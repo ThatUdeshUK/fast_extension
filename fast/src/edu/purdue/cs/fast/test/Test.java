@@ -66,7 +66,7 @@ public class Test {
 	public static void main(String[] args) throws Exception {
 		
 		testFast("results/results.csv",
-				spatiallyUniformTweetsQueriesPath,spatiallyUniformTweetsQueriesPath, 5000000, 100000, false, 5, 20, 1000.0, 1, 512, 8, 2);
+				tweetsQueriesPath,tweetsObjectsPath, 5000000, 100000, false, 5, 20, 500.0, 21, 512, 8, 0);
 		
 
 	}
