@@ -18,9 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 
-import edu.purdue.cs.fast.ExpandbleIndex;
-import edu.purdue.cs.fast.KeywordFrequencyStats;
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.KeyWordTrieIndexMinimal;
+import edu.purdue.cs.fast.KeywordFrequencyStats;
 import edu.purdue.cs.fast.helper.Command;
 import edu.purdue.cs.fast.helper.LatLong;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
@@ -36,6 +36,7 @@ import edu.purdue.cs.fast.messages.DataObject;
 import edu.purdue.cs.fast.messages.MinimalRangeQuery;
 import edu.purdue.cs.fast.messages.Query;
 import edu.purdue.cs.fast.readers.QueriesReader;
+
 
 /**
  * This class tests the global and local index performance and test the value of
@@ -66,7 +67,7 @@ public class Test {
 	public static void main(String[] args) throws Exception {
 		
 		testFast("results/results.csv",
-				tweetsQueriesPath,tweetsObjectsPath, 5000000, 100000, false, 5, 20, 500.0, 21, 512, 8, 0);
+				tweetsQueriesPath,tweetsObjectsPath, 5000000, 100000, false, 5, 20, 100.0, 3, 512, 8, 0);
 		
 
 	}
@@ -172,16 +173,18 @@ public class Test {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		for (MinimalRangeQuery q : queries) {
-			// if(q.queryId==11508){
-			// System.out.println("");
-			// }
 			localIndex.addContinousQuery(q);
 			sumQueryKeywords += q.queryText.size();
 
 		}
 
 		stopwatch.stop();
+		KeyWordTrieIndexMinimal trieIndex = new KeyWordTrieIndexMinimal();
+		if (verifyCorrectness)
+			for (MinimalRangeQuery q : queries) {
+				trieIndex.insert(q.queryText, q);
 
+			}
 		
 
 		queryRegisterationduration = stopwatch.elapsed(TimeUnit.NANOSECONDS);
@@ -215,7 +218,10 @@ public class Test {
 
 				sumOfObjectsKeywords += obj.getObjectText().size();
 				List<MinimalRangeQuery> result = localIndex.getReleventSpatialKeywordRangeQueries(obj, false);
-				
+				if (verifyCorrectness)
+					// if (result.size() > 0) {
+					verifyCorrectness(trieIndex, obj, result, localIndex);
+				// }
 				if (result != null && result.size() > 0) {
 					querycount += result.size();
 				}
@@ -282,7 +288,52 @@ public class Test {
 		return toReturn;
 	}
 
-	
+	public static void verifyCorrectness(KeyWordTrieIndexMinimal trieIndex, DataObject obj,
+			List<MinimalRangeQuery> result, FAST localIndex) {
+		LinkedList<MinimalRangeQuery> trieResult = trieIndex.find(obj.getObjectText());
+		int totalResult = 0;
+		HashSet<MinimalRangeQuery> resultSet = new HashSet<MinimalRangeQuery>();
+		HashSet<MinimalRangeQuery> trieResultHashSet = new HashSet<MinimalRangeQuery>();
+		for (MinimalRangeQuery q : trieResult) {
+			if (SpatialHelper.overlapsSpatially(obj.getLocation(), q.spatialRange)
+					&& TextHelpers.containsTextually(obj.getObjectText(), q.queryText)) {
+				totalResult++;
+				trieResultHashSet.add(q);
+			}
+		}
+		for (MinimalRangeQuery q : result) {
+			resultSet.add(q);
+		}
+		if (totalResult < result.size()) {
+			System.out.println("Object:" + result.size() + ":" + obj.toString());
+			for (MinimalRangeQuery q : result) {
+				if (!trieResultHashSet.contains(q)) {
+					System.err.println("Error extra query");
+
+				}
+
+				if (!SpatialHelper.overlapsSpatially(obj.getLocation(), q.spatialRange)
+						|| !TextHelpers.containsTextually(obj.getObjectText(), q.queryText)) {
+					System.err.println("Error should repeat");
+
+				}
+
+			}
+			localIndex.getReleventSpatialKeywordRangeQueries(obj, false);
+			;
+
+		} else if (totalResult > result.size()) {
+			System.out.println("Object:" + result.size() + ":" + obj.toString());
+			for (MinimalRangeQuery q : trieResultHashSet) {
+				if (!resultSet.contains(q)) {
+					if (q.queryId == 657746)
+						System.out.println("missing");
+					System.err.println("Error missing query" + q.toString());
+					localIndex.getReleventSpatialKeywordRangeQueries(obj, true);
+				}
+			}
+		}
+	}
 	public static double stdev(Double a[], int n) {
 
 		if (n == 0)

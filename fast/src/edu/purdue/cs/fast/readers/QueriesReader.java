@@ -228,115 +228,133 @@ public class QueriesReader extends FileSpout {
 
 	public Query buildQuery(String line) {
 		//String[] tweetParts = line.split(",");
-		try {
-			int from = 0, to = 0;
-			to = line.indexOf(',');
-			//		if (tweetParts.length < 5) {
-			//			System.out.println("Improper tweet format <5:" + line);
-			//			return null;
-			//		}
+				try {
+					int from = 0, to = 0;
+					to = line.indexOf(',');
+					//		if (tweetParts.length < 5) {
+					//			System.out.println("Improper tweet format <5:" + line);
+					//			return null;
+					//		}
 
-			if (from == -1 || to == -1)
-				return null;
-			String idstring = line.substring(from, to);
-		
-			from = to;
-			to = line.indexOf(',', from + 1);
-			from = to;
-			to = line.indexOf(',', from + 1);
+					if (from == -1 || to == -1)
+						return null;
+					String idstring = line.substring(from, to);
+					from = to;
+					to = line.indexOf(',', from + 1);
+					if (to == -1)
+						return null;
+					String dateString = line.substring(from + 1, to);
+					from = to;
+					to = line.indexOf(',', from + 1);
 
-			double x = 0.0;
-			double y = 0.0;
+					double lat = 0.0;
+					double lon = 0.0;
 
-			if (from == -1 || to == -1)
-				return null;
-			x = Double.parseDouble(line.substring(from + 1, to));
-			from = to;
-			to = line.indexOf(',', from + 1);
-			if (to == -1)
-				return null;
-			y = Double.parseDouble(line.substring(from + 1, to));
+					if (from == -1 || to == -1)
+						return null;
+					lat = Double.parseDouble(line.substring(from + 1, to));
+					from = to;
+					to = line.indexOf(',', from + 1);
+					if (to == -1)
+						return null;
+					lon = Double.parseDouble(line.substring(from + 1, to));
 
+					if (lat < SpatioTextualConstants.minLat || lat > SpatioTextualConstants.maxLat || lon < SpatioTextualConstants.minLong || lon > SpatioTextualConstants.maxLong
+							|| (Double.compare(lat, 0.0) == 0 && Double.compare(lon, 0.0) == 0)) {
 
-			from = to;
-			to = line.indexOf(',', from + 1);
-
-			String textContent = line.substring(from + 1);
-			ArrayList<String> queryText1 = new ArrayList<String>();
-			ArrayList<String> textList = TextHelpers.transformIntoSortedArrayListOfString(textContent);
-			if (textList.size() < keywordCountVal) {
-				//return null;
-				if (previousTextList == null)
-					return null;
-				textList.addAll(previousTextList);
-			} else {
-				previousTextList = textList;
-			}
-			//Collections.shuffle(textList, new Random(0));
-			for (int j = 0; j < keywordCountVal; j++) {
-				queryText1.add(textList.get(j));
-				//queryText1.add(textList.get(r.nextInt(textList.size())));
-				//queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
-			}
-			Collections.sort(queryText1);
-			//			for (int j = 0; j < keywordCountVal; j++) {
-			//
-			//				queryText1.add(textList.get(j));
-			//			//	queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
-			//			}
-			Integer id = i + selfTaskIndex * totalQueryCountVal;
-			Point xy = new Point(x,y);
-			Date date = new Date();
-			ArrayList<String> queryText2 = new ArrayList<String>();
-			Query q = new Query();
-			q.setQueryId(id);
-			q.setCommand(Command.addCommand);
-			//	q.setContinousQuery(true);
-			q.setDataSrc(dataSrc1);
-			//	q.setDistance(distance);
-			q.setTimeStamp(date.getTime());
-			q.setRemoveTime(Long.MAX_VALUE);
-			if (queryType.equals(QueryType.queryTextualRange)) {
-				q.setSpatialRange(new Rectangle(xy, new Point(xy.getX() + spatialRangeVal, xy.getY() + spatialRangeVal)));
-				q.setTextualPredicate(textualPredicate1);
-				if (TextualPredicate.BOOLEAN_EXPR.equals(textualPredicate1)) {
-					if (keywordCountVal == 1) {
-						q.setTextualPredicate(TextualPredicate.OVERlAPS);
-						q.setQueryText(queryText1);
-					} else if (keywordCountVal == 2) {
-						q.setTextualPredicate(TextualPredicate.CONTAINS);
-						q.setQueryText(queryText1);
+						if (previousLocations.size() > 0) {
+							latLong = previousLocations.get(r.nextInt(previousLocations.size()));
+							prevLocCount++;
+						} else {
+							System.out.println("out of bounds of entire space lat lon:" + lat + "," + lon + "," + line);
+							return null;
+						}
 					} else {
-						ArrayList<ArrayList<String>> complexKeywords = new ArrayList<ArrayList<String>>();
-						int howManySplitsSecontions = r.nextInt(Math.max(keywordCountVal / 2, 2));
-						int start = 0;
-						int batchSize = keywordCountVal / (howManySplitsSecontions + 1);
-						int j = 0;
-						for (; j < howManySplitsSecontions; j++) {
-							complexKeywords.add(new ArrayList<String>());
-							for (int k = 0; k < batchSize; k++) {
-								complexKeywords.get(j).add(queryText1.get(start++));
-							}
-						}
-						//add the remaing keywords in the last batch;
-						while (complexKeywords.size() <= howManySplitsSecontions) {
-							complexKeywords.add(new ArrayList<String>());
-						}
-						while (start < keywordCountVal)
-							complexKeywords.get(j).add(queryText1.get(start++));
-					}
+						latLong = new LatLong(lat, lon);
+						previousLocations.add(latLong);
 
-				} else {
-					q.setQueryText(queryText1);
+					}
+					from = to;
+					to = line.indexOf(',', from + 1);
+					from = to;
+					to = line.indexOf(',', from + 1);
+
+					String textContent = line.substring(from + 1);
+					ArrayList<String> queryText1 = new ArrayList<String>();
+					ArrayList<String> textList = TextHelpers.transformIntoSortedArrayListOfString(textContent);
+					if (textList.size() < keywordCountVal) {
+						//return null;
+						if (previousTextList == null)
+							return null;
+						textList.addAll(previousTextList);
+					} else {
+						previousTextList = textList;
+					}
+					//Collections.shuffle(textList, new Random(0));
+					for (int j = 0; j < keywordCountVal; j++) {
+						queryText1.add(textList.get(j));
+						//queryText1.add(textList.get(r.nextInt(textList.size())));
+						//queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
+					}
+					Collections.sort(queryText1);
+					//			for (int j = 0; j < keywordCountVal; j++) {
+					//
+					//				queryText1.add(textList.get(j));
+					//			//	queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
+					//			}
+					Integer id = i + selfTaskIndex * totalQueryCountVal;
+					Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong);
+					Date date = new Date();
+					ArrayList<String> queryText2 = new ArrayList<String>();
+					Query q = new Query();
+					q.setQueryId(id);
+					q.setCommand(Command.addCommand);
+					//	q.setContinousQuery(true);
+					q.setDataSrc(dataSrc1);
+					//	q.setDistance(distance);
+					q.setTimeStamp(date.getTime());
+					q.setRemoveTime(Long.MAX_VALUE);
+					if (queryType.equals(QueryType.queryTextualRange)) {
+						q.setSpatialRange(new Rectangle(xy, new Point(xy.getX() + spatialRangeVal, xy.getY() + spatialRangeVal)));
+						q.setTextualPredicate(textualPredicate1);
+						if (TextualPredicate.BOOLEAN_EXPR.equals(textualPredicate1)) {
+							if (keywordCountVal == 1) {
+								q.setTextualPredicate(TextualPredicate.OVERlAPS);
+								q.setQueryText(queryText1);
+							} else if (keywordCountVal == 2) {
+								q.setTextualPredicate(TextualPredicate.CONTAINS);
+								q.setQueryText(queryText1);
+							} else {
+								ArrayList<ArrayList<String>> complexKeywords = new ArrayList<ArrayList<String>>();
+								int howManySplitsSecontions = r.nextInt(Math.max(keywordCountVal / 2, 2));
+								int start = 0;
+								int batchSize = keywordCountVal / (howManySplitsSecontions + 1);
+								int j = 0;
+								for (; j < howManySplitsSecontions; j++) {
+									complexKeywords.add(new ArrayList<String>());
+									for (int k = 0; k < batchSize; k++) {
+										complexKeywords.get(j).add(queryText1.get(start++));
+									}
+								}
+								//add the remaing keywords in the last batch;
+								while (complexKeywords.size() <= howManySplitsSecontions) {
+									complexKeywords.add(new ArrayList<String>());
+								}
+								while (start < keywordCountVal)
+									complexKeywords.get(j).add(queryText1.get(start++));
+							}
+
+						} else {
+							q.setQueryText(queryText1);
+						}
+					} 
+					return q;
+				} catch (Exception e) {
+					System.out.println("unable to parse line" + line);
+					e.printStackTrace();
+					return null;
 				}
-			} 
-			return q;
-		} catch (Exception e) {
-			System.out.println("unable to parse line" + line);
-			e.printStackTrace();
-			return null;
 		}
-	}
 	public Query buildQueryfromSynthetic(String line) {
 		//String[] tweetParts = line.split(",");
 		try {
