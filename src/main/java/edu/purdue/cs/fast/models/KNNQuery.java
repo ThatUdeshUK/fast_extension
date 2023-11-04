@@ -17,16 +17,41 @@ public class KNNQuery extends Query {
         super(id, keywords, predicate, et);
         this.location = location;
         this.k = k;
-        this.ar = SpatioTextualConstants.xMaxRange;
+        this.ar = Double.MAX_VALUE;
     }
 
+    /**
+     * Push to the monitored priority queue until there are `k` number of objects. Once it's filled upto `k`, the
+     * `ar` of the KNNQuery is updated.
+     *
+     * @param obj DataObject to be added
+     * @return Whether the KNN query currently monitors `k` objects or not
+     */
     public boolean pushUntilK(DataObject obj) {
         if (monitoredObjects == null) {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }
 
         monitoredObjects.add(obj);
-        return monitoredObjects.size() >= k;
+        boolean kFilled = monitoredObjects.size() >= k;
+        if (monitoredObjects.size() > k) {
+            monitoredObjects.poll();
+        }
+
+        if (kFilled) {
+            assert monitoredObjects.peek() != null;
+
+            Point o = monitoredObjects.peek().location;
+            double maxX = o.x - location.x;
+            double maxY = o.y - location.y;
+            this.ar = Math.sqrt(maxX * maxX + maxY * maxY);
+        }
+        return kFilled;
+    }
+
+    @Override
+    public Rectangle spatialBox() {
+        return new Rectangle(location.x - ar, location.y - ar, location.x + ar, location.y + ar);
     }
 
     @Override

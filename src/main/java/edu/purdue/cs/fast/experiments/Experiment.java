@@ -3,7 +3,10 @@ package edu.purdue.cs.fast.experiments;
 import com.google.common.base.Stopwatch;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
+import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.KNNQuery;
+import edu.purdue.cs.fast.models.MinimalRangeQuery;
 import edu.purdue.cs.fast.models.Query;
 
 import java.io.BufferedWriter;
@@ -20,6 +23,8 @@ public abstract class Experiment {
     protected FAST fast;
     protected long creationTime;
     protected long searchTime;
+    protected long queriesMem;
+    protected long indexMem;
 
     protected abstract List<Query> generateQueries();
 
@@ -28,16 +33,38 @@ public abstract class Experiment {
     abstract void run();
 
     protected void create() {
+        create(true);
+    }
+
+    protected void create(boolean calculateMem) {
         List<Query> queries = generateQueries();
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
             fast.addContinuousQuery(q);
         }
         stopwatch.stop();
+
+//        System.gc();
+//        System.gc();
+//        if (calculateMem) {
+//            for (Query q : queries) {
+//                if (q instanceof MinimalRangeQuery)
+//                    queriesMem += ObjectSizeCalculator.getObjectSize((MinimalRangeQuery) q);
+//                if (q instanceof KNNQuery)
+//                    queriesMem += ObjectSizeCalculator.getObjectSize((KNNQuery) q);
+//            }
+//            System.out.println("Queries size =" + queriesMem / 1024 / 1024 + " MB");
+//            System.gc();
+//            System.gc();
+//        }
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
     protected Iterable<List<Query>> search() {
+        return search(true);
+    }
+
+    protected Iterable<List<Query>> search(boolean calculateMem) {
         List<DataObject> objects = generateObjects();
         ArrayList<List<Query>> results = new ArrayList<>();
 
@@ -47,6 +74,15 @@ public abstract class Experiment {
         }
         stopwatch.stop();
         this.searchTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
+
+        System.gc();
+        System.gc();
+        if (calculateMem) {
+            indexMem = ObjectSizeCalculator.getObjectSize(fast.index) - queriesMem;
+            System.out.println("Local index size =" + indexMem / 1024 / 1024 + " MB");
+            System.gc();
+            System.gc();
+        }
 
         return results;
     }
@@ -63,7 +99,7 @@ public abstract class Experiment {
             try {
                 if (!fileExists) {
                     outputFile.createNewFile();
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,gran,max_x,max_y");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,query_mem,index_mem,gran,max_x,max_y");
                     for (String k: keys) {
                         header.append(",").append(k);
                     }
@@ -78,8 +114,8 @@ public abstract class Experiment {
                 FileWriter fw = new FileWriter(outputFile, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + fast.gridGranularity + "," +
-                        fast.bounds.max.x + "," + fast.bounds.max.y);
+                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + queriesMem + ","
+                        + indexMem + ","+ fast.gridGranularity + "," + fast.bounds.max.x + "," + fast.bounds.max.y);
                 for (String v: values) {
                     line.append(",").append(v);
                 }

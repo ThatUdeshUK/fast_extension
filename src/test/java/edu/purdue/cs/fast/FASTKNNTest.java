@@ -25,7 +25,8 @@ class FASTKNNTest {
                 new DataObject(2, new Point(5.0, 5.0), List.of("k1", "k2"), 2),
                 new DataObject(3, new Point(2.0, 6.0), List.of("k1", "k2"), 3),
                 new DataObject(4, new Point(1.0, 1.0), List.of("k1", "k2"), 4),
-                new DataObject(5, new Point(5.0, 6.0), List.of("k1", "k2"), 5)
+                new DataObject(5, new Point(5.0, 6.0), List.of("k1", "k2"), 5),
+                new DataObject(6, new Point(7.0, 8.0), List.of("k1", "k2"), 6)
         );
 
         this.answers = List.of(
@@ -33,7 +34,8 @@ class FASTKNNTest {
                 List.of(1, 2, 3),
                 List.of(1, 3),
                 List.of(),
-                List.of(1, 2, 3)
+                List.of(1, 2, 3),
+                List.of()
         );
     }
 
@@ -73,6 +75,7 @@ class FASTKNNTest {
 
         System.out.println("-----Search Test-----");
         for (int i = 0; i < answers.size(); i++) {
+            System.out.println(objects.get(i));
             List<Integer> fastAns = testFAST.searchQueries(objects.get(i)).stream().map((Query query) -> query.id).toList();
             System.out.println(fastAns + " | " + answers.get(i).toString());
 

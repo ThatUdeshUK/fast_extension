@@ -19,6 +19,8 @@ public abstract class Query {
 		this.et = et;
 	}
 
+	public abstract Rectangle spatialBox();
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

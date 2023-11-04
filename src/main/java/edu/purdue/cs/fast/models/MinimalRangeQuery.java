@@ -13,6 +13,11 @@ public class MinimalRangeQuery extends Query {
 	}
 
 	@Override
+	public Rectangle spatialBox() {
+		return this.spatialRange;
+	}
+
+	@Override
 	public String toString() {
 		return "MinimalRangeQuery{" +
 				"id=" + id +

@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.structures.*;
 
 public class FAST {
@@ -63,6 +62,8 @@ public class FAST {
     public double localXstep;
     public double localYstep;
     public Rectangle bounds;
+    public double globalXRange;
+    public double globalYRange;
     public int gridGranularity;
     public int maxLevel;
     public SpatialCell cellBeingCleaned;
@@ -76,11 +77,11 @@ public class FAST {
 
     public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
         this.bounds = bounds;
-        Double globalXrange = SpatioTextualConstants.xMaxRange;
-        Double globalYrange = SpatioTextualConstants.yMaxRange;
+        this.globalXRange = bounds.max.x - bounds.min.x;
+        this.globalYRange = bounds.max.y - bounds.min.y;
         this.gridGranularity = xGridGranularity;
-        this.localXstep = (globalXrange / this.gridGranularity);
-        this.localYstep = (globalYrange / this.gridGranularity);
+        this.localXstep = (this.globalXRange / this.gridGranularity);
+        this.localYstep = (this.globalYRange / this.gridGranularity);
         this.maxLevel = Math.min((int) (Math.log(gridGranularity) / Math.log(2)), maxLevel);
         this.minInsertedLevel = -1;
         this.maxInsertedLevel = -1;
@@ -140,6 +141,8 @@ public class FAST {
     }
 
     public void addContinuousKNNQuery(KNNQuery query) {
+        queryTimeStampCounter++;
+
         if (minInsertedLevel == -1) {
             maxInsertedLevel = maxLevel;
             minInsertedLevel = maxLevel;
@@ -149,7 +152,7 @@ public class FAST {
 
         int coordinate = calcCoordinate(maxLevel, 0, 0, 1);
         if (!index.containsKey(coordinate)) {
-            Rectangle bounds = SpatialCell.getBounds(0, 0, SpatioTextualConstants.xMaxRange);
+            Rectangle bounds = SpatialCell.getBounds(0, 0, globalXRange);
             index.put(coordinate, new SpatialCell(bounds, coordinate, maxLevel));
         }
 
@@ -165,34 +168,33 @@ public class FAST {
     }
 
     public void addContinuousMinimalRangeQuery(MinimalRangeQuery query) {
+        queryTimeStampCounter++;
+
         ArrayList<ReinsertEntry> currentLevelQueries = new ArrayList<>();
         currentLevelQueries.add(new ReinsertEntry(query.spatialRange, query));
         reinsertContinuous(currentLevelQueries, maxLevel);
     }
 
     private void reinsertContinuous(ArrayList<ReinsertEntry> currentLevelQueries, int level) {
-        queryTimeStampCounter++;
-
         while (level >= 0 && !currentLevelQueries.isEmpty()) {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
-            double levelStep = (SpatioTextualConstants.xMaxRange / levelGranularity);
+            double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
 
-                int levelxMinCell = (int) (entry.query.spatialRange.min.x / levelStep);
-                int levelyMinCell = (int) (entry.query.spatialRange.min.y / levelStep);
-                int levelxMaxCell = (int) (entry.query.spatialRange.max.x / levelStep);
-                int levelyMaxCell = (int) (entry.query.spatialRange.max.y / levelStep);
+//                int levelXMinCell = (int) (entry.query.spatialRange.min.x / levelStep);
+//                int levelXMinCell = (int) (entry.query.spatialRange.min.y / levelStep);
+//                int levelXMaxCell = (int) (entry.query.spatialRange.max.x / levelStep);
+//                int levelYMaxCell = (int) (entry.query.spatialRange.max.y / levelStep);
 
-                if (entry.range != null) {
-                    if (entry.query.id == debugQueryId)
-                        System.out.println("reinsert" + entry.query);
-
-                    levelxMinCell = (int) (entry.range.min.x / levelStep);
-                    levelyMinCell = (int) (entry.range.min.y / levelStep);
-                    levelxMaxCell = (int) (entry.range.max.x / levelStep);
-                    levelyMaxCell = (int) (entry.range.max.y / levelStep);
-                }
+//                if (entry.range != null) {
+//                    if (entry.query.id == debugQueryId)
+//                        System.out.println("reinsert" + entry.query);
+                int levelXMinCell = (int) (entry.range.min.x / levelStep);
+                int levelYMinCell = (int) (entry.range.min.y / levelStep);
+                int levelXMaxCell = (int) (entry.range.max.x / levelStep);
+                int levelYMaxCell = (int) (entry.range.max.y / levelStep);
+//                }
 
                 if (minInsertedLevel == -1)
                     minInsertedLevel = maxInsertedLevel = level;
@@ -204,22 +206,39 @@ public class FAST {
 
                 int coodinate;
                 QueryListNode sharedQueries = null;
-                for (int i = levelxMinCell; i <= levelxMaxCell; i++) {
-                    for (int j = levelyMinCell; j <= levelyMaxCell; j++) {
+                for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
+                    for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
+                        if (entry.query instanceof KNNQuery) {
+                            double x = (((KNNQuery) entry.query).location.x / levelStep);
+                            double y = (((KNNQuery) entry.query).location.y / levelStep);
+                            double r = (((KNNQuery) entry.query).ar / levelStep);
+
+                            double si = i;
+                            if (i + 1 < x)
+                                si += 1;
+
+                            double sj = j;
+                            if (j + 1< x)
+                                sj += 1;
+
+                            double d = Math.sqrt((si - x) * (si - x) + (sj - y) * (sj - y));
+                            if (!(((i < x || j < y) && d - 1 < r) || d < r))
+                                continue;
+                        }
                         totalQueryInsertionsIncludingReplications++;
                         coodinate = calcCoordinate(level, i, j, levelGranularity);
                         if (!index.containsKey(coodinate)) {
                             Rectangle bounds = SpatialCell.getBounds(i, j, levelStep);
-                            if (bounds.min.x >= SpatioTextualConstants.xMaxRange || bounds.min.y >= SpatioTextualConstants.yMaxRange)
+                            if (bounds.min.x >= globalXRange || bounds.min.y >= globalYRange)
                                 continue;
                             index.put(coodinate, new SpatialCell(bounds, coodinate, level));
                         }
                         SpatialCell spatialCell = index.get(coodinate);
-                        if (SpatialHelper.overlapsSpatially(entry.query.spatialRange, spatialCell.bounds)) {
-                            if (i == levelxMinCell && j == levelyMinCell) {
+                        if (SpatialHelper.overlapsSpatially(entry.query.spatialBox(), spatialCell.bounds)) {
+                            if (i == levelXMinCell && j == levelYMinCell) {
                                 sharedQueries = spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
-                            } else if (sharedQueries != null) {
-                                spatialCell.addInternalQuery(minKeyword, entry.query, sharedQueries, insertNextLevelQueries);
+                            } else if (sharedQueries != null && entry.query instanceof MinimalRangeQuery) {
+                                spatialCell.addInternalQuery(minKeyword, (MinimalRangeQuery) entry.query, sharedQueries, insertNextLevelQueries);
                             } else
                                 spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
                         }
@@ -233,6 +252,14 @@ public class FAST {
             currentLevelQueries = insertNextLevelQueries;
             level--;
         }
+    }
+
+    private void reinsertDescendedKNNQueries(ArrayList<KNNQuery> descendingKNNQueries) {
+        ArrayList<ReinsertEntry> boundedKNNQueries = new ArrayList<>();
+        for (KNNQuery query : descendingKNNQueries) {
+            boundedKNNQueries.add(new ReinsertEntry(query.spatialBox(), query));
+        }
+        reinsertContinuous(boundedKNNQueries, 0);
     }
 
     public void cleanNextSetOfEntries() {
@@ -278,12 +305,20 @@ public class FAST {
             Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
             SpatialCell spatialCellOptimized = index.get(cellCoordinates);
             if (spatialCellOptimized != null) {
-                keywords = spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
+                // TODO - DANGER you removed `keywords =`
+                if (level == maxInsertedLevel)
+                    spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
+                else
+                    spatialCellOptimized.searchQueries(dataObject, keywords, result, null);
             }
             step /= 2;
             granualrity <<= 1;
         }
-
+        if (!descendingKNNQueries.isEmpty()) {
+            // TODO - Only descend to last level
+            reinsertDescendedKNNQueries(descendingKNNQueries);
+//            System.out.println(descendingKNNQueries.stream().map((query) -> query.id).toList());
+        }
         return result;
     }
 

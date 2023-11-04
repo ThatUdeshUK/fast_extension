@@ -397,7 +397,7 @@ public class SpatialCell {
                         if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
                             // TODO - implement descend
                             finalQueries.add(query);
-                            if (query.pushUntilK(obj)) {
+                            if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
                                 textualIndex.remove(keyword);
                             }
@@ -416,7 +416,7 @@ public class SpatialCell {
                             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
                                 // TODO - implement descend
                                 finalQueries.add(query);
-                                if (query.pushUntilK(obj)) {
+                                if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                     descendingKNNQueries.add(query);
                                     ((QueryListNode) node).queries.kNNQueries().remove(query);
                                 }

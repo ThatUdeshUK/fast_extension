@@ -22,11 +22,12 @@ public class Run {
         numQueriesList.add(500000);
         numQueriesList.add(1000000);
         numQueriesList.add(2500000);
-        numQueriesList.add(5000000);
+//        numQueriesList.add(5000000);
 
         for (int numQueries: numQueriesList) {
+            System.out.println("Running experiment -> No. queries: " + numQueries);
             PlacesKNNExperiment experiment = new PlacesKNNExperiment(
-                    "/u/antor/u13/ukumaras/Projects/fast_index/fast/results/output_places_US_knn2.csv",
+                    "/u/antor/u13/ukumaras/Projects/fast_index/fast/results/output_places_US_knn_sea_cnn.csv",
                     "/u/antor/u13/ukumaras/Projects/FAST/data/places_dump_US.geojson",
                     "places_knn",
                     numQueries,
