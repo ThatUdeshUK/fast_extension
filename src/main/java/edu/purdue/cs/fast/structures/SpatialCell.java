@@ -50,6 +50,10 @@ public class SpatialCell {
         this.level = level;
     }
 
+    public static Rectangle getBounds(int i, int j, double step) {
+        return new Rectangle(new Point(i * step, j * step), new Point((i + 1) * step, (j + 1) * step));
+    }
+
     public void addInternalQuery(String keyword, MinimalRangeQuery query,
                                  QueryListNode sharedQueries, ArrayList<ReinsertEntry> insertNextLevelQueries) {
         if (textualIndex == null) {
@@ -110,7 +114,7 @@ public class SpatialCell {
     }
 
     public QueryListNode addInternalQueryNoShare(String keyword, Query query, QueryListNode sharedQueries,
-                                          ArrayList<ReinsertEntry> insertNextLevelQueries) {
+                                                 ArrayList<ReinsertEntry> insertNextLevelQueries) {
         if (textualIndex == null) {
             textualIndex = new ConcurrentHashMap<>();
         }
@@ -206,7 +210,6 @@ public class SpatialCell {
                                 ((QueryTrieNode) node).finalQueries = new ArrayList<>();
                             ((QueryTrieNode) node).finalQueries.add(query);
                         } else {
-
                             if (((QueryTrieNode) node).queries == null)
                                 ((QueryTrieNode) node).queries = new HybridList();
                             ((QueryTrieNode) node).queries.add(query);
@@ -376,7 +379,8 @@ public class SpatialCell {
         return !cleaningIterator.hasNext();
     }
 
-    public ArrayList<String> searchQueries(DataObject obj, List<String> keywords, List<Query> finalQueries) {
+    public ArrayList<String> searchQueries(DataObject obj, List<String> keywords, List<Query> finalQueries,
+                                           ArrayList<KNNQuery> descendingKNNQueries) {
         ArrayList<String> remainingKeywords = new ArrayList<String>();
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
@@ -391,9 +395,12 @@ public class SpatialCell {
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
                         if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                            query.pushWithLimitK(obj);
-                            if (query.monitoredObjects.contains(obj))
-                                finalQueries.add(query);
+                            // TODO - implement descend
+                            finalQueries.add(query);
+                            if (query.pushUntilK(obj)) {
+                                descendingKNNQueries.add(query);
+                                textualIndex.remove(keyword);
+                            }
                         }
                     }
                 } else if (node instanceof QueryListNode) {
@@ -404,12 +411,15 @@ public class SpatialCell {
                             MinimalRangeQuery query = ((MinimalRangeQuery) q);
                             if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
                                 finalQueries.add(q);
-                        } else if (q instanceof KNNQuery ) {
+                        } else if (q instanceof KNNQuery) {
                             KNNQuery query = ((KNNQuery) q);
                             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                                query.pushWithLimitK(obj);
-                                if (query.monitoredObjects.contains(obj))
-                                    finalQueries.add(query);
+                                // TODO - implement descend
+                                finalQueries.add(query);
+                                if (query.pushUntilK(obj)) {
+                                    descendingKNNQueries.add(query);
+                                    ((QueryListNode) node).queries.kNNQueries().remove(query);
+                                }
                             }
                         }
                     }
@@ -418,18 +428,15 @@ public class SpatialCell {
                 }
             }
         }
+
         for (int i = 0; i < remainingKeywords.size(); i++) {
             String keyword = remainingKeywords.get(i);
             Object keyWordIndex = textualIndex.get(keyword);
             FAST.totalTrieAccess++;
-            ((QueryTrieNode) keyWordIndex).find(obj, remainingKeywords, i + 1, finalQueries);
+            ((QueryTrieNode) keyWordIndex).find(obj, remainingKeywords, i + 1, finalQueries, descendingKNNQueries);
         }
 
         return remainingKeywords;
-    }
-
-    public static Rectangle getBounds(int i, int j, double step) {
-        return new Rectangle(new Point(i * step, j * step), new Point((i + 1) * step, (j + 1) * step));
     }
 
     static class SpatialOverlapComparator implements Comparator<MinimalRangeQuery> {

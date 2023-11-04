@@ -13,7 +13,7 @@ public class PlacesKNNExperiment extends PlacesExperiment {
     public PlacesKNNExperiment(String outputPath, String inputPath) {
         super(outputPath, inputPath);
 
-        this.name = "places_knn_00";
+        this.name = "places_knn";
         this.numQueries = 2500000;
         this.numObjects = 100000;
         this.numKeywords = 3;
