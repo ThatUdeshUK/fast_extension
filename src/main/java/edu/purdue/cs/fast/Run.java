@@ -18,13 +18,15 @@ public class Run {
         int numObjects = 100000;
 
         List<Integer> numQueriesList = new ArrayList<>();
+        numQueriesList.add(100000);
+        numQueriesList.add(500000);
         numQueriesList.add(1000000);
         numQueriesList.add(2500000);
         numQueriesList.add(5000000);
 
         for (int numQueries: numQueriesList) {
             PlacesKNNExperiment experiment = new PlacesKNNExperiment(
-                    "/u/antor/u13/ukumaras/Projects/fast_index/fast/results/output_places_US_knn.csv",
+                    "/u/antor/u13/ukumaras/Projects/fast_index/fast/results/output_places_US_knn2.csv",
                     "/u/antor/u13/ukumaras/Projects/FAST/data/places_dump_US.geojson",
                     "places_knn",
                     numQueries,

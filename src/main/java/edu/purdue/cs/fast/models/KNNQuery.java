@@ -20,17 +20,13 @@ public class KNNQuery extends Query {
         this.ar = SpatioTextualConstants.xMaxRange;
     }
 
-    public void pushWithLimitK(DataObject obj) {
+    public boolean pushUntilK(DataObject obj) {
         if (monitoredObjects == null) {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }
 
-        if (!monitoredObjects.contains(obj)) {
-            monitoredObjects.add(obj);
-            if (monitoredObjects.size() > k) {
-                monitoredObjects.poll();
-            }
-        }
+        monitoredObjects.add(obj);
+        return monitoredObjects.size() >= k;
     }
 
     @Override

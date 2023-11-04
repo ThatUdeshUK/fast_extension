@@ -265,7 +265,10 @@ public class FAST {
 
     public List<Query> searchQueries(DataObject dataObject) {
         objectTimeStampCounter++;
+
         List<Query> result = new LinkedList<>();
+        ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
+
         if (minInsertedLevel == -1)
             return result;
         double step = (maxInsertedLevel == 0) ? localXstep : (localXstep * (2 << (maxInsertedLevel - 1)));
@@ -275,7 +278,7 @@ public class FAST {
             Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
             SpatialCell spatialCellOptimized = index.get(cellCoordinates);
             if (spatialCellOptimized != null) {
-                keywords = spatialCellOptimized.searchQueries(dataObject, keywords, result);
+                keywords = spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
             }
             step /= 2;
             granualrity <<= 1;
