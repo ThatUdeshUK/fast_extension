@@ -32,4 +32,5 @@ replay_pid*
 # FS
 ../.DS_Store
 */.DS_Store
+data/*.geojson
 

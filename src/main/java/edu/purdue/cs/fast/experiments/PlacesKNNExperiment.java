@@ -46,7 +46,7 @@ public class PlacesKNNExperiment extends PlacesExperiment {
 
     @Override
     public void run() {
-        loadData();
+        init();
 
         System.out.print("Creating index -> ");
         create();

@@ -43,7 +43,7 @@ public class PlacesExperiment extends Experiment {
         );
     }
 
-    void loadData() {
+    public void init() {
         ArrayList<Place> places = new ArrayList<>();
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
@@ -114,7 +114,7 @@ public class PlacesExperiment extends Experiment {
 
     @Override
     public void run() {
-        loadData();
+        init();
 
         System.out.print("Creating index -> ");
         create();
