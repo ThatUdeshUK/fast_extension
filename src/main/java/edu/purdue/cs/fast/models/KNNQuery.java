@@ -1,5 +1,7 @@
 package edu.purdue.cs.fast.models;
 
+import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 
@@ -47,6 +49,10 @@ public class KNNQuery extends Query {
             this.ar = Math.sqrt(maxX * maxX + maxY * maxY);
         }
         return kFilled;
+    }
+
+    public int calcMinSpatialLevel() {
+        return Math.max((int) (Math.log((ar / FAST.localXstep)) / Math.log(2)), 0);
     }
 
     @Override
