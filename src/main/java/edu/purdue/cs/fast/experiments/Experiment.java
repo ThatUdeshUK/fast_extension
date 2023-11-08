@@ -20,6 +20,7 @@ public abstract class Experiment {
     protected FAST fast;
     protected long creationTime;
     protected long searchTime;
+    protected ArrayList<Long> searchTimeline = new ArrayList<>();
 
     protected abstract List<Query> generateQueries();
 
@@ -43,7 +44,11 @@ public abstract class Experiment {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (DataObject o : objects) {
-            results.add(fast.searchQueries(o));
+            Stopwatch stopwatch2 = Stopwatch.createStarted();
+            List<Query> res = fast.searchQueries(o);
+            stopwatch2.stop();
+            searchTimeline.add(stopwatch.elapsed(TimeUnit.NANOSECONDS));
+            results.add(res);
         }
         stopwatch.stop();
         this.searchTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
@@ -63,7 +68,7 @@ public abstract class Experiment {
             try {
                 if (!fileExists) {
                     outputFile.createNewFile();
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,query_mem,index_mem,gran,max_x,max_y");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,gran,max_x,max_y");
                     for (String k: keys) {
                         header.append(",").append(k);
                     }
@@ -86,6 +91,14 @@ public abstract class Experiment {
                 bw.write(line + "\n");
                 bw.close();
                 fw.close();
+
+                FileWriter fw2 = new FileWriter(outputPath.replace(".csv", "_timeline.csv"));
+                BufferedWriter bw2 = new BufferedWriter(fw2);
+                for (long v: searchTimeline) {
+                    bw2.write(v + "\n");
+                }
+                bw2.close();
+                fw2.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

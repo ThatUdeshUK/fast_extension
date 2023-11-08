@@ -9,6 +9,7 @@ import java.util.List;
 
 public class PlacesKNNExperiment extends PlacesExperiment {
     private final int k;
+    private final boolean pushToLowest;
 
     public PlacesKNNExperiment(String outputPath, String inputPath) {
         super(outputPath, inputPath);
@@ -17,12 +18,13 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         this.numQueries = 2500000;
         this.numObjects = 100000;
         this.numKeywords = 3;
+        this.pushToLowest = false;
 
         this.k = 5;
     }
 
     public PlacesKNNExperiment(String outputPath, String inputPath, String name, int numQueries, int numObjects,
-                               int numKeywords, double srRate, int k) {
+                               int numKeywords, double srRate, int k, boolean pushToLowest) {
         super(outputPath, inputPath);
 
         this.name = name;
@@ -30,6 +32,10 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         this.numObjects = numObjects;
         this.numKeywords = numKeywords;
         this.srRate = srRate;
+        this.pushToLowest = pushToLowest;
+
+        if (this.pushToLowest)
+            this.fast.setPushToLowest();
 
         this.k = k;
     }

@@ -72,8 +72,11 @@ public class FAST {
     public int maxInsertedLevel;
     public int minInsertedLevelInterleaved;
     public int maxInsertedLevelInterleaved;
+
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
+
+    private boolean pushToLowest = false;
 
     public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
         this.bounds = bounds;
@@ -259,7 +262,9 @@ public class FAST {
 
     private void reinsertDescendedKNNQueries(ArrayList<KNNQuery> descendingKNNQueries) {
         for (KNNQuery query : descendingKNNQueries) {
-            int level = query.calcMinSpatialLevel();
+            int level = 0;
+            if (!pushToLowest)
+                level = query.calcMinSpatialLevel();
 //            System.out.println("Should reinsert: " + query.id + " with AR: " + query.ar + " at level: " + level);
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
@@ -324,7 +329,6 @@ public class FAST {
         if (!descendingKNNQueries.isEmpty()) {
             // TODO - Only descend to last level
             reinsertDescendedKNNQueries(descendingKNNQueries);
-//            System.out.println(descendingKNNQueries.stream().map((query) -> query.id).toList());
         }
         return result;
     }
@@ -352,6 +356,10 @@ public class FAST {
         return minkeyword;
     }
 
+    public void setPushToLowest() {
+        pushToLowest = true;
+    }
+
     public void printFrequencies() {
         System.out.println(keywordFrequencyMap.toString());
     }
@@ -375,17 +383,23 @@ public class FAST {
         if (node instanceof QueryNode) {
             System.out.println(((QueryNode) node).query.id);
         } else if (node instanceof QueryListNode) {
-            List<Query> queries = ((QueryListNode) node).queries.allQueries();
-            System.out.println(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
+            printQueryList(((QueryListNode) node).queries.allQueries());
         } else if (node instanceof QueryTrieNode) {
             if (((QueryTrieNode) node).queries != null) {
-                List<Query> queries = ((QueryTrieNode) node).queries.allQueries();
-                System.out.print(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
+                printQueryList(((QueryTrieNode) node).queries.allQueries());
             }
             System.out.println();
             if (((QueryTrieNode) node).subtree != null)
                 ((QueryTrieNode) node).subtree.forEach((t, u) -> printTextualNode(t, u, level + 1));
         }
+    }
+
+    private void printQueryList(Iterable<Query> queries) {
+        StringBuilder s = new StringBuilder();
+        for (Query query : queries) {
+            s.append(", ").append(query.id);
+        }
+        System.out.print(s);
     }
 
 }
