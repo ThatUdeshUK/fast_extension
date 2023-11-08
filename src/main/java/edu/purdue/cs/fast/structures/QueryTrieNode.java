@@ -26,22 +26,24 @@ public class QueryTrieNode extends TextualNode {
         if (finalQueries != null)
             for (Query q : finalQueries) {
                 FAST.objectSearchTrieFinalNodeCounter++;
-                boolean kFilled = searchQueries(obj, results, q);
-                if (kFilled && descendingKNNQueries != null) {
-                    descendingKNNQueries.add((KNNQuery) q);
-                    finalQueries.remove(q);
-                }
+                searchQueries(obj, results, q);
             }
 
-        if (queries != null)
-            for (Query q : queries.allQueries()) {
+        if (queries != null) {
+            for (MinimalRangeQuery q : queries.mbrQueries()) {
+                FAST.objectSearchTrieNodeCounter++;
+                searchQueries(obj, results, q);
+            }
+            for (Iterator<KNNQuery> it = queries.kNNQueries().iterator(); it.hasNext(); ) {
+                KNNQuery q = it.next();
                 FAST.objectSearchTrieNodeCounter++;
                 boolean kFilled = searchQueries(obj, results, q);
                 if (kFilled && descendingKNNQueries != null) {
-                    descendingKNNQueries.add((KNNQuery) q);
-                    queries.remove(q);
+                    descendingKNNQueries.add(q);
+                    it.remove();
                 }
             }
+        }
 
         if (subtree != null)
             for (int i = start; i < keywords.size(); i++) {

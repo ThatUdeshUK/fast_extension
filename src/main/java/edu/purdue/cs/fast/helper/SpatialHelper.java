@@ -297,7 +297,7 @@ public class SpatialHelper {
     }
 
     public static Boolean overlapsSpatially(Point point, Point loc, double ar) {
-        return Math.sqrt(Math.pow(point.x - loc.x, 2.0) + Math.pow(point.y - loc.y, 2.0)) < ar;
+        return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) < ar * ar;
     }
 
     public static Boolean overlapsSpatially(Rectangle rectangle1, Rectangle rectangle2) {

@@ -1,10 +1,12 @@
 package edu.purdue.cs.fast.structures;
 
+import com.google.common.collect.Iterables;
 import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.MinimalRangeQuery;
 import edu.purdue.cs.fast.models.Query;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class HybridList {
@@ -25,10 +27,15 @@ public class HybridList {
         return this.kNNQueries;
     }
 
-    public List<Query> allQueries() {
-        ArrayList<Query> all = new ArrayList<>(this.mbrQueries);
-        all.addAll(this.kNNQueries);
-        return all;
+    private Iterable<? extends Query> mbrQueriesGeneric() {
+        return this.mbrQueries;
+    }
+    private Iterable<? extends Query> knnQueriesGeneric() {
+        return this.mbrQueries;
+    }
+
+    public Iterable<Query> allQueries() {
+        return Iterables.concat(this.mbrQueriesGeneric(), this.knnQueriesGeneric());
     }
 
     public void add(Query query) {

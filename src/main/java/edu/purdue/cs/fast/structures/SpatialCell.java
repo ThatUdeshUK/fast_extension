@@ -404,8 +404,7 @@ public class SpatialCell {
                         }
                     }
                 } else if (node instanceof QueryListNode) {
-                    List<Query> rareQueries = ((QueryListNode) node).queries.allQueries();
-                    for (Query q : rareQueries) {
+                    for (Query q : ((QueryListNode) node).queries.allQueries()) {
                         FAST.objectSearchInvListNodeCounter++;
                         if (q instanceof MinimalRangeQuery) {
                             MinimalRangeQuery query = ((MinimalRangeQuery) q);
