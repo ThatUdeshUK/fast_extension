@@ -120,12 +120,15 @@ public class SpatialCell {
         }
         Queue<Query> queue = new LinkedList<>();
         boolean inserted = insertAtKeyWord(keyword, query, sharedQueries);
-        if (inserted)
+        if (inserted) {
+            if (query.id == 49)
+                System.out.println("Inserted 49 at: " + keyword);
+
             if (textualIndex.get(keyword) instanceof QueryListNode)
                 return (QueryListNode) textualIndex.get(keyword);
             else
                 return null;
-        else {
+        } else {
             queue.add(query);
         }
 
@@ -137,9 +140,11 @@ public class SpatialCell {
             if (otherKeyword != null) {
                 inserted = insertAtKeyWord(otherKeyword, query, null);
             }
-            if (inserted)
+            if (inserted) {
+                if (query.id == 49)
+                    System.out.println("Inserted 49 at: " + otherKeyword);
                 continue;
-            else {
+            } else {
                 for (String term : query.keywords) {
                     //mark all these keywords as tries
                     if (textualIndex.get(term) instanceof QueryListNode) {
@@ -394,8 +399,12 @@ public class SpatialCell {
                             finalQueries.add(query);
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
+                        if (obj.id == 0 && query.id == 49) {
+                            System.out.println("Keyword size check: " + (keywords.size() >= query.keywords.size()));
+                            System.out.println("Spatial check: " + (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)));
+                            System.out.println("Keyword check: " + (TextHelpers.containsTextually(keywords, query.keywords)));
+                        }
                         if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                            // TODO - implement descend
                             finalQueries.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
@@ -412,8 +421,12 @@ public class SpatialCell {
                                 finalQueries.add(q);
                         } else if (q instanceof KNNQuery) {
                             KNNQuery query = ((KNNQuery) q);
+                            if (obj.id == 0 && query.id == 49) {
+                                System.out.println("Keyword size check: " + (keywords.size() >= query.keywords.size()));
+                                System.out.println("Spatial check: " + (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)));
+                                System.out.println("Keyword check: " + (TextHelpers.containsTextually(keywords, query.keywords)));
+                            }
                             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                                // TODO - implement descend
                                 finalQueries.add(query);
                                 if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                     descendingKNNQueries.add(query);

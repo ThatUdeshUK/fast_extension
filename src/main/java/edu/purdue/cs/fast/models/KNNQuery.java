@@ -30,6 +30,10 @@ public class KNNQuery extends Query {
      * @return Whether the KNN query currently monitors `k` objects or not
      */
     public boolean pushUntilK(DataObject obj) {
+        if (obj.id == 0) {
+            System.out.println("Matching query: " + this.id);
+        }
+
         if (monitoredObjects == null) {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }

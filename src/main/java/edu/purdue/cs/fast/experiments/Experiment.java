@@ -5,6 +5,7 @@ import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.structures.QueryTrieNode;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,6 +37,8 @@ public abstract class Experiment {
         List<Query> queries = generateQueries();
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
+            if (q.id == 49)
+                System.out.println(q);
             fast.addContinuousQuery(q);
         }
         stopwatch.stop();
@@ -52,6 +55,19 @@ public abstract class Experiment {
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
             List<Query> res = fast.searchQueries(o);
+            if (o.id == 0) {
+                System.out.println("First obj res size: " + res.size());
+                QueryTrieNode testGeneral = ((QueryTrieNode) fast.index.get(37748736).textualIndex.get("general"));
+                QueryTrieNode testContractor = ((QueryTrieNode) fast.index.get(37748736).textualIndex.get("contractor"));
+                QueryTrieNode testGeneralContractor = (QueryTrieNode) testGeneral.subtree.get("contractor");
+
+                System.out.println(testGeneral.queries);
+                System.out.println(testGeneralContractor.queries.kNNQueries().stream().map((q) -> q.id).sorted().toList());
+                System.out.println(testContractor.queries.kNNQueries().stream().map((q) -> q.id).sorted().toList());
+                for (Query outQuery : res) {
+                    System.out.println(outQuery);
+                }
+            }
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();

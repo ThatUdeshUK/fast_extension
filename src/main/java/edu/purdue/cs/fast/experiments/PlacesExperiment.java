@@ -108,7 +108,7 @@ public class PlacesExperiment extends Experiment {
         ArrayList<DataObject> objects = new ArrayList<>();
         for (int i = numQueries + 1; i < numQueries + numObjects; i++) {
             Place place = places.get(i);
-            objects.add(place.toDataObject(i));
+            objects.add(place.toDataObject(i - numQueries - 1));
         }
         return objects;
     }
