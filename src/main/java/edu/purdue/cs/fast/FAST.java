@@ -383,10 +383,10 @@ public class FAST {
         if (node instanceof QueryNode) {
             System.out.println(((QueryNode) node).query.id);
         } else if (node instanceof QueryListNode) {
-            printQueryList(((QueryListNode) node).queries.allQueries());
+            printQueryList(((QueryListNode) node).queries);
         } else if (node instanceof QueryTrieNode) {
             if (((QueryTrieNode) node).queries != null) {
-                printQueryList(((QueryTrieNode) node).queries.allQueries());
+                printQueryList(((QueryTrieNode) node).queries);
             }
             System.out.println();
             if (((QueryTrieNode) node).subtree != null)

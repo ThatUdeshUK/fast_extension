@@ -62,11 +62,6 @@ public class QueryTrieNode extends TextualNode {
                     }
                     if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (obj.id == 0 && query.id == 49) {
-                            System.out.println("Keyword size check: " + (keywords.size() >= query.keywords.size()));
-                            System.out.println("Spatial check: " + (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)));
-                            System.out.println("Keyword check: " + (TextHelpers.containsTextually(keywords, query.keywords)));
-                        }
                         if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
@@ -85,11 +80,6 @@ public class QueryTrieNode extends TextualNode {
                     ArrayList<KNNQuery> toRemove = new ArrayList<>();
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.objectSearchTrieNodeCounter++;
-                        if (obj.id == 0 && query.id == 49) {
-                            System.out.println("Keyword size check: " + (keywords.size() >= query.keywords.size()));
-                            System.out.println("Spatial check: " + (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)));
-                            System.out.println("Keyword check: " + (TextHelpers.containsTextually(keywords, query.keywords)));
-                        }
                         if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
@@ -110,9 +100,6 @@ public class QueryTrieNode extends TextualNode {
             results.add(q);
         }
         if (q instanceof KNNQuery query) {
-            if (obj.id == 0 && query.id == 49) {
-                System.out.println("Spatial check: " + (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)));
-            }
             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)) {
                 results.add(query);
                 return query.pushUntilK(obj);
@@ -124,7 +111,7 @@ public class QueryTrieNode extends TextualNode {
     public int clean(QueryListNode combinedQueries) {
         int operations = 0;
         if (queries != null) {
-            Iterator<Query> queriesItr = queries.allQueries().iterator();
+            Iterator<Query> queriesItr = queries.iterator();
             while (queriesItr.hasNext()) {
                 Query query = queriesItr.next();
                 if (query.et < FAST.queryTimeStampCounter)
@@ -150,7 +137,7 @@ public class QueryTrieNode extends TextualNode {
                     }
                     operations++;
                 } else if (node instanceof QueryListNode) {
-                    Iterator<Query> queriesInternalItr = ((QueryListNode) node).queries.allQueries().iterator();
+                    Iterator<Query> queriesInternalItr = ((QueryListNode) node).queries.iterator();
                     while (queriesInternalItr.hasNext()) {
                         Query query = queriesInternalItr.next();
                         if (query.et < FAST.queryTimeStampCounter)

@@ -1,6 +1,5 @@
 package edu.purdue.cs.fast.structures;
 
-import com.google.common.collect.Iterables;
 import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.MinimalRangeQuery;
 import edu.purdue.cs.fast.models.Query;
@@ -9,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class HybridList {
+public class HybridList implements Iterable<Query> {
     private final ArrayList<MinimalRangeQuery> mbrQueries;
     private final ArrayList<KNNQuery> kNNQueries;
 
@@ -25,17 +24,6 @@ public class HybridList {
 
     public List<KNNQuery> kNNQueries() {
         return this.kNNQueries;
-    }
-
-    private Iterable<? extends Query> mbrQueriesGeneric() {
-        return this.mbrQueries;
-    }
-    private Iterable<? extends Query> knnQueriesGeneric() {
-        return this.mbrQueries;
-    }
-
-    public Iterable<Query> allQueries() {
-        return Iterables.concat(this.mbrQueriesGeneric(), this.knnQueriesGeneric());
     }
 
     public void add(Query query) {
@@ -75,5 +63,43 @@ public class HybridList {
 
     public int size() {
         return this.mbrQueries.size() + this.kNNQueries.size();
+    }
+
+    @Override
+    public Iterator<Query> iterator() {
+        return new HybridIterator(this.mbrQueries(), this.kNNQueries);
+    }
+
+    static class HybridIterator implements Iterator<Query> {
+        private int i = 0;
+        private final List<MinimalRangeQuery> a;
+        private final List<KNNQuery> b;
+
+        private final int aSize;
+        private final int bSize;
+
+        public HybridIterator(List<MinimalRangeQuery> mbrQueries, List<KNNQuery> knnQueries) {
+            this.a = mbrQueries;
+            this.b = knnQueries;
+            aSize = mbrQueries.size();
+            bSize = knnQueries.size();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return i < aSize + bSize;
+        }
+
+        @Override
+        public Query next() {
+            Query out = null;
+            if (i < aSize) {
+                out = a.get(i);
+            } else if (i - aSize < bSize) {
+                out = b.get(i - aSize);
+            }
+            i++;
+            return out;
+        }
     }
 }

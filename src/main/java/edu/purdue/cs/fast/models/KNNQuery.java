@@ -1,8 +1,6 @@
 package edu.purdue.cs.fast.models;
 
 import edu.purdue.cs.fast.FAST;
-import edu.purdue.cs.fast.helper.SpatialHelper;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 
 import java.util.Comparator;
@@ -30,10 +28,6 @@ public class KNNQuery extends Query {
      * @return Whether the KNN query currently monitors `k` objects or not
      */
     public boolean pushUntilK(DataObject obj) {
-        if (obj.id == 0) {
-            System.out.println("Matching query: " + this.id);
-        }
-
         if (monitoredObjects == null) {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }
