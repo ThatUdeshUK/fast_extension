@@ -11,6 +11,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class PlacesExperiment extends Experiment {
     protected final String inputPath;
@@ -82,7 +83,7 @@ public class PlacesExperiment extends Experiment {
 
             System.out.print("Shuffling -> ");
             start = System.currentTimeMillis();
-            Collections.shuffle(places);
+            Collections.shuffle(places, new Random(seed));
             end = System.currentTimeMillis();
             System.out.println("Done! Time=" + (end - start));
         } catch (IOException ignore) {

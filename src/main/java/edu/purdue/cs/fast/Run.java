@@ -32,6 +32,7 @@ public class Run {
                     k,
                     false
             );
+            experiment.setSaveOutput();
 
             experiment.run();
         }

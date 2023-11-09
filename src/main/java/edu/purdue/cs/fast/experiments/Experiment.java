@@ -20,6 +20,10 @@ public abstract class Experiment {
     protected FAST fast;
     protected long creationTime;
     protected long searchTime;
+    protected boolean saveTimeline = false;
+    protected boolean saveOutput = false;
+    protected int seed  = 7;
+    protected ArrayList<List<Query>> results;
     protected ArrayList<Long> searchTimeline = new ArrayList<>();
 
     protected abstract List<Query> generateQueries();
@@ -38,22 +42,25 @@ public abstract class Experiment {
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
-    public Iterable<List<Query>> search() {
+    public void search() {
         List<DataObject> objects = generateObjects();
-        ArrayList<List<Query>> results = new ArrayList<>();
+        results = new ArrayList<>();
 
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        Stopwatch totalTimeWatch = Stopwatch.createStarted();
         for (DataObject o : objects) {
-            Stopwatch stopwatch2 = Stopwatch.createStarted();
+            Stopwatch searchTimeWatch = null;
+            if (saveTimeline)
+                searchTimeWatch = Stopwatch.createStarted();
             List<Query> res = fast.searchQueries(o);
-            stopwatch2.stop();
-            searchTimeline.add(stopwatch.elapsed(TimeUnit.NANOSECONDS));
+            if (saveTimeline) {
+                assert searchTimeWatch != null;
+                searchTimeWatch.stop();
+                searchTimeline.add(totalTimeWatch.elapsed(TimeUnit.NANOSECONDS));
+            }
             results.add(res);
         }
-        stopwatch.stop();
-        this.searchTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
-
-        return results;
+        totalTimeWatch.stop();
+        this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
     public void save(List<String> keys, List<String> values) throws InvalidOutputFile {
@@ -92,19 +99,51 @@ public abstract class Experiment {
                 bw.close();
                 fw.close();
 
-                FileWriter fw2 = new FileWriter(outputPath.replace(".csv", "_timeline.csv"));
-                BufferedWriter bw2 = new BufferedWriter(fw2);
-                for (long v: searchTimeline) {
-                    bw2.write(v + "\n");
+                if (saveTimeline) {
+                    FileWriter timelineFW = new FileWriter(getSuffixedPath("timeline", keys, values));
+                    BufferedWriter timelineBW = new BufferedWriter(timelineFW);
+                    for (long v : searchTimeline) {
+                        timelineBW.write(v + "\n");
+                    }
+                    timelineBW.close();
+                    timelineFW.close();
                 }
-                bw2.close();
-                fw2.close();
+
+                if (saveOutput) {
+                    FileWriter outputFW = new FileWriter(getSuffixedPath("output", keys, values));
+                    BufferedWriter outputBW = new BufferedWriter(outputFW);
+                    for (List<Query> v : results) {
+                        outputBW.write(v.stream().map((query) -> query.id).sorted().toList() + "\n");
+                    }
+                    outputBW.close();
+                    outputFW.close();
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         } else {
             throw new InvalidOutputFile(outputPath);
         }
+    }
+
+    private String getSuffixedPath(String type, List<String> keys, List<String> values) {
+        int numQueriesI = keys.indexOf("num_queries");
+        int numObjectsI = keys.indexOf("num_objects");
+        String outSuffix = "_" + type + "_" + values.get(numQueriesI) + "_" + values.get(numObjectsI) + ".csv";
+
+        return outputPath.replace(".csv", outSuffix);
+    }
+
+    public ArrayList<List<Query>> getResults() {
+        return results;
+    }
+
+    public void setSaveTimeline() {
+        this.saveTimeline = true;
+    }
+
+    public void setSaveOutput() {
+        this.saveOutput = true;
     }
 }
 
