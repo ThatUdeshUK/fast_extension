@@ -11,7 +11,8 @@ public class KNNQuery extends Query {
     public Point location;
     public double ar;
     public int k;
-    public PriorityQueue<DataObject> monitoredObjects;
+
+    private PriorityQueue<DataObject> monitoredObjects;
     private final Rectangle spatialBox;
 
     public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, int et) {
@@ -19,11 +20,11 @@ public class KNNQuery extends Query {
         this.location = location;
         this.k = k;
         this.ar = Double.MAX_VALUE;
-        this.spatialBox = new Rectangle(this.location, this.location);
+        this.spatialBox = new Rectangle(0, 0, 0, 0);
     }
 
     /**
-     * Push to the monitored priority queue until there are `k` number of objects. Once it's filled upto `k`, the
+     * Push objects until there are `k` number of objects. Once it's filled upto `k`, the
      * `ar` of the KNNQuery is updated.
      *
      * @param obj DataObject to be added
@@ -55,6 +56,10 @@ public class KNNQuery extends Query {
         return Math.max((int) (Math.log((ar / FAST.localXstep)) / Math.log(2)), 0);
     }
 
+    public PriorityQueue<DataObject> getMonitoredObjects() {
+        return monitoredObjects;
+    }
+
     @Override
     public Rectangle spatialBox() {
         this.spatialBox.min.x = location.x - ar;
@@ -71,9 +76,7 @@ public class KNNQuery extends Query {
                 ", keywords=" + keywords +
                 ", location=" + location +
                 ", k=" + k +
-                ", predicate=" + predicate +
-                ", et=" + et +
-                ", deleted=" + deleted +
+                ", ar=" + ar +
                 '}';
     }
 

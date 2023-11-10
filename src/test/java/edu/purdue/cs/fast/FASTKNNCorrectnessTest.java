@@ -11,16 +11,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.IntFunction;
 
 
-class FASTKNNCorrectness {
-    private PlacesKNNExperiment experiment;
+class FASTKNNCorrectnessTest {
+    private final PlacesKNNExperiment experiment;
 
-    public FASTKNNCorrectness() {
+    public FASTKNNCorrectnessTest() {
         experiment = new PlacesKNNExperiment(
                 null,
-                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.geojson").toString(),
+                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 "places_knn_seacnn",
                 1000,
                 100,

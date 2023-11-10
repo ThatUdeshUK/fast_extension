@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class KNNQueryTest {
 
     @Test
@@ -23,19 +21,19 @@ class KNNQueryTest {
         for (DataObject object : objects.subList(0, 3)) {
             dummyQuery.pushUntilK(object);
         }
-        assertListEqualUnordered(objects.subList(0, 3), dummyQuery.monitoredObjects.stream().toList());
+        assertListEqualUnordered(objects.subList(0, 3), dummyQuery.getMonitoredObjects().stream().toList());
         assert 5.656854249492381 == dummyQuery.ar;
 
         dummyQuery.pushUntilK(objects.get(3));
         assert 2.23606797749979 == dummyQuery.ar;
-        assertListEqualUnordered(objects.stream().filter((a) -> a.id != 2).toList(), dummyQuery.monitoredObjects.stream().toList());
+        assertListEqualUnordered(objects.stream().filter((a) -> a.id != 2).toList(), dummyQuery.getMonitoredObjects().stream().toList());
     }
 
     @Test
     void calcMinSpatialLevel() {
         int bound = 1024;
         int gridGranularity = 512;
-        FAST.localXstep = bound / gridGranularity;
+        FAST.localXstep = (double) bound / gridGranularity;
         int maxLevel = (int) (Math.log(gridGranularity) / Math.log(2));
         for (int i = maxLevel; i >= 0; i--) {
             int granI = (int) (512 / Math.pow(2, i));

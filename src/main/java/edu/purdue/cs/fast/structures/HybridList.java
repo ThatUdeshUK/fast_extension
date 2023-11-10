@@ -69,37 +69,32 @@ public class HybridList implements Iterable<Query> {
     public Iterator<Query> iterator() {
         return new HybridIterator(this.mbrQueries(), this.kNNQueries);
     }
+}
 
-    static class HybridIterator implements Iterator<Query> {
-        private int i = 0;
-        private final List<MinimalRangeQuery> a;
-        private final List<KNNQuery> b;
+class HybridIterator implements Iterator<Query> {
+    private int i = 0;
+    private final List<MinimalRangeQuery> a;
+    private final List<KNNQuery> b;
 
-        private final int aSize;
-        private final int bSize;
+    public HybridIterator(List<MinimalRangeQuery> mbrQueries, List<KNNQuery> knnQueries) {
+        this.a = mbrQueries;
+        this.b = knnQueries;
+    }
 
-        public HybridIterator(List<MinimalRangeQuery> mbrQueries, List<KNNQuery> knnQueries) {
-            this.a = mbrQueries;
-            this.b = knnQueries;
-            aSize = mbrQueries.size();
-            bSize = knnQueries.size();
+    @Override
+    public boolean hasNext() {
+        return i < a.size() + b.size();
+    }
+
+    @Override
+    public Query next() {
+        Query out = null;
+        if (i < a.size()) {
+            out = a.get(i);
+        } else if (i - a.size() < b.size()) {
+            out = b.get(i - a.size());
         }
-
-        @Override
-        public boolean hasNext() {
-            return i < aSize + bSize;
-        }
-
-        @Override
-        public Query next() {
-            Query out = null;
-            if (i < aSize) {
-                out = a.get(i);
-            } else if (i - aSize < bSize) {
-                out = b.get(i - aSize);
-            }
-            i++;
-            return out;
-        }
+        i++;
+        return out;
     }
 }

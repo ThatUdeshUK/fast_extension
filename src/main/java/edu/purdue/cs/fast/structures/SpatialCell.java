@@ -379,9 +379,9 @@ public class SpatialCell {
         return !cleaningIterator.hasNext();
     }
 
-    public void searchQueries(DataObject obj, List<String> keywords, List<Query> finalQueries,
+    public void searchQueries(DataObject obj, List<String> keywords, List<Query> results,
                                            ArrayList<KNNQuery> descendingKNNQueries) {
-        ArrayList<String> remainingKeywords = new ArrayList<String>();
+        ArrayList<String> remainingKeywords = new ArrayList<>();
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
             TextualNode node = textualIndex.get(keyword);
@@ -391,11 +391,11 @@ public class SpatialCell {
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
                         if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
-                            finalQueries.add(query);
+                            results.add(query);
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
                         if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                            finalQueries.add(query);
+                            results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
                                 textualIndex.remove(keyword);
@@ -408,11 +408,11 @@ public class SpatialCell {
                         if (q instanceof MinimalRangeQuery) {
                             MinimalRangeQuery query = ((MinimalRangeQuery) q);
                             if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
-                                finalQueries.add(q);
+                                results.add(q);
                         } else if (q instanceof KNNQuery) {
                             KNNQuery query = ((KNNQuery) q);
                             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
-                                finalQueries.add(query);
+                                results.add(query);
                                 if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                     descendingKNNQueries.add(query);
                                     ((QueryListNode) node).queries.kNNQueries().remove(query);
@@ -430,7 +430,7 @@ public class SpatialCell {
             String keyword = remainingKeywords.get(i);
             Object keyWordIndex = textualIndex.get(keyword);
             FAST.totalTrieAccess++;
-            ((QueryTrieNode) keyWordIndex).find(obj, remainingKeywords, i + 1, finalQueries, descendingKNNQueries);
+            ((QueryTrieNode) keyWordIndex).find(obj, remainingKeywords, i + 1, results, descendingKNNQueries);
         }
     }
 
