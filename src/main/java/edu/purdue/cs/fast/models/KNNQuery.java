@@ -12,12 +12,14 @@ public class KNNQuery extends Query {
     public double ar;
     public int k;
     public PriorityQueue<DataObject> monitoredObjects;
+    private final Rectangle spatialBox;
 
     public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, int et) {
         super(id, keywords, predicate, et);
         this.location = location;
         this.k = k;
         this.ar = Double.MAX_VALUE;
+        this.spatialBox = new Rectangle(this.location, this.location);
     }
 
     /**
@@ -55,7 +57,11 @@ public class KNNQuery extends Query {
 
     @Override
     public Rectangle spatialBox() {
-        return new Rectangle(location.x - ar, location.y - ar, location.x + ar, location.y + ar);
+        this.spatialBox.min.x = location.x - ar;
+        this.spatialBox.min.y = location.y - ar;
+        this.spatialBox.max.x = location.x + ar;
+        this.spatialBox.max.y = location.y + ar;
+        return this.spatialBox;
     }
 
     @Override

@@ -10,29 +10,29 @@ public class Run {
         double srRate = 0.01;
         int k = 5;
         int numKeywords = 5;
-        int numObjects = 100;
+        int numObjects = 100000;
 
         List<Integer> numQueriesList = List.of(
 //                100000,
 //                500000,
-                1000 //,
-//                2500000 //,
-//                5000000
+//                1000000,
+                2500000
         );
 
         for (int numQueries : numQueriesList) {
             PlacesKNNExperiment experiment = new PlacesKNNExperiment(
-                    Paths.get(args[0], "results/output_places_US_knn_seacnn.csv").toString(),
+                    Paths.get(args[0], "results/output_places_US_knn_seacnn_fixed_v2.csv").toString(),
                     Paths.get(args[1], "data/places_dump_US.geojson").toString(),
-                    "places_knn",
+                    "places_knn_seacnn",
                     numQueries,
                     numObjects,
                     numKeywords,
                     srRate,
-                    k,
-                    false
+                    k
             );
-            experiment.setSaveOutput();
+//            experiment.setPushToLowest();
+//            experiment.setSaveOutput();
+            experiment.setSaveStats(false);
 
             experiment.run();
         }

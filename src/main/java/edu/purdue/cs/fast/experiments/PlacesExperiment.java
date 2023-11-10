@@ -86,7 +86,8 @@ public class PlacesExperiment extends Experiment {
             Collections.shuffle(places, new Random(seed));
             end = System.currentTimeMillis();
             System.out.println("Done! Time=" + (end - start));
-        } catch (IOException ignore) {
+        } catch (IOException e) {
+            throw new RuntimeException("Wrong path is given: " + inputPath);
         }
 
         this.places = places;

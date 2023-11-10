@@ -192,19 +192,10 @@ public class FAST {
     }
 
     private void singleQueryInsert(int level, ReinsertEntry entry, double levelStep, int levelGranularity, ArrayList<ReinsertEntry> insertNextLevelQueries) {
-//        int levelXMinCell = (int) (entry.query.spatialRange.min.x / levelStep);
-//        int levelXMinCell = (int) (entry.query.spatialRange.min.y / levelStep);
-//        int levelXMaxCell = (int) (entry.query.spatialRange.max.x / levelStep);
-//        int levelYMaxCell = (int) (entry.query.spatialRange.max.y / levelStep);
-
-//        if (entry.range != null) {
-//            if (entry.query.id == debugQueryId)
-//                System.out.println("reinsert" + entry.query);
         int levelXMinCell = (int) (entry.range.min.x / levelStep);
         int levelYMinCell = (int) (entry.range.min.y / levelStep);
         int levelXMaxCell = (int) (entry.range.max.x / levelStep);
         int levelYMaxCell = (int) (entry.range.max.y / levelStep);
-//        }
 
         if (minInsertedLevel == -1)
             minInsertedLevel = maxInsertedLevel = level;
@@ -265,13 +256,42 @@ public class FAST {
             int level = 0;
             if (!pushToLowest)
                 level = query.calcMinSpatialLevel();
-//            System.out.println("Should reinsert: " + query.id + " with AR: " + query.ar + " at level: " + level);
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
             double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
             singleQueryInsert(level, new ReinsertEntry(query.spatialBox(), query), levelStep, levelGranularity, insertNextLevelQueries);
             assert insertNextLevelQueries.isEmpty();
         }
+    }
+
+    public List<Query> searchQueries(DataObject dataObject) {
+        objectTimeStampCounter++;
+
+        List<Query> result = new LinkedList<>();
+        ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
+
+        if (minInsertedLevel == -1)
+            return result;
+        double step = (maxInsertedLevel == 0) ? localXstep : (localXstep * (2 << (maxInsertedLevel - 1)));
+        int granualrity = this.gridGranularity >> maxInsertedLevel;
+        List<String> keywords = dataObject.keywords;
+        for (int level = maxInsertedLevel; level >= minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
+            Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
+            SpatialCell spatialCellOptimized = index.get(cellCoordinates);
+            if (spatialCellOptimized != null) {
+                // TODO - DANGER you removed `keywords =`
+                if (level == maxInsertedLevel)
+                    spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
+                else
+                    spatialCellOptimized.searchQueries(dataObject, keywords, result, null);
+            }
+            step /= 2;
+            granualrity <<= 1;
+        }
+        if (!descendingKNNQueries.isEmpty()) {
+            reinsertDescendedKNNQueries(descendingKNNQueries);
+        }
+        return result;
     }
 
     public void cleanNextSetOfEntries() {
@@ -300,37 +320,6 @@ public class FAST {
         int xCell = (int) ((x) / step);
         int yCell = (int) ((y) / step);
         return calcCoordinate(level, xCell, yCell, granularity);
-    }
-
-    public List<Query> searchQueries(DataObject dataObject) {
-        objectTimeStampCounter++;
-
-        List<Query> result = new LinkedList<>();
-        ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
-
-        if (minInsertedLevel == -1)
-            return result;
-        double step = (maxInsertedLevel == 0) ? localXstep : (localXstep * (2 << (maxInsertedLevel - 1)));
-        int granualrity = this.gridGranularity >> maxInsertedLevel;
-        List<String> keywords = dataObject.keywords;
-        for (int level = maxInsertedLevel; level >= minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
-            Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
-            SpatialCell spatialCellOptimized = index.get(cellCoordinates);
-            if (spatialCellOptimized != null) {
-                // TODO - DANGER you removed `keywords =`
-                if (level == maxInsertedLevel)
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
-                else
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, null);
-            }
-            step /= 2;
-            granualrity <<= 1;
-        }
-        if (!descendingKNNQueries.isEmpty()) {
-            // TODO - Only descend to last level
-            reinsertDescendedKNNQueries(descendingKNNQueries);
-        }
-        return result;
     }
 
     public String getMinKeyword(int level, Query query) {

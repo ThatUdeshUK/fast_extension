@@ -20,9 +20,10 @@ public abstract class Experiment {
     protected FAST fast;
     protected long creationTime;
     protected long searchTime;
+    protected boolean saveStats = true;
     protected boolean saveTimeline = false;
     protected boolean saveOutput = false;
-    protected int seed  = 7;
+    protected int seed = 7;
     protected ArrayList<List<Query>> results;
     protected ArrayList<Long> searchTimeline = new ArrayList<>();
 
@@ -64,6 +65,9 @@ public abstract class Experiment {
     }
 
     public void save(List<String> keys, List<String> values) throws InvalidOutputFile {
+        if (!this.saveStats)
+            return;
+
         if (outputPath == null) {
             System.out.println("No output file specified. Skipping saving!");
             return;
@@ -76,7 +80,7 @@ public abstract class Experiment {
                 if (!fileExists) {
                     outputFile.createNewFile();
                     StringBuilder header = new StringBuilder("name,creation_time,search_time,gran,max_x,max_y");
-                    for (String k: keys) {
+                    for (String k : keys) {
                         header.append(",").append(k);
                     }
 
@@ -92,7 +96,7 @@ public abstract class Experiment {
 
                 StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," +
                         fast.gridGranularity + "," + fast.bounds.max.x + "," + fast.bounds.max.y);
-                for (String v: values) {
+                for (String v : values) {
                     line.append(",").append(v);
                 }
                 bw.write(line + "\n");
@@ -134,6 +138,10 @@ public abstract class Experiment {
         return outputPath.replace(".csv", outSuffix);
     }
 
+    public void setSeed(int seed) {
+        this.seed = seed;
+    }
+
     public ArrayList<List<Query>> getResults() {
         return results;
     }
@@ -144,6 +152,15 @@ public abstract class Experiment {
 
     public void setSaveOutput() {
         this.saveOutput = true;
+    }
+
+    /**
+     * Sets whether to save the run or not. Overwrite the setSaveTimeline and setSaveOutput settings.
+     *
+     * @param saveStats to save the run or not.
+     */
+    public void setSaveStats(boolean saveStats) {
+        this.saveStats = saveStats;
     }
 }
 

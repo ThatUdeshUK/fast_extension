@@ -297,7 +297,14 @@ public class SpatialHelper {
     }
 
     public static Boolean overlapsSpatially(Point point, Point loc, double ar) {
-        return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) < ar * ar;
+//        return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) < ar * ar;
+        boolean isInRectangle = point.x >= loc.x - ar && point.x <= loc.x + ar &&
+                point.y >= loc.y - ar && point.y <= loc.y + ar;
+
+        if (isInRectangle) {
+            return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) <= ar * ar;
+        }
+        return false;
     }
 
     public static Boolean overlapsSpatially(Rectangle rectangle1, Rectangle rectangle2) {
@@ -326,7 +333,6 @@ public class SpatialHelper {
         return new Rectangle(new Point(Math.max(rect1.min.x - area, 0), Math.max(rect1.min.y - area, 0)),
                 new Point(Math.min(rect1.max.x + area, SpatioTextualConstants.xMaxRange), Math.min(rect1.max.y + area, SpatioTextualConstants.yMaxRange)));
     }
-
 
     /**
      * Splits a partition into two partitions.

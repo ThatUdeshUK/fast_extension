@@ -104,15 +104,6 @@ public class SpatialCell {
         }
     }
 
-    public void deleteQueryFromStats(Query query) {
-        if (!query.deleted) {
-            query.deleted = true;
-            for (String keyword : query.keywords) {
-                FAST.keywordFrequencyMap.get(keyword).queryCount--;
-            }
-        }
-    }
-
     public QueryListNode addInternalQueryNoShare(String keyword, Query query, QueryListNode sharedQueries,
                                                  ArrayList<ReinsertEntry> insertNextLevelQueries) {
         if (textualIndex == null) {
@@ -237,6 +228,15 @@ public class SpatialCell {
             }
         }
         return null;
+    }
+
+    public void deleteQueryFromStats(Query query) {
+        if (!query.deleted) {
+            query.deleted = true;
+            for (String keyword : query.keywords) {
+                FAST.keywordFrequencyMap.get(keyword).queryCount--;
+            }
+        }
     }
 
     public boolean checkSpanForForceInsertFinal(Query query) {
