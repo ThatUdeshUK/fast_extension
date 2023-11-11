@@ -40,8 +40,8 @@ public class PlacesHybridExperiment extends PlacesExperiment {
     }
 
     @Override
-    protected List<Query> generateQueries() {
-        ArrayList<Query> queries = new ArrayList<>();
+    protected void generateQueries(List<Place> places) {
+        this.queries = new ArrayList<>();
         int knnQueryCount = (int) (numQueries * knnRatio);
         for (int i = 0; i < knnQueryCount; i++) {
             Place place = places.get(i);
@@ -52,7 +52,6 @@ public class PlacesHybridExperiment extends PlacesExperiment {
             Place place = places.get(i);
             queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, numQueries + numObjects + 1));
         }
-        return queries;
     }
 
     @Override

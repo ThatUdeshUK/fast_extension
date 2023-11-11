@@ -16,12 +16,13 @@ public class Run {
                 100000,
                 500000,
                 1000000,
-                2500000
+                2500000,
+                5000000
         );
 
         for (int numQueries : numQueriesList) {
             PlacesKNNExperiment experiment = new PlacesKNNExperiment(
-                    Paths.get(args[0], "results/output_places_US_knn_seacnn_fixed_v2.csv").toString(),
+                    Paths.get(args[0], "results/output_places_US_knn_seacnn_mem.csv").toString(),
                     Paths.get(args[1], "data/places_dump_US.geojson").toString(),
                     "places_knn_seacnn",
                     numQueries,

@@ -25,18 +25,20 @@ public class PlacesKNNExperiment extends PlacesExperiment {
     }
 
     @Override
-    protected List<Query> generateQueries() {
-        ArrayList<Query> queries = new ArrayList<>();
+    protected void generateQueries(List<Place> places) {
+        this.queries = new ArrayList<>();
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
             queries.add(place.toKNNQuery(i, numKeywords, k, numQueries + numObjects + 1));
         }
-        return queries;
     }
 
     @Override
     public void run() {
         init();
+        System.gc();
+        System.gc();
+        System.gc();
 
         System.out.print("Creating index -> ");
         create();

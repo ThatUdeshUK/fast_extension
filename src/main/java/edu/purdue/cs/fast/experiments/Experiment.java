@@ -5,6 +5,7 @@ import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
+import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,12 +15,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public abstract class Experiment {
+public abstract class Experiment<T> {
     protected String name;
     protected String outputPath;
     protected FAST fast;
+    protected List<Query> queries;
+    protected List<DataObject> objects;
     protected long creationTime;
     protected long searchTime;
+    protected long createMem;
+    protected long searchMem;
     protected boolean saveStats = true;
     protected boolean saveTimeline = false;
     protected boolean saveOutput = false;
@@ -27,24 +32,25 @@ public abstract class Experiment {
     protected ArrayList<List<Query>> results;
     protected ArrayList<Long> searchTimeline = new ArrayList<>();
 
-    protected abstract List<Query> generateQueries();
+    abstract void init();
 
-    protected abstract List<DataObject> generateObjects();
+    protected abstract void generateQueries(List<T> list);
+
+    protected abstract void generateObjects(List<T> list);
 
     abstract void run();
 
     public void create() {
-        List<Query> queries = generateQueries();
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
             fast.addContinuousQuery(q);
         }
         stopwatch.stop();
+        createMem = GraphLayout.parseInstance(fast).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
     public void search() {
-        List<DataObject> objects = generateObjects();
         results = new ArrayList<>();
 
         Stopwatch totalTimeWatch = Stopwatch.createStarted();
@@ -61,6 +67,7 @@ public abstract class Experiment {
             results.add(res);
         }
         totalTimeWatch.stop();
+        searchMem = GraphLayout.parseInstance(fast).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
@@ -79,7 +86,7 @@ public abstract class Experiment {
             try {
                 if (!fileExists) {
                     outputFile.createNewFile();
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,gran,max_x,max_y");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem,gran,max_x,max_y");
                     for (String k : keys) {
                         header.append(",").append(k);
                     }
@@ -94,8 +101,8 @@ public abstract class Experiment {
                 FileWriter fw = new FileWriter(outputFile, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," +
-                        fast.gridGranularity + "," + fast.bounds.max.x + "," + fast.bounds.max.y);
+                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + createMem +
+                        "," + searchMem + "," + fast.gridGranularity + "," + fast.bounds.max.x + "," + fast.bounds.max.y);
                 for (String v : values) {
                     line.append(",").append(v);
                 }

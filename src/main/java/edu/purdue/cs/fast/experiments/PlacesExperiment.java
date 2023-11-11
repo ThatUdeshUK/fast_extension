@@ -13,14 +13,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public class PlacesExperiment extends Experiment {
+public class PlacesExperiment extends Experiment<Place> {
     protected final String inputPath;
     protected int numQueries;
     protected int numObjects;
     protected int numKeywords;
     protected double srRate;
-
-    protected ArrayList<Place> places;
 
     public PlacesExperiment(String outputPath, String inputPath) {
         this.name = "places";
@@ -44,6 +42,7 @@ public class PlacesExperiment extends Experiment {
         );
     }
 
+    @Override
     public void init() {
         ArrayList<Place> places = new ArrayList<>();
         double minX = Double.MAX_VALUE;
@@ -90,28 +89,27 @@ public class PlacesExperiment extends Experiment {
             throw new RuntimeException("Wrong path is given: " + inputPath);
         }
 
-        this.places = places;
+        generateQueries(places);
+        generateObjects(places);
     }
 
     @Override
-    protected List<Query> generateQueries() {
-        ArrayList<Query> queries = new ArrayList<>();
+    protected void generateQueries(List<Place> places) {
+        this.queries = new ArrayList<>();
         int r = (int) (SpatioTextualConstants.xMaxRange * srRate);
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
             queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, numQueries + numObjects + 1));
         }
-        return queries;
     }
 
     @Override
-    protected List<DataObject> generateObjects() {
-        ArrayList<DataObject> objects = new ArrayList<>();
+    protected void generateObjects(List<Place> places) {
+        this.objects = new ArrayList<>();
         for (int i = numQueries + 1; i < numQueries + numObjects; i++) {
             Place place = places.get(i);
             objects.add(place.toDataObject(i - numQueries - 1));
         }
-        return objects;
     }
 
     @Override
