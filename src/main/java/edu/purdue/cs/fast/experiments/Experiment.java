@@ -46,7 +46,7 @@ public abstract class Experiment<T> {
             fast.addContinuousQuery(q);
         }
         stopwatch.stop();
-        createMem = GraphLayout.parseInstance(fast).totalSize();
+//        createMem = GraphLayout.parseInstance(fast).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
@@ -67,7 +67,7 @@ public abstract class Experiment<T> {
             results.add(res);
         }
         totalTimeWatch.stop();
-        searchMem = GraphLayout.parseInstance(fast).totalSize();
+//        searchMem = GraphLayout.parseInstance(fast).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
 

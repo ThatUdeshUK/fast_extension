@@ -13,11 +13,11 @@ public class Run {
         int numObjects = 100000;
 
         List<Integer> numQueriesList = List.of(
-                100000,
-                500000,
-                1000000,
-                2500000,
-                5000000
+//                100000,
+//                500000,
+                1000000 //,
+//                2500000,
+//                5000000
         );
 
         for (int numQueries : numQueriesList) {
@@ -33,7 +33,7 @@ public class Run {
             );
 //            experiment.setPushToLowest();
 //            experiment.setSaveOutput();
-            experiment.setSaveStats(true);
+            experiment.setSaveStats(false);
 
             experiment.run();
         }
