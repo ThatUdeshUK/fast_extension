@@ -7,8 +7,8 @@ import edu.purdue.cs.fast.helper.TextualPredicate;
 public class MinimalRangeQuery extends Query {
 	public Rectangle spatialRange;
 
-	public MinimalRangeQuery(int id, List<String> keywords, Rectangle spatialRange, TextualPredicate predicate, int et) {
-		super(id, keywords, predicate, et);
+	public MinimalRangeQuery(int id, List<String> keywords, Rectangle spatialRange, TextualPredicate predicate, long st, long et) {
+		super(id, keywords, predicate, st, et);
 		this.spatialRange = spatialRange;
 	}
 

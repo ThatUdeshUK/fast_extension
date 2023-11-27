@@ -57,12 +57,14 @@ public class QueryTrieNode extends TextualNode {
                     FAST.objectSearchTrieNodeCounter++;
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
+                        if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp)
                             results.add(query);
                     }
                     if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords)) {
+                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp) {
                             results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
@@ -74,13 +76,15 @@ public class QueryTrieNode extends TextualNode {
                     for (MinimalRangeQuery query : ((QueryListNode) node).queries.mbrQueries()) {
                         FAST.objectSearchTrieNodeCounter++;
                         if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange)
-                                && TextHelpers.containsTextually(keywords, query.keywords))
+                                && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp)
                             results.add(query);
                     }
                     ArrayList<KNNQuery> toRemove = new ArrayList<>();
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.objectSearchTrieNodeCounter++;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords)) {
+                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp) {
                             results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
@@ -114,7 +118,7 @@ public class QueryTrieNode extends TextualNode {
             Iterator<Query> queriesItr = queries.iterator();
             while (queriesItr.hasNext()) {
                 Query query = queriesItr.next();
-                if (query.et < FAST.queryTimeStampCounter)
+                if (query.et <= FAST.timestamp)
                     queriesItr.remove();
                 else {
                     combinedQueries.queries.add(query);
@@ -130,7 +134,7 @@ public class QueryTrieNode extends TextualNode {
                 TextualNode node = trieCellsItr.next().getValue();
                 if (node instanceof QueryNode) {
                     MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
-                    if (query.et < FAST.queryTimeStampCounter)
+                    if (query.et <= FAST.timestamp)
                         trieCellsItr.remove();
                     else {
                         combinedQueries.queries.add(query);
@@ -140,7 +144,7 @@ public class QueryTrieNode extends TextualNode {
                     Iterator<Query> queriesInternalItr = ((QueryListNode) node).queries.iterator();
                     while (queriesInternalItr.hasNext()) {
                         Query query = queriesInternalItr.next();
-                        if (query.et < FAST.queryTimeStampCounter)
+                        if (query.et <= FAST.timestamp)
                             queriesInternalItr.remove();
                         else {
                             combinedQueries.queries.add(query);

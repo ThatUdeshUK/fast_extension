@@ -8,14 +8,16 @@ public abstract class Query {
 	public int id;
 	public List<String> keywords;
 	public TextualPredicate predicate;
-	public int et;
+	public long st;
+	public long et;
 
 	public boolean deleted;
 
-	public Query(int id, List<String> keywords, TextualPredicate predicate, int et) {
+	public Query(int id, List<String> keywords, TextualPredicate predicate, long st, long et) {
 		this.id = id;
 		this.keywords = keywords;
 		this.predicate = predicate;
+		this.st = st;
 		this.et = et;
 	}
 

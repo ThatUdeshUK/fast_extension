@@ -67,7 +67,7 @@ public class HybridList implements Iterable<Query> {
 
     @Override
     public Iterator<Query> iterator() {
-        return new HybridIterator(this.mbrQueries(), this.kNNQueries);
+        return new HybridIterator(this.mbrQueries, this.kNNQueries);
     }
 }
 

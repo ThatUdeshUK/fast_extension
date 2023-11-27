@@ -26,13 +26,15 @@ public class DataObject {
     public Point location;
     public List<String> keywords;
     public Long st;
+    public Long et;
 
-    public DataObject(Integer id, Point location, List<String> keywords, long st) {
+    public DataObject(Integer id, Point location, List<String> keywords, long st, long et) {
         super();
         this.id = id;
         this.location = location;
         this.keywords = keywords;
         this.st = st;
+        this.et = et;
     }
 
     @Override
@@ -42,6 +44,7 @@ public class DataObject {
                 ", location=" + location +
                 ", keywords=" + keywords +
                 ", st=" + st +
+                ", et=" + et +
                 '}';
     }
 

@@ -47,20 +47,21 @@ public class Place {
 
     public MinimalRangeQuery toMinimalRangeQuery(int qid, int r, double maxRange, int numKeywords, int expireTimestamp) {
         ArrayList<String> keywords = new ArrayList<>(properties.tags.subList(0, Math.min(properties.tags.size(), numKeywords)));
-        return new MinimalRangeQuery(qid, keywords, toRectangle(r, maxRange), null, expireTimestamp);
+        return new MinimalRangeQuery(qid, keywords, toRectangle(r, maxRange), null, qid, expireTimestamp);
     }
 
     public KNNQuery toKNNQuery(int qid, int numKeywords, int k, int expireTimestamp) {
         ArrayList<String> keywords = new ArrayList<>(properties.tags.subList(0, Math.min(properties.tags.size(), numKeywords)));
-        return new KNNQuery(qid, keywords, coordinate(), k, null, expireTimestamp);
+        return new KNNQuery(qid, keywords, coordinate(), k, null, qid, expireTimestamp);
     }
 
-    public DataObject toDataObject(int oid) {
+    public DataObject toDataObject(int oid, int expireTimestamp) {
         return new DataObject(
                 oid,
                 new Point(geometry.coordinates.get(0), geometry.coordinates.get(1)),
                 properties.tags,
-                (long) oid
+                oid,
+                expireTimestamp
         );
     }
 }

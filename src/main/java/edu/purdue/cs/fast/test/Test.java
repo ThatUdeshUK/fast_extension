@@ -407,7 +407,7 @@ public class Test {
                             QueryType.queryTextualRange, queryspatialRange, textualPredicate, null, null);
                     if (importableQuery == null)
                         continue;
-                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, Integer.MAX_VALUE);
+                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, 0, Integer.MAX_VALUE);
                     allQueiries.add(minimalRangeQuery);
                     i++;
                 } else if (dataset == 1) {
@@ -415,7 +415,7 @@ public class Test {
                             null, QueryType.queryTextualRange, queryspatialRange, textualPredicate, null, null);
                     if (importableQuery == null)
                         continue;
-                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, Integer.MAX_VALUE);
+                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, 0, Integer.MAX_VALUE);
                     allQueiries.add(minimalRangeQuery);
                     i++;
 
@@ -424,7 +424,7 @@ public class Test {
                             null, null, QueryType.queryTextualRange, queryspatialRange, textualPredicate, null, null);
                     if (importableQuery == null)
                         continue;
-                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, Integer.MAX_VALUE);
+                    minimalRangeQuery = new MinimalRangeQuery(i, importableQuery.getQueryText(), importableQuery.spatialRange, textualPredicate, 0, Integer.MAX_VALUE);
                     allQueiries.add(minimalRangeQuery);
                     i++;
 
@@ -469,7 +469,7 @@ public class Test {
         Point xy = new Point(x, y);
         Date date = new Date();
 
-        DataObject obj = new DataObject(id, xy, TextHelpers.transformIntoSortedArrayListOfString(textContent), date.getTime());
+        DataObject obj = new DataObject(id, xy, TextHelpers.transformIntoSortedArrayListOfString(textContent), date.getTime(), Integer.MAX_VALUE);
         return obj;
     }
 
@@ -509,7 +509,7 @@ public class Test {
         Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong);
         Date date = new Date();
 
-        DataObject obj = new DataObject(id, xy, TextHelpers.transformIntoSortedArrayListOfString(textContent), date.getTime());
+        DataObject obj = new DataObject(id, xy, TextHelpers.transformIntoSortedArrayListOfString(textContent), date.getTime(), Integer.MAX_VALUE);
         return obj;
     }
 
@@ -545,7 +545,7 @@ public class Test {
         Point point = SpatialHelper.convertFromLatLonToXYPoint(new LatLong(lat, lon));
         Date date = new Date();
 
-        DataObject dataObject = new DataObject(countId++, point, TextHelpers.transformIntoSortedArrayListOfString(text), date.getTime());
+        DataObject dataObject = new DataObject(countId++, point, TextHelpers.transformIntoSortedArrayListOfString(text), date.getTime(), Integer.MAX_VALUE);
         return dataObject;
 
     }

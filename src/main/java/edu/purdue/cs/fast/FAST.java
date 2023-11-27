@@ -45,8 +45,9 @@ public class FAST {
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     public static int totalVisited = 0;
     public static int spatialOverlappingQueries = 0;
-    public static int queryTimeStampCounter;
-    public static int objectTimeStampCounter;
+    public static int timestamp = 0;
+    //    public static int queryTimeStampCounter;
+//    public static int objectTimeStampCounter;
     public static int debugQueryId = -1;
     public static int queryInsertInvListNodeCounter = 0;
     public static int queryInsertTrieNodeCounter = 0;
@@ -59,9 +60,9 @@ public class FAST {
     public static int numberOfTrieNodes = 0;
     public static int totalTrieAccess = 0;
     public static int objectSearchTrieFinalNodeCounter = 0;
-    public int gridGranularity;
     public static double localXstep;
     public static double localYstep;
+    public int gridGranularity;
     public Rectangle bounds;
     public double globalXRange;
     public double globalYRange;
@@ -104,8 +105,9 @@ public class FAST {
         numberOfHashEntries = 0;
         numberOfTrieNodes = 0;
         totalTrieAccess = 0;
-        queryTimeStampCounter = 0;
-        objectTimeStampCounter = 0;
+        timestamp = 0;
+//        queryTimeStampCounter = 0;
+//        objectTimeStampCounter = 0;
         cleaningIterator = null;
         cellBeingCleaned = null;
         lastCellCleaningDone = true;
@@ -136,16 +138,18 @@ public class FAST {
     }
 
     public void addContinuousQuery(Query query) {
+        timestamp++;
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
         } else if (query instanceof KNNQuery) {
             addContinuousKNNQuery((KNNQuery) query);
         }
+
+//		if (queryTimeStampCounter % CLEANING_INTERVAL == 0)
+//			cleanNextSetOfEntries();
     }
 
     public void addContinuousKNNQuery(KNNQuery query) {
-        queryTimeStampCounter++;
-
         if (minInsertedLevel == -1) {
             maxInsertedLevel = maxLevel;
             minInsertedLevel = maxLevel;
@@ -171,8 +175,6 @@ public class FAST {
     }
 
     public void addContinuousMinimalRangeQuery(MinimalRangeQuery query) {
-        queryTimeStampCounter++;
-
         ArrayList<ReinsertEntry> currentLevelQueries = new ArrayList<>();
         currentLevelQueries.add(new ReinsertEntry(query.spatialRange, query));
         reinsertContinuous(currentLevelQueries, maxLevel);
@@ -207,8 +209,8 @@ public class FAST {
 
         int coodinate;
         QueryListNode sharedQueries = null;
-        for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
-            for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
+        for (int i = levelXMinCell; i < levelXMaxCell; i++) {
+            for (int j = levelYMinCell; j < levelYMaxCell; j++) {
                 if (entry.query instanceof KNNQuery) {
                     double x = (((KNNQuery) entry.query).location.x / levelStep);
                     double y = (((KNNQuery) entry.query).location.y / levelStep);
@@ -259,13 +261,13 @@ public class FAST {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
             double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
-            singleQueryInsert(level, new ReinsertEntry(query.spatialBox(), query), levelStep, levelGranularity, insertNextLevelQueries);
+            singleQueryInsert(level, new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query), levelStep, levelGranularity, insertNextLevelQueries);
             assert insertNextLevelQueries.isEmpty();
         }
     }
 
     public List<Query> searchQueries(DataObject dataObject) {
-        objectTimeStampCounter++;
+        timestamp++;
 
         List<Query> result = new LinkedList<>();
         ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
@@ -328,7 +330,7 @@ public class FAST {
         for (String keyword : query.keywords) {
             KeywordFrequency stats = keywordFrequencyMap.get(keyword);
             if (stats == null) {
-                stats = new KeywordFrequency(1, 1, objectTimeStampCounter);
+                stats = new KeywordFrequency(1, 1, timestamp);
                 keywordFrequencyMap.put(keyword, stats);
                 minkeyword = keyword;
                 minCount = 0;
@@ -386,9 +388,9 @@ public class FAST {
     private void printQueryList(Iterable<Query> queries) {
         StringBuilder s = new StringBuilder();
         for (Query query : queries) {
-            s.append(", ").append(query.id);
+            s.append(query.id).append(", ");
         }
-        System.out.print(s);
+        System.out.print(s + "\n");
     }
 
 }

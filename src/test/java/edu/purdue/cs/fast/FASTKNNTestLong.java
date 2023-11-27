@@ -14,26 +14,26 @@ class FASTKNNTestLong {
 
     public FASTKNNTestLong() {
         this.queries = List.of(
-                new KNNQuery(1, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 100),
-                new KNNQuery(2, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 100),
-                new KNNQuery(3, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 100),
-                new KNNQuery(4, List.of("k3", "k6"), new Point(7.0, 4.0), 1, null, 100),
-                new KNNQuery(5, List.of("k1", "k3"), new Point(5.0, 5.0), 1, null, 100),
-                new KNNQuery(6, List.of("k1", "k2", "k3"), new Point(5.0, 5.0), 1, null, 100),
-                new KNNQuery(7, List.of("k2", "k3", "k7"), new Point(5.0, 5.0), 1, null, 100),
-                new KNNQuery(8, List.of("k2"), new Point(5.0, 5.0), 1, null, 100),
-                new KNNQuery(9, List.of("k1", "k3"), new Point(5.0, 5.0), 1, null, 100),
-                new KNNQuery(10, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 100),
-                new KNNQuery(11, List.of("k1"), new Point(8.0, 5.0), 3, null,100),
-                new KNNQuery(12, List.of("k2", "k3"), new Point(1.0, 7.0), 2, null, 100)
+                new KNNQuery(1, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 0, 100),
+                new KNNQuery(2, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 0, 100),
+                new KNNQuery(3, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 0, 100),
+                new KNNQuery(4, List.of("k3", "k6"), new Point(7.0, 4.0), 1, null, 0, 100),
+                new KNNQuery(5, List.of("k1", "k3"), new Point(5.0, 5.0), 1, null, 0, 100),
+                new KNNQuery(6, List.of("k1", "k2", "k3"), new Point(5.0, 5.0), 1, null, 0, 100),
+                new KNNQuery(7, List.of("k2", "k3", "k7"), new Point(5.0, 5.0), 1, null, 0, 100),
+                new KNNQuery(8, List.of("k2"), new Point(5.0, 5.0), 1, null, 0, 100),
+                new KNNQuery(9, List.of("k1", "k3"), new Point(5.0, 5.0), 1, null, 0, 100),
+                new KNNQuery(10, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 0, 100),
+                new KNNQuery(11, List.of("k1"), new Point(8.0, 5.0), 3, null,0, 100),
+                new KNNQuery(12, List.of("k2", "k3"), new Point(1.0, 7.0), 2, null, 0, 100)
         );
 
         this.objects = List.of(
-                new DataObject(1, new Point(7.0, 8.0), List.of("k1", "k2"), 1),
-                new DataObject(2, new Point(5.0, 5.0), List.of("k1", "k2"), 2),
-                new DataObject(3, new Point(2.0, 6.0), List.of("k1", "k2"), 3),
-                new DataObject(4, new Point(1.0, 1.0), List.of("k1", "k2"), 4),
-                new DataObject(5, new Point(5.0, 6.0), List.of("k1", "k2"), 5)
+                new DataObject(1, new Point(7.0, 8.0), List.of("k1", "k2"), 1, 100),
+                new DataObject(2, new Point(5.0, 5.0), List.of("k1", "k2"), 2, 100),
+                new DataObject(3, new Point(2.0, 6.0), List.of("k1", "k2"), 3, 100),
+                new DataObject(4, new Point(1.0, 1.0), List.of("k1", "k2"), 4, 100),
+                new DataObject(5, new Point(5.0, 6.0), List.of("k1", "k2"), 5, 100)
         );
 
         this.answers = List.of(

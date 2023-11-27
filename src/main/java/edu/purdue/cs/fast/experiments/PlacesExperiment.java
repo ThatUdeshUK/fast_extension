@@ -19,6 +19,7 @@ public class PlacesExperiment extends Experiment<Place> {
     protected int numObjects;
     protected int numKeywords;
     protected double srRate;
+    private Random randomizer;
 
     public PlacesExperiment(String outputPath, String inputPath) {
         this.name = "places";
@@ -40,6 +41,8 @@ public class PlacesExperiment extends Experiment<Place> {
                 fineGridGran,
                 maxLevel
         );
+
+        this.randomizer = new Random(seed);
     }
 
     @Override
@@ -82,7 +85,7 @@ public class PlacesExperiment extends Experiment<Place> {
 
             System.out.print("Shuffling -> ");
             start = System.currentTimeMillis();
-            Collections.shuffle(places, new Random(seed));
+            Collections.shuffle(places, randomizer);
             end = System.currentTimeMillis();
             System.out.println("Done! Time=" + (end - start));
         } catch (IOException e) {
@@ -99,7 +102,8 @@ public class PlacesExperiment extends Experiment<Place> {
         int r = (int) (SpatioTextualConstants.xMaxRange * srRate);
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, numQueries + numObjects + 1));
+            int et = randomizer.nextInt(i, numQueries + numObjects + i);
+            queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, et));
         }
     }
 
@@ -108,7 +112,8 @@ public class PlacesExperiment extends Experiment<Place> {
         this.objects = new ArrayList<>();
         for (int i = numQueries + 1; i < numQueries + numObjects; i++) {
             Place place = places.get(i);
-            objects.add(place.toDataObject(i - numQueries - 1));
+            int et = randomizer.nextInt(i, numQueries + numObjects + i);
+            objects.add(place.toDataObject(i - numQueries - 1, et));
         }
     }
 

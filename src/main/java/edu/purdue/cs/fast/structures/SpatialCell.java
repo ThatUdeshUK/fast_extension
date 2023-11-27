@@ -70,7 +70,7 @@ public class SpatialCell {
             TextualNode node = textualIndex.get(keyword);
             if (node instanceof QueryNode) {
                 Query exitingQuery = ((QueryNode) node).query;
-                if (exitingQuery.et > FAST.queryTimeStampCounter) { //checking for the support of the query
+                if (exitingQuery.et > FAST.timestamp) { //checking for the support of the query
                     if (sharedQueries.queries.contains(exitingQuery)) {
                         textualIndex.put(keyword, sharedQueries);
                     } else if (sharedQueries.queries.mbrQueries().size() < FAST.Trie_SPLIT_THRESHOLD) {
@@ -153,7 +153,7 @@ public class SpatialCell {
                     trieNode.subtree.put(keyword, new QueryNode(query));
                     inserted = true;
                 } else if (node instanceof QueryNode) {
-                    if (((QueryNode) node).query.et > FAST.queryTimeStampCounter) {
+                    if (((QueryNode) node).query.et > FAST.timestamp) {
                         QueryListNode newNode = new QueryListNode(((QueryNode) node).query);
                         newNode.queries.add(query);
                         trieNode.subtree.put(keyword, newNode);
@@ -173,7 +173,7 @@ public class SpatialCell {
                     newCell.queries = new HybridList();
                     trieNode.subtree.put(keyword, newCell);
                     for (Query otherQuery : ((QueryListNode) node).queries) {
-                        if (otherQuery.et > FAST.queryTimeStampCounter) {
+                        if (otherQuery.et > FAST.timestamp) {
                             if (otherQuery.keywords.size() > (j + 1)) {
 
                                 QueryListNode otherCell = (QueryListNode) newCell.subtree.get(otherQuery.keywords.get(j + 1));
@@ -264,7 +264,7 @@ public class SpatialCell {
             }
             if (node instanceof QueryNode) { //single query
                 Query exitingQuery = ((QueryNode) node).query;
-                if (exitingQuery.et > FAST.queryTimeStampCounter) { //checking for the support of the query
+                if (exitingQuery.et > FAST.timestamp) { //checking for the support of the query
                     QueryListNode rareQueries = new QueryListNode(exitingQuery);
                     FAST.queryInsertInvListNodeCounter++;
                     rareQueries.queries.add(query);
@@ -343,13 +343,13 @@ public class SpatialCell {
             String keyword = nextNode.getKey();
             if (node instanceof QueryNode) {
                 numberOfVisitedEntries++;
-                if (((QueryNode) node).query.et < FAST.queryTimeStampCounter)
+                if (((QueryNode) node).query.et < FAST.timestamp)
                     node = null;
             } else if (node instanceof QueryListNode) {
                 Iterator<Query> queriesIterator = ((QueryListNode) node).queries.iterator();
                 while (queriesIterator.hasNext()) {
                     Query query = queriesIterator.next();
-                    if (query.et < FAST.queryTimeStampCounter)
+                    if (query.et < FAST.timestamp)
                         queriesIterator.remove();
                     numberOfVisitedEntries++;
                 }
@@ -380,7 +380,7 @@ public class SpatialCell {
     }
 
     public void searchQueries(DataObject obj, List<String> keywords, List<Query> results,
-                                           ArrayList<KNNQuery> descendingKNNQueries) {
+                              ArrayList<KNNQuery> descendingKNNQueries) {
         ArrayList<String> remainingKeywords = new ArrayList<>();
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
@@ -390,11 +390,13 @@ public class SpatialCell {
                 if (node instanceof QueryNode) {
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
-                        if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
+                        if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp)
                             results.add(query);
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
+                        if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                query.et > FAST.timestamp) {
                             results.add(query);
                             if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                 descendingKNNQueries.add(query);
@@ -403,23 +405,27 @@ public class SpatialCell {
                         }
                     }
                 } else if (node instanceof QueryListNode) {
+                    ArrayList<KNNQuery> toRemove = new ArrayList<>();
                     for (Query q : ((QueryListNode) node).queries) {
                         FAST.objectSearchInvListNodeCounter++;
                         if (q instanceof MinimalRangeQuery) {
                             MinimalRangeQuery query = ((MinimalRangeQuery) q);
-                            if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords))
+                            if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                    query.et > FAST.timestamp)
                                 results.add(q);
                         } else if (q instanceof KNNQuery) {
                             KNNQuery query = ((KNNQuery) q);
-                            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords)) {
+                            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
+                                    query.et > FAST.timestamp) {
                                 results.add(query);
                                 if (query.pushUntilK(obj) && descendingKNNQueries != null) {
                                     descendingKNNQueries.add(query);
-                                    ((QueryListNode) node).queries.kNNQueries().remove(query);
+                                    toRemove.add(query);
                                 }
                             }
                         }
                     }
+                    toRemove.forEach((KNNQuery query) -> ((QueryListNode) node).queries.remove(query));
                 } else if (node instanceof QueryTrieNode) {
                     remainingKeywords.add(keyword);
                 }

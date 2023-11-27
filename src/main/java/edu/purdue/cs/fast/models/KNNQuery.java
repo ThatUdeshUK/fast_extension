@@ -15,8 +15,8 @@ public class KNNQuery extends Query {
     private PriorityQueue<DataObject> monitoredObjects;
     private final Rectangle spatialBox;
 
-    public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, int et) {
-        super(id, keywords, predicate, et);
+    public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, long st, long et) {
+        super(id, keywords, predicate, st, et);
         this.location = location;
         this.k = k;
         this.ar = Double.MAX_VALUE;
