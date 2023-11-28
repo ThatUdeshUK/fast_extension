@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
+import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.parser.Place;
@@ -11,9 +12,9 @@ public class PlacesKNNExperiment extends PlacesExperiment {
     private final int k;
     private boolean pushToLowest;
 
-    public PlacesKNNExperiment(String outputPath, String inputPath, String name, int numQueries, int numObjects,
-                               int numKeywords, double srRate, int k) {
-        super(outputPath, inputPath);
+    public PlacesKNNExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
+                               int numQueries, int numObjects, int numKeywords, double srRate, int k, int maxRange) {
+        super(outputPath, inputPath, index, maxRange);
 
         this.name = name;
         this.numQueries = numQueries;

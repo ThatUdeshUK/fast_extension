@@ -1,8 +1,8 @@
 package edu.purdue.cs.fast.experiments;
 
+import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
-import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.util.ArrayList;
@@ -12,8 +12,8 @@ public class PlacesHybridExperiment extends PlacesExperiment {
     private final double knnRatio;
     private final int k;
 
-    public PlacesHybridExperiment(String outputPath, String inputPath) {
-        super(outputPath, inputPath);
+    public PlacesHybridExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, int maxRange) {
+        super(outputPath, inputPath, index, maxRange);
 
         this.name = "places_knn_00";
         this.numQueries = 2500000;
@@ -25,9 +25,10 @@ public class PlacesHybridExperiment extends PlacesExperiment {
         this.knnRatio = 0.0;
     }
 
-    public PlacesHybridExperiment(String outputPath, String inputPath, String name, int numQueries, int numObjects,
-                                  int numKeywords, double srRate, int k, double knnRatio) {
-        super(outputPath, inputPath);
+    public PlacesHybridExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
+                                  int numQueries, int numObjects, int numKeywords, double srRate, int k,
+                                  double knnRatio, int maxRange) {
+        super(outputPath, inputPath, index, maxRange);
 
         this.name = name;
         this.numQueries = numQueries;
@@ -47,10 +48,10 @@ public class PlacesHybridExperiment extends PlacesExperiment {
             Place place = places.get(i);
             queries.add(place.toKNNQuery(i, numKeywords, k, numQueries + numObjects + 1));
         }
-        int r = (int) (SpatioTextualConstants.xMaxRange * srRate);
+        int r = (int) (this.maxRange * srRate);
         for (int i = knnQueryCount; i < numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, numQueries + numObjects + 1));
+            queries.add(place.toMinimalRangeQuery(i, r, this.maxRange, numKeywords, numQueries + numObjects + 1));
         }
     }
 

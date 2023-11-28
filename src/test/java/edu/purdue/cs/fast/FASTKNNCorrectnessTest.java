@@ -1,6 +1,9 @@
 package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
+import edu.purdue.cs.fast.helper.SpatioTextualConstants;
+import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,15 +20,26 @@ class FASTKNNCorrectnessTest {
     private final PlacesKNNExperiment experiment;
 
     public FASTKNNCorrectnessTest() {
+        FAST fast = new FAST(
+                new Rectangle(
+                        new Point(0.0, 0.0),
+                        new Point(512, 512)
+                ),
+                512,
+                9
+        );
+
         experiment = new PlacesKNNExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
+                fast,
                 "places_knn_seacnn",
                 1000,
                 100,
                 5,
                 0.0,
-                5
+                5,
+                512
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);

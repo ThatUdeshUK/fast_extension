@@ -29,6 +29,7 @@ import edu.purdue.cs.fast.models.Rectangle;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.test.Test;
 
 
 public class ImportableQuery {
@@ -71,8 +72,8 @@ public class ImportableQuery {
 	public void setRemoveTime(Long removeTime) {
 		this.removeTime = removeTime;
 	}
-	private static Double maxFarthestDistance=Math.sqrt(SpatioTextualConstants.xMaxRange*SpatioTextualConstants.xMaxRange+
-			SpatioTextualConstants.yMaxRange*SpatioTextualConstants.yMaxRange);//this is the maximum possible space between any two points indexed
+	private static Double maxFarthestDistance=Math.sqrt(Test.xMaxRange* Test.xMaxRange+
+			Test.yMaxRange*Test.yMaxRange);//this is the maximum possible space between any two points indexed
 	
 	public void setFarthestDistance(Double farthestDistance) {
 		this.farthestDistance = farthestDistance;

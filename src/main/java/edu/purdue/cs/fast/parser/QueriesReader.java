@@ -16,6 +16,7 @@ import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.helper.TextHelpers;
 import edu.purdue.cs.fast.helper.TextualPredicate;
+import edu.purdue.cs.fast.test.Test;
 
 public class QueriesReader extends FileSpout {
 	public QueriesReader(Map spoutConf, Integer initialSleepDuration) {
@@ -302,7 +303,7 @@ public class QueriesReader extends FileSpout {
 					//			//	queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
 					//			}
 					Integer id = i + selfTaskIndex * totalQueryCountVal;
-					Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong);
+					Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong, Test.xMaxRange, Test.yMaxRange);
 					Date date = new Date();
 					ArrayList<String> queryText2 = new ArrayList<String>();
 					ImportableQuery q = new ImportableQuery();
@@ -518,7 +519,7 @@ public class QueriesReader extends FileSpout {
 			//			//	queryText2.add(keywordsArr[keywordsArr.length - i - 1]);
 			//			}
 			Integer id = i + selfTaskIndex * totalQueryCountVal;
-			Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong);
+			Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong, Test.xMaxRange, Test.yMaxRange);
 			Date date = new Date();
 			ArrayList<String> queryText2 = new ArrayList<String>();
 			ImportableQuery q = new ImportableQuery();

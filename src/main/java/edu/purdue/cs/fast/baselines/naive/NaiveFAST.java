@@ -1,3 +1,5 @@
+package edu.purdue.cs.fast.baselines.naive;
+
 /**
  * Copyright Jul 5, 2015
  * Author : Ahmed Mahmood
@@ -21,7 +23,6 @@
  * This version is meant for the fair comparison of with the state of the art
  * index that does not have any other cluster and tornado related attributes
  */
-package edu.purdue.cs.fast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,11 +32,18 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import edu.purdue.cs.fast.models.*;
+import edu.purdue.cs.fast.SpatialKeywordIndex;
+import edu.purdue.cs.fast.baselines.naive.models.KNNQuery;
+import edu.purdue.cs.fast.baselines.naive.models.ReinsertEntry;
 import edu.purdue.cs.fast.helper.SpatialHelper;
-import edu.purdue.cs.fast.structures.*;
+import edu.purdue.cs.fast.helper.SpatioTextualConstants;
+import edu.purdue.cs.fast.baselines.naive.structures.*;
+import edu.purdue.cs.fast.models.*;
+import edu.purdue.cs.fast.structures.KeywordFrequency;
+import edu.purdue.cs.fast.structures.QueryNode;
+import edu.purdue.cs.fast.structures.TextualNode;
 
-public class FAST implements SpatialKeywordIndex {
+public class NaiveFAST implements SpatialKeywordIndex {
     public static int Trie_SPLIT_THRESHOLD = 2;
     public static int Degradation_Ratio = 2;
     public static int Trie_OVERLALL_MERGE_THRESHOLD = 2;
@@ -45,9 +53,9 @@ public class FAST implements SpatialKeywordIndex {
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     public static int totalVisited = 0;
     public static int spatialOverlappingQueries = 0;
-    public static int timestamp = 0;
-    //    public static int queryTimeStampCounter;
+//    public static int queryTimeStampCounter;
 //    public static int objectTimeStampCounter;
+    public static int timestamp;
     public static int debugQueryId = -1;
     public static int queryInsertInvListNodeCounter = 0;
     public static int queryInsertTrieNodeCounter = 0;
@@ -60,12 +68,12 @@ public class FAST implements SpatialKeywordIndex {
     public static int numberOfTrieNodes = 0;
     public static int totalTrieAccess = 0;
     public static int objectSearchTrieFinalNodeCounter = 0;
-    public static double localXstep;
-    public static double localYstep;
-    public int gridGranularity;
-    public Rectangle bounds;
     public double globalXRange;
     public double globalYRange;
+    public double localXstep;
+    public double localYstep;
+    public Rectangle bounds;
+    public int gridGranularity;
     public int maxLevel;
     public SpatialCell cellBeingCleaned;
     public boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
@@ -73,19 +81,16 @@ public class FAST implements SpatialKeywordIndex {
     public int maxInsertedLevel;
     public int minInsertedLevelInterleaved;
     public int maxInsertedLevelInterleaved;
-
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
 
-    private boolean pushToLowest = false;
-
-    public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
+    public NaiveFAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
         this.bounds = bounds;
         this.globalXRange = bounds.max.x - bounds.min.x;
         this.globalYRange = bounds.max.y - bounds.min.y;
         this.gridGranularity = xGridGranularity;
-        FAST.localXstep = (this.globalXRange / this.gridGranularity);
-        FAST.localYstep = (this.globalYRange / this.gridGranularity);
+        this.localXstep = (this.globalXRange / this.gridGranularity);
+        this.localYstep = (this.globalXRange / this.gridGranularity);
         this.maxLevel = Math.min((int) (Math.log(gridGranularity) / Math.log(2)), maxLevel);
         this.minInsertedLevel = -1;
         this.maxInsertedLevel = -1;
@@ -106,8 +111,6 @@ public class FAST implements SpatialKeywordIndex {
         numberOfTrieNodes = 0;
         totalTrieAccess = 0;
         timestamp = 0;
-//        queryTimeStampCounter = 0;
-//        objectTimeStampCounter = 0;
         cleaningIterator = null;
         cellBeingCleaned = null;
         lastCellCleaningDone = true;
@@ -138,15 +141,11 @@ public class FAST implements SpatialKeywordIndex {
     }
 
     public void addContinuousQuery(Query query) {
-        timestamp++;
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
         } else if (query instanceof KNNQuery) {
             addContinuousKNNQuery((KNNQuery) query);
         }
-
-//		if (queryTimeStampCounter % CLEANING_INTERVAL == 0)
-//			cleanNextSetOfEntries();
     }
 
     public void addContinuousKNNQuery(KNNQuery query) {
@@ -181,119 +180,68 @@ public class FAST implements SpatialKeywordIndex {
     }
 
     private void reinsertContinuous(ArrayList<ReinsertEntry> currentLevelQueries, int level) {
+        timestamp++;
+
         while (level >= 0 && !currentLevelQueries.isEmpty()) {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
-            double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
+            double levelStep = (globalXRange / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
-                singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
+
+                int levelxMinCell = (int) (entry.query.spatialRange.min.x / levelStep);
+                int levelyMinCell = (int) (entry.query.spatialRange.min.y / levelStep);
+                int levelxMaxCell = (int) (entry.query.spatialRange.max.x / levelStep);
+                int levelyMaxCell = (int) (entry.query.spatialRange.max.y / levelStep);
+
+                if (entry.range != null) {
+                    if (entry.query.id == debugQueryId)
+                        System.out.println("reinsert" + entry.query);
+
+                    levelxMinCell = (int) (entry.range.min.x / levelStep);
+                    levelyMinCell = (int) (entry.range.min.y / levelStep);
+                    levelxMaxCell = (int) (entry.range.max.x / levelStep);
+                    levelyMaxCell = (int) (entry.range.max.y / levelStep);
+                }
+
+                if (minInsertedLevel == -1)
+                    minInsertedLevel = maxInsertedLevel = level;
+                if (level < minInsertedLevel)
+                    minInsertedLevel = level;
+                if (level > maxInsertedLevel)
+                    maxInsertedLevel = level;
+                String minKeyword = getMinKeyword(level, entry.query);
+
+                int coodinate;
+                QueryListNode sharedQueries = null;
+                for (int i = levelxMinCell; i <= levelxMaxCell; i++) {
+                    for (int j = levelyMinCell; j <= levelyMaxCell; j++) {
+                        totalQueryInsertionsIncludingReplications++;
+                        coodinate = calcCoordinate(level, i, j, levelGranularity);
+                        if (!index.containsKey(coodinate)) {
+                            Rectangle bounds = SpatialCell.getBounds(i, j, levelStep);
+                            if (bounds.min.x >= globalXRange || bounds.min.y >= globalYRange)
+                                continue;
+                            index.put(coodinate, new SpatialCell(bounds, coodinate, level));
+                        }
+                        SpatialCell spatialCell = index.get(coodinate);
+                        if (SpatialHelper.overlapsSpatially(entry.query.spatialRange, spatialCell.bounds)) {
+                            if (i == levelxMinCell && j == levelyMinCell) {
+                                sharedQueries = spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
+                            } else if (sharedQueries != null) {
+                                spatialCell.addInternalQuery(minKeyword, entry.query, sharedQueries, insertNextLevelQueries);
+                            } else
+                                spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
+                        }
+                        if (spatialCell.textualIndex == null) {
+                            index.remove(coodinate);
+                        }
+
+                    }
+                }
             }
             currentLevelQueries = insertNextLevelQueries;
             level--;
         }
-    }
-
-    private void singleQueryInsert(int level, ReinsertEntry entry, double levelStep, int levelGranularity, ArrayList<ReinsertEntry> insertNextLevelQueries) {
-        int levelXMinCell = (int) (entry.range.min.x / levelStep);
-        int levelYMinCell = (int) (entry.range.min.y / levelStep);
-        int levelXMaxCell = (int) ((entry.range.max.x - .001) / levelStep);
-        int levelYMaxCell = (int) ((entry.range.max.y - .001) / levelStep);
-
-        if (minInsertedLevel == -1)
-            minInsertedLevel = maxInsertedLevel = level;
-        if (level < minInsertedLevel)
-            minInsertedLevel = level;
-        if (level > maxInsertedLevel)
-            maxInsertedLevel = level;
-        String minKeyword = getMinKeyword(level, entry.query);
-
-        int coodinate;
-        QueryListNode sharedQueries = null;
-        for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
-            for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
-                if (entry.query instanceof KNNQuery) {
-                    double x = (((KNNQuery) entry.query).location.x / levelStep);
-                    double y = (((KNNQuery) entry.query).location.y / levelStep);
-                    double r = (((KNNQuery) entry.query).ar / levelStep);
-
-                    double si = i;
-                    if (i + 1 < x)
-                        si += 1;
-
-                    double sj = j;
-                    if (j + 1 < x)
-                        sj += 1;
-
-                    double d = Math.sqrt((si - x) * (si - x) + (sj - y) * (sj - y));
-                    if (!(((i < x || j < y) && d - 1 < r) || d < r))
-                        continue;
-                }
-                totalQueryInsertionsIncludingReplications++;
-                coodinate = calcCoordinate(level, i, j, levelGranularity);
-                if (!index.containsKey(coodinate)) {
-                    Rectangle bounds = SpatialCell.getBounds(i, j, levelStep);
-                    if (bounds.min.x >= globalXRange || bounds.min.y >= globalYRange)
-                        continue;
-                    index.put(coodinate, new SpatialCell(bounds, coodinate, level));
-                }
-                SpatialCell spatialCell = index.get(coodinate);
-                if (SpatialHelper.overlapsSpatially(entry.query.spatialBox(), spatialCell.bounds)) {
-                    if (i == levelXMinCell && j == levelYMinCell) {
-                        sharedQueries = spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
-                    } else if (sharedQueries != null && entry.query instanceof MinimalRangeQuery) {
-                        spatialCell.addInternalQuery(minKeyword, (MinimalRangeQuery) entry.query, sharedQueries, insertNextLevelQueries);
-                    } else
-                        spatialCell.addInternalQueryNoShare(minKeyword, entry.query, null, insertNextLevelQueries);
-                }
-                if (spatialCell.textualIndex == null) {
-                    index.remove(coodinate);
-                }
-
-            }
-        }
-    }
-
-    private void reinsertDescendedKNNQueries(ArrayList<KNNQuery> descendingKNNQueries) {
-        for (KNNQuery query : descendingKNNQueries) {
-            int level = 0;
-            if (!pushToLowest)
-                level = query.calcMinSpatialLevel();
-            ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
-            int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
-            double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
-            singleQueryInsert(level, new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query), levelStep, levelGranularity, insertNextLevelQueries);
-            assert insertNextLevelQueries.isEmpty();
-        }
-    }
-
-    public List<Query> searchQueries(DataObject dataObject) {
-        timestamp++;
-
-        List<Query> result = new LinkedList<>();
-        ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
-
-        if (minInsertedLevel == -1)
-            return result;
-        double step = (maxInsertedLevel == 0) ? localXstep : (localXstep * (2 << (maxInsertedLevel - 1)));
-        int granualrity = this.gridGranularity >> maxInsertedLevel;
-        List<String> keywords = dataObject.keywords;
-        for (int level = maxInsertedLevel; level >= minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
-            Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
-            SpatialCell spatialCellOptimized = index.get(cellCoordinates);
-            if (spatialCellOptimized != null) {
-                // TODO - DANGER you removed `keywords =`
-                if (level == maxInsertedLevel)
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
-                else
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, null);
-            }
-            step /= 2;
-            granualrity <<= 1;
-        }
-        if (!descendingKNNQueries.isEmpty()) {
-            reinsertDescendedKNNQueries(descendingKNNQueries);
-        }
-        return result;
     }
 
     public void cleanNextSetOfEntries() {
@@ -324,6 +272,27 @@ public class FAST implements SpatialKeywordIndex {
         return calcCoordinate(level, xCell, yCell, granularity);
     }
 
+    public List<Query> searchQueries(DataObject dataObject) {
+        timestamp++;
+        List<Query> result = new LinkedList<>();
+        if (minInsertedLevel == -1)
+            return result;
+        double step = (maxInsertedLevel == 0) ? localXstep : (localXstep * (2 << (maxInsertedLevel - 1)));
+        int granualrity = this.gridGranularity >> maxInsertedLevel;
+        List<String> keywords = dataObject.keywords;
+        for (int level = maxInsertedLevel; level >= minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
+            Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
+            SpatialCell spatialCellOptimized = index.get(cellCoordinates);
+            if (spatialCellOptimized != null) {
+                keywords = spatialCellOptimized.searchQueries(dataObject, keywords, result);
+            }
+            step /= 2;
+            granualrity <<= 1;
+        }
+
+        return result;
+    }
+
     public String getMinKeyword(int level, Query query) {
         String minkeyword = null;
         int minCount = Integer.MAX_VALUE;
@@ -345,10 +314,6 @@ public class FAST implements SpatialKeywordIndex {
             }
         }
         return minkeyword;
-    }
-
-    public void setPushToLowest() {
-        pushToLowest = true;
     }
 
     public void printFrequencies() {
@@ -374,23 +339,17 @@ public class FAST implements SpatialKeywordIndex {
         if (node instanceof QueryNode) {
             System.out.println(((QueryNode) node).query.id);
         } else if (node instanceof QueryListNode) {
-            printQueryList(((QueryListNode) node).queries);
+            List<Query> queries = ((QueryListNode) node).queries.allQueries();
+            System.out.println(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
         } else if (node instanceof QueryTrieNode) {
             if (((QueryTrieNode) node).queries != null) {
-                printQueryList(((QueryTrieNode) node).queries);
+                List<Query> queries = ((QueryTrieNode) node).queries.allQueries();
+                System.out.print(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
             }
             System.out.println();
             if (((QueryTrieNode) node).subtree != null)
                 ((QueryTrieNode) node).subtree.forEach((t, u) -> printTextualNode(t, u, level + 1));
         }
-    }
-
-    private void printQueryList(Iterable<Query> queries) {
-        StringBuilder s = new StringBuilder();
-        for (Query query : queries) {
-            s.append(query.id).append(", ");
-        }
-        System.out.print(s + "\n");
     }
 
 }

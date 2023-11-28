@@ -1,6 +1,9 @@
-package edu.purdue.cs.fast.models;
+package edu.purdue.cs.fast.unit;
 
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.KNNQuery;
+import edu.purdue.cs.fast.models.Point;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

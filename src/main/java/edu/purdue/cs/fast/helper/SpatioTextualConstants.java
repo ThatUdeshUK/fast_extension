@@ -67,15 +67,15 @@ public class SpatioTextualConstants {
 	public static final Integer numMovingObjects = 100;
 
 	//Data constants 
-	public static final Double xMaxRange = 512.0; // 10000.0;//16384.0 ;//
-	public static final Double yMaxRange = 512.0; // 10000.0;//16384.0 ;//
+//	public static final Double xMaxRange = 512.0; // 10000.0;//16384.0 ;//
+//	public static final Double yMaxRange = 512.0; // 10000.0;//16384.0 ;//
 	
 	//find grid granuality constansnts
 	public static final Integer defaultFineGridGranularityX =64;
 	public static final Integer defaultFineGridGranularityY =64;
 	
-	public static final Double defaultFineGridGranularityXstep = xMaxRange/defaultFineGridGranularityX;
-	public static final Double defaultFineGridGranularityYstep = yMaxRange/defaultFineGridGranularityX;
+//	public static final Double defaultFineGridGranularityXstep = xMaxRange/defaultFineGridGranularityX;
+//	public static final Double defaultFineGridGranularityYstep = yMaxRange/defaultFineGridGranularityX;
 	
 
 	//Data constants 

@@ -43,6 +43,8 @@ public class Test {
     static Integer countId = 0;
     static Integer queryCountId = 0;
     static Integer finegGridGran = 64;
+    public static Integer xMaxRange = 512;
+    public static Integer yMaxRange = 512;
     public static final String vocabPath = "C:\\datasets\\synthetic\\vocab.csv";
     public static final String tweetsQueriesPath = "C:\\datasets\\tweets\\tweetsForQueries.csv";
     public static final String tweetsObjectsPath = "C:\\datasets\\tweets\\sampletweets.csv";
@@ -135,7 +137,7 @@ public class Test {
 
         FAST localHybridPyramidIndexExperiment = new FAST(
                 new Rectangle(new Point(0.0, 0.0),
-                        new Point(SpatioTextualConstants.xMaxRange, SpatioTextualConstants.yMaxRange)),
+                        new Point(xMaxRange, yMaxRange)),
                 finegGridGran, maxLevel);
         result += testLocalPyramid(dataObjects, queries, localHybridPyramidIndexExperiment, getSize, verifyCorrectness);
 
@@ -506,7 +508,7 @@ public class Test {
         while (i < tweetParts.length)
             textContent = textContent + tweetParts[i++] + " ";
 
-        Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong);
+        Point xy = SpatialHelper.convertFromLatLonToXYPoint(latLong, xMaxRange, yMaxRange);
         Date date = new Date();
 
         DataObject obj = new DataObject(id, xy, TextHelpers.transformIntoSortedArrayListOfString(textContent), date.getTime(), Integer.MAX_VALUE);
@@ -542,7 +544,7 @@ public class Test {
         if (lon < SpatioTextualConstants.minLong || lon > SpatioTextualConstants.maxLong)
             return null;
 
-        Point point = SpatialHelper.convertFromLatLonToXYPoint(new LatLong(lat, lon));
+        Point point = SpatialHelper.convertFromLatLonToXYPoint(new LatLong(lat, lon), xMaxRange, yMaxRange);
         Date date = new Date();
 
         DataObject dataObject = new DataObject(countId++, point, TextHelpers.transformIntoSortedArrayListOfString(text), date.getTime(), Integer.MAX_VALUE);

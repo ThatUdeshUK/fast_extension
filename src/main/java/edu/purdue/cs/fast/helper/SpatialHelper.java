@@ -52,28 +52,28 @@ public class SpatialHelper {
     //
     //         return xy;
     //	}
-    public static Point convertFromLatLonToXYPoint(LatLong lonlat) {
+    public static Point convertFromLatLonToXYPoint(LatLong lonlat, int xMaxRange, int yMaxRange) {
         return new Point(
-                (lonlat.getLongitude() - SpatioTextualConstants.minLong) / (SpatioTextualConstants.maxLong - SpatioTextualConstants.minLong) * SpatioTextualConstants.xMaxRange,
-                (lonlat.getLatitude() - SpatioTextualConstants.minLat) / (SpatioTextualConstants.maxLat - SpatioTextualConstants.minLat) * SpatioTextualConstants.yMaxRange
+                (lonlat.getLongitude() - SpatioTextualConstants.minLong) / (SpatioTextualConstants.maxLong - SpatioTextualConstants.minLong) * xMaxRange,
+                (lonlat.getLatitude() - SpatioTextualConstants.minLat) / (SpatioTextualConstants.maxLat - SpatioTextualConstants.minLat) * yMaxRange
         );
     }
 
-    public static Point convertFromLatLonToXYPoint(LatLong lonlat, double minLat, double minLong, double maxLat, double maxLong) {
-        return new Point(
-                (lonlat.getLongitude() - minLong) / (maxLong - minLong) * SpatioTextualConstants.xMaxRange,
-                (lonlat.getLatitude() - minLat) / (maxLat - minLat) * SpatioTextualConstants.yMaxRange
-        );
-    }
-
-    public static LatLong convertFromXYToLatLonTo(Point xy) {
-
-        LatLong latlong = new LatLong();
-        latlong.setLatitude((xy.y / SpatioTextualConstants.yMaxRange * (SpatioTextualConstants.maxLat - SpatioTextualConstants.minLat)) + SpatioTextualConstants.minLat);
-        latlong.setLongitude((xy.x / SpatioTextualConstants.xMaxRange * (SpatioTextualConstants.maxLong - SpatioTextualConstants.minLong)) + SpatioTextualConstants.minLong);
-
-        return latlong;
-    }
+//    public static Point convertFromLatLonToXYPoint(LatLong lonlat, double minLat, double minLong, double maxLat, double maxLong) {
+//        return new Point(
+//                (lonlat.getLongitude() - minLong) / (maxLong - minLong) * SpatioTextualConstants.xMaxRange,
+//                (lonlat.getLatitude() - minLat) / (maxLat - minLat) * SpatioTextualConstants.yMaxRange
+//        );
+//    }
+//
+//    public static LatLong convertFromXYToLatLonTo(Point xy) {
+//
+//        LatLong latlong = new LatLong();
+//        latlong.setLatitude((xy.y / SpatioTextualConstants.yMaxRange * (SpatioTextualConstants.maxLat - SpatioTextualConstants.minLat)) + SpatioTextualConstants.minLat);
+//        latlong.setLongitude((xy.x / SpatioTextualConstants.xMaxRange * (SpatioTextualConstants.maxLong - SpatioTextualConstants.minLong)) + SpatioTextualConstants.minLong);
+//
+//        return latlong;
+//    }
 
     //    /**
     //     * Basic Linear Conversion
@@ -89,14 +89,14 @@ public class SpatialHelper {
     //
     //         return latlong;
     //	}
-    public static LatLong convertFromXYToLatLonTo(Point xy, double minLat, double minLong, double maxLat, double maxLong) {
-
-        LatLong latlong = new LatLong();
-        latlong.setLatitude((xy.y / SpatioTextualConstants.yMaxRange * (maxLat - minLat)) + minLat);
-        latlong.setLongitude((xy.x / SpatioTextualConstants.xMaxRange * (maxLong - minLong)) + minLong);
-
-        return latlong;
-    }
+//    public static LatLong convertFromXYToLatLonTo(Point xy, double minLat, double minLong, double maxLat, double maxLong) {
+//
+//        LatLong latlong = new LatLong();
+//        latlong.setLatitude((xy.y / SpatioTextualConstants.yMaxRange * (maxLat - minLat)) + minLat);
+//        latlong.setLongitude((xy.x / SpatioTextualConstants.xMaxRange * (maxLong - minLong)) + minLong);
+//
+//        return latlong;
+//    }
 
     public static Double getArea(Rectangle rect) {
         return (rect.max.x - rect.min.x) * (rect.max.y - rect.min.y);
@@ -329,10 +329,10 @@ public class SpatialHelper {
                 new Point(Math.max(rect1.max.x, rect2.max.x), Math.max(rect1.max.y, rect2.max.y)));
     }
 
-    public static Rectangle expand(Rectangle rect1, Double area) {
-        return new Rectangle(new Point(Math.max(rect1.min.x - area, 0), Math.max(rect1.min.y - area, 0)),
-                new Point(Math.min(rect1.max.x + area, SpatioTextualConstants.xMaxRange), Math.min(rect1.max.y + area, SpatioTextualConstants.yMaxRange)));
-    }
+//    public static Rectangle expand(Rectangle rect1, Double area) {
+//        return new Rectangle(new Point(Math.max(rect1.min.x - area, 0), Math.max(rect1.min.y - area, 0)),
+//                new Point(Math.min(rect1.max.x + area, SpatioTextualConstants.xMaxRange), Math.min(rect1.max.y + area, SpatioTextualConstants.yMaxRange)));
+//    }
 
     /**
      * Splits a partition into two partitions.

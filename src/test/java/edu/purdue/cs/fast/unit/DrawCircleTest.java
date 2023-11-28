@@ -1,4 +1,4 @@
-package edu.purdue.cs.fast;
+package edu.purdue.cs.fast.unit;
 
 import org.junit.jupiter.api.Test;
 

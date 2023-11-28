@@ -1,7 +1,7 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.gson.Gson;
-import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
@@ -19,9 +19,10 @@ public class PlacesExperiment extends Experiment<Place> {
     protected int numObjects;
     protected int numKeywords;
     protected double srRate;
-    private Random randomizer;
+    protected int maxRange;
+    private final Random randomizer;
 
-    public PlacesExperiment(String outputPath, String inputPath) {
+    public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, int maxRange) {
         this.name = "places";
         this.outputPath = outputPath;
         this.inputPath = inputPath;
@@ -29,19 +30,8 @@ public class PlacesExperiment extends Experiment<Place> {
         this.numObjects = 100000;
         this.numKeywords = 3;
         this.srRate = 0.01;
-
-        int fineGridGran = 512;
-        int maxLevel = 9;
-
-        this.fast = new FAST(
-                new Rectangle(
-                        new Point(0.0, 0.0),
-                        new Point(SpatioTextualConstants.xMaxRange, SpatioTextualConstants.yMaxRange)
-                ),
-                fineGridGran,
-                maxLevel
-        );
-
+        this.index = index;
+        this.maxRange = maxRange;
         this.randomizer = new Random(seed);
     }
 
@@ -80,7 +70,7 @@ public class PlacesExperiment extends Experiment<Place> {
             System.out.println("Done! Time=" + (end - start));
 
             for (Place place : places) {
-                place.scale(new Point(minX, minY), new Point(maxX, maxY), SpatioTextualConstants.xMaxRange - 1);
+                place.scale(new Point(minX, minY), new Point(maxX, maxY), maxRange - 1);
             }
 
             System.out.print("Shuffling -> ");
@@ -99,11 +89,11 @@ public class PlacesExperiment extends Experiment<Place> {
     @Override
     protected void generateQueries(List<Place> places) {
         this.queries = new ArrayList<>();
-        int r = (int) (SpatioTextualConstants.xMaxRange * srRate);
+        int r = (int) (maxRange * srRate);
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
             int et = randomizer.nextInt(i, numQueries + numObjects + i);
-            queries.add(place.toMinimalRangeQuery(i, r, SpatioTextualConstants.xMaxRange, numKeywords, et));
+            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, et));
         }
     }
 

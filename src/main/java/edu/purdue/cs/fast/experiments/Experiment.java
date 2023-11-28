@@ -1,11 +1,10 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.common.base.Stopwatch;
-import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
-import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class Experiment<T> {
     protected String name;
     protected String outputPath;
-    protected FAST fast;
+    protected SpatialKeywordIndex index;
     protected List<Query> queries;
     protected List<DataObject> objects;
     protected long creationTime;
@@ -43,7 +42,7 @@ public abstract class Experiment<T> {
     public void create() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
-            fast.addContinuousQuery(q);
+            index.addContinuousQuery(q);
         }
         stopwatch.stop();
 //        createMem = GraphLayout.parseInstance(fast).totalSize();
@@ -58,7 +57,7 @@ public abstract class Experiment<T> {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
-            List<Query> res = fast.searchQueries(o);
+            List<Query> res = index.searchQueries(o);
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();
@@ -84,8 +83,7 @@ public abstract class Experiment<T> {
         boolean fileExists = outputFile.exists();
         if (!outputFile.isDirectory()) {
             try {
-                if (!fileExists) {
-                    outputFile.createNewFile();
+                if (!fileExists && outputFile.createNewFile()) {
                     StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem,gran,max_x,max_y");
                     for (String k : keys) {
                         header.append(",").append(k);
@@ -102,7 +100,7 @@ public abstract class Experiment<T> {
                 BufferedWriter bw = new BufferedWriter(fw);
 
                 StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + createMem +
-                        "," + searchMem + "," + fast.gridGranularity + "," + fast.bounds.max.x + "," + fast.bounds.max.y);
+                        "," + searchMem); // + "," + index.gridGranularity + "," + index.bounds.max.x + "," + index.bounds.max.y
                 for (String v : values) {
                     line.append(",").append(v);
                 }
