@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.*;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.io.*;
@@ -20,7 +19,7 @@ public class PlacesExperiment extends Experiment<Place> {
     protected int numKeywords;
     protected double srRate;
     protected int maxRange;
-    private final Random randomizer;
+    protected final Random randomizer;
 
     public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, int maxRange) {
         this.name = "places";
@@ -92,8 +91,7 @@ public class PlacesExperiment extends Experiment<Place> {
         int r = (int) (maxRange * srRate);
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
-            int et = randomizer.nextInt(i, numQueries + numObjects + i);
-            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, et));
+            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numQueries + numObjects + 1));
         }
     }
 
@@ -102,8 +100,7 @@ public class PlacesExperiment extends Experiment<Place> {
         this.objects = new ArrayList<>();
         for (int i = numQueries + 1; i < numQueries + numObjects; i++) {
             Place place = places.get(i);
-            int et = randomizer.nextInt(i, numQueries + numObjects + i);
-            objects.add(place.toDataObject(i - numQueries - 1, et));
+            objects.add(place.toDataObject(i - numQueries - 1, numQueries + numObjects + 1));
         }
     }
 

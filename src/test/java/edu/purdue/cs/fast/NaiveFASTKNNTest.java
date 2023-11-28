@@ -1,7 +1,7 @@
 package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
-import edu.purdue.cs.fast.baselines.naive.models.KNNQuery;
+import edu.purdue.cs.fast.baselines.naive.models.NaiveKNNQuery;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Query;
@@ -19,10 +19,10 @@ class NaiveFASTKNNTest {
 
     public NaiveFASTKNNTest() {
         this.queries = List.of(
-                new KNNQuery(1, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 1,8),
-                new KNNQuery(2, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 2,7),
-                new KNNQuery(3, List.of("k1"), new Point(8.0, 5.0), 3, null, 3,11),
-                new KNNQuery(4, List.of("k2", "k3"), new Point(1.0, 7.0), 2, null, 4,9)
+                new NaiveKNNQuery(1, List.of("k1", "k2"), new Point(5.0, 5.0), 3, null, 1,8),
+                new NaiveKNNQuery(2, List.of("k1", "k2"), new Point(7.0, 7.0), 2, null, 2,7),
+                new NaiveKNNQuery(3, List.of("k1"), new Point(8.0, 5.0), 3, null, 3,11),
+                new NaiveKNNQuery(4, List.of("k2", "k3"), new Point(1.0, 7.0), 2, null, 4,9)
         );
 
         // TODO - Address tie-breaking

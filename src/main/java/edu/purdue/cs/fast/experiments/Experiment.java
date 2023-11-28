@@ -43,6 +43,11 @@ public abstract class Experiment<T> {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
             index.addContinuousQuery(q);
+
+//            if (index instanceof FAST)
+//                System.out.println("FAST - Qid:" + q.id + " st: " + q.st + " et: " + q.et + " t: " + FAST.timestamp);
+//            else if (index instanceof NaiveFAST)
+//                System.out.println("NaiveFAST - Qid:" + q.id + " st: " + q.st + " et: " + q.et + " t: " + NaiveFAST.timestamp);
         }
         stopwatch.stop();
 //        createMem = GraphLayout.parseInstance(fast).totalSize();
@@ -57,6 +62,12 @@ public abstract class Experiment<T> {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
+//
+//            if (index instanceof FAST)
+//                System.out.println("FAST - Oid:" + o.id + " st: " + o.st + " et: " + o.et + " t: " + FAST.timestamp);
+//            else if (index instanceof NaiveFAST)
+//                System.out.println("NaiveFAST - Oid:" + o.id + " st: " + o.st + " et: " + o.et + " t: " + NaiveFAST.timestamp);
+
             List<Query> res = index.searchQueries(o);
             if (saveTimeline) {
                 assert searchTimeWatch != null;
@@ -84,7 +95,7 @@ public abstract class Experiment<T> {
         if (!outputFile.isDirectory()) {
             try {
                 if (!fileExists && outputFile.createNewFile()) {
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem,gran,max_x,max_y");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem");
                     for (String k : keys) {
                         header.append(",").append(k);
                     }
@@ -100,7 +111,7 @@ public abstract class Experiment<T> {
                 BufferedWriter bw = new BufferedWriter(fw);
 
                 StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + createMem +
-                        "," + searchMem); // + "," + index.gridGranularity + "," + index.bounds.max.x + "," + index.bounds.max.y
+                        "," + searchMem);
                 for (String v : values) {
                     line.append(",").append(v);
                 }

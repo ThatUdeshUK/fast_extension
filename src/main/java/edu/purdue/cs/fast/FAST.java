@@ -46,8 +46,6 @@ public class FAST implements SpatialKeywordIndex {
     public static int totalVisited = 0;
     public static int spatialOverlappingQueries = 0;
     public static int timestamp = 0;
-    //    public static int queryTimeStampCounter;
-//    public static int objectTimeStampCounter;
     public static int debugQueryId = -1;
     public static int queryInsertInvListNodeCounter = 0;
     public static int queryInsertTrieNodeCounter = 0;
@@ -73,10 +71,8 @@ public class FAST implements SpatialKeywordIndex {
     public int maxInsertedLevel;
     public int minInsertedLevelInterleaved;
     public int maxInsertedLevelInterleaved;
-
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
-
     private boolean pushToLowest = false;
 
     public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
@@ -106,8 +102,6 @@ public class FAST implements SpatialKeywordIndex {
         numberOfTrieNodes = 0;
         totalTrieAccess = 0;
         timestamp = 0;
-//        queryTimeStampCounter = 0;
-//        objectTimeStampCounter = 0;
         cleaningIterator = null;
         cellBeingCleaned = null;
         lastCellCleaningDone = true;
@@ -137,6 +131,7 @@ public class FAST implements SpatialKeywordIndex {
         return sum / count;
     }
 
+    @Override
     public void addContinuousQuery(Query query) {
         timestamp++;
         if (query instanceof MinimalRangeQuery) {
@@ -266,6 +261,7 @@ public class FAST implements SpatialKeywordIndex {
         }
     }
 
+    @Override
     public List<Query> searchQueries(DataObject dataObject) {
         timestamp++;
 
@@ -359,9 +355,7 @@ public class FAST implements SpatialKeywordIndex {
         System.out.println("Bounds=" + bounds.toString());
         index.forEach((key, v) -> {
             System.out.println("Level: " + v.level + ", Key: " + v.coordinate + " -->");
-            v.textualIndex.forEach((keyword, node) -> {
-                printTextualNode(keyword, node, 1);
-            });
+            v.textualIndex.forEach((keyword, node) -> printTextualNode(keyword, node, 1));
         });
     }
 

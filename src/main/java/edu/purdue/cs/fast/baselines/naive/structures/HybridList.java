@@ -1,6 +1,6 @@
 package edu.purdue.cs.fast.baselines.naive.structures;
 
-import edu.purdue.cs.fast.baselines.naive.models.KNNQuery;
+import edu.purdue.cs.fast.baselines.naive.models.NaiveKNNQuery;
 import edu.purdue.cs.fast.models.MinimalRangeQuery;
 import edu.purdue.cs.fast.models.Query;
 
@@ -9,7 +9,7 @@ import java.util.List;
 
 public class HybridList {
     private final ArrayList<MinimalRangeQuery> mbrQueries;
-    private final ArrayList<KNNQuery> kNNQueries;
+    private final ArrayList<NaiveKNNQuery> kNNQueries;
 
     // TODO - Remove eager init
     public HybridList() {
@@ -21,7 +21,7 @@ public class HybridList {
         return this.mbrQueries;
     }
 
-    public List<KNNQuery> kNNQueries() {
+    public List<NaiveKNNQuery> kNNQueries() {
         return this.kNNQueries;
     }
 
@@ -34,8 +34,8 @@ public class HybridList {
     public void add(Query query) {
         if (query instanceof MinimalRangeQuery) {
             this.mbrQueries.add((MinimalRangeQuery) query);
-        } else if (query instanceof KNNQuery) {
-            this.kNNQueries.add((KNNQuery) query);
+        } else if (query instanceof NaiveKNNQuery) {
+            this.kNNQueries.add((NaiveKNNQuery) query);
         }
     }
 
@@ -48,16 +48,16 @@ public class HybridList {
     public void remove(Query query) {
         if (query instanceof MinimalRangeQuery) {
             this.mbrQueries.remove((MinimalRangeQuery) query);
-        } else if (query instanceof KNNQuery) {
-            this.kNNQueries.remove((KNNQuery) query);
+        } else if (query instanceof NaiveKNNQuery) {
+            this.kNNQueries.remove((NaiveKNNQuery) query);
         }
     }
 
     public boolean contains(Query query) {
         if (query instanceof MinimalRangeQuery) {
             return this.mbrQueries.contains((MinimalRangeQuery) query);
-        } else if (query instanceof KNNQuery) {
-            return this.kNNQueries.contains((KNNQuery) query);
+        } else if (query instanceof NaiveKNNQuery) {
+            return this.kNNQueries.contains((NaiveKNNQuery) query);
         }
         return false;
     }

@@ -1,5 +1,3 @@
-package edu.purdue.cs.fast.baselines.naive;
-
 /**
  * Copyright Jul 5, 2015
  * Author : Ahmed Mahmood
@@ -23,6 +21,7 @@ package edu.purdue.cs.fast.baselines.naive;
  * This version is meant for the fair comparison of with the state of the art
  * index that does not have any other cluster and tornado related attributes
  */
+package edu.purdue.cs.fast.baselines.naive;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,10 +32,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import edu.purdue.cs.fast.SpatialKeywordIndex;
-import edu.purdue.cs.fast.baselines.naive.models.KNNQuery;
+import edu.purdue.cs.fast.baselines.naive.models.NaiveKNNQuery;
 import edu.purdue.cs.fast.baselines.naive.models.ReinsertEntry;
 import edu.purdue.cs.fast.helper.SpatialHelper;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.baselines.naive.structures.*;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.KeywordFrequency;
@@ -47,14 +45,8 @@ public class NaiveFAST implements SpatialKeywordIndex {
     public static int Trie_SPLIT_THRESHOLD = 2;
     public static int Degradation_Ratio = 2;
     public static int Trie_OVERLALL_MERGE_THRESHOLD = 2;
-    public static int CLEANING_INTERVAL = 1000;
-    public static int NUMBER_OF_ACTIVE_QUERIES = 1000000;
     public static int MAX_ENTRIES_PER_CLEANING_INTERVAL = 10;
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
-    public static int totalVisited = 0;
-    public static int spatialOverlappingQueries = 0;
-//    public static int queryTimeStampCounter;
-//    public static int objectTimeStampCounter;
     public static int timestamp;
     public static int debugQueryId = -1;
     public static int queryInsertInvListNodeCounter = 0;
@@ -120,35 +112,19 @@ public class NaiveFAST implements SpatialKeywordIndex {
         return (level << 22) + y * gridGranularity + x;
     }
 
-    public double getAverageRankedInvListSize() {
-        double sum = 0.0, count = 0.0;
-        ConcurrentHashMap<Integer, SpatialCell> levelIndex = index;
-        for (SpatialCell cell : levelIndex.values()) {
-            if (cell.textualIndex != null) {
-                for (TextualNode node : cell.textualIndex.values()) {
-                    if (node instanceof QueryListNode && !((QueryListNode) node).queries.isEmpty()) {
-                        count++;
-                        sum += ((QueryListNode) node).queries.size();
-                    }
-                    if (node instanceof QueryTrieNode && ((QueryTrieNode) node).queries != null && !((QueryTrieNode) node).queries.isEmpty()) {
-                        count++;
-                        sum += ((QueryTrieNode) node).queries.size();
-                    }
-                }
-            }
-        }
-        return sum / count;
-    }
-
+    @Override
     public void addContinuousQuery(Query query) {
+        timestamp++;
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
         } else if (query instanceof KNNQuery) {
-            addContinuousKNNQuery((KNNQuery) query);
+            addContinuousKNNQuery(NaiveKNNQuery.fromKNNQuery((KNNQuery) query));
+        } else if (query instanceof NaiveKNNQuery) {
+            addContinuousKNNQuery((NaiveKNNQuery) query);
         }
     }
 
-    public void addContinuousKNNQuery(KNNQuery query) {
+    public void addContinuousKNNQuery(NaiveKNNQuery query) {
         if (minInsertedLevel == -1) {
             maxInsertedLevel = maxLevel;
             minInsertedLevel = maxLevel;
@@ -180,8 +156,6 @@ public class NaiveFAST implements SpatialKeywordIndex {
     }
 
     private void reinsertContinuous(ArrayList<ReinsertEntry> currentLevelQueries, int level) {
-        timestamp++;
-
         while (level >= 0 && !currentLevelQueries.isEmpty()) {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
@@ -260,10 +234,6 @@ public class NaiveFAST implements SpatialKeywordIndex {
             cleaningIterator.remove();
     }
 
-    public Integer getCountPerKeywordsAll(ArrayList<String> keywords) {
-        return 0;
-    }
-
     public Integer mapDataPointToPartition(int level, Point point, double step, int granularity) {
         double x = point.x;
         double y = point.y;
@@ -272,6 +242,7 @@ public class NaiveFAST implements SpatialKeywordIndex {
         return calcCoordinate(level, xCell, yCell, granularity);
     }
 
+    @Override
     public List<Query> searchQueries(DataObject dataObject) {
         timestamp++;
         List<Query> result = new LinkedList<>();
@@ -324,9 +295,7 @@ public class NaiveFAST implements SpatialKeywordIndex {
         System.out.println("Bounds=" + bounds.toString());
         index.forEach((key, v) -> {
             System.out.println("Level: " + v.level + ", Key: " + v.coordinate + " -->");
-            v.textualIndex.forEach((keyword, node) -> {
-                printTextualNode(keyword, node, 1);
-            });
+            v.textualIndex.forEach((keyword, node) -> printTextualNode(keyword, node, 1));
         });
     }
 

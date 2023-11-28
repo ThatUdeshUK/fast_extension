@@ -1,7 +1,6 @@
 package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 
@@ -17,6 +16,7 @@ public class Run {
         int fineGridGran = 512;
         int maxLevel = 9;
         int maxRange = 512;
+        boolean pushToLowest = false;
 
         List<Integer> numQueriesList = List.of(
 //                100000,
@@ -35,6 +35,8 @@ public class Run {
                     fineGridGran,
                     maxLevel
             );
+            if (pushToLowest)
+                fast.setPushToLowest();
 
             PlacesKNNExperiment experiment = new PlacesKNNExperiment(
                     Paths.get(args[0], "results/output_places_US_knn_seacnn_mem.csv").toString(),
@@ -48,7 +50,6 @@ public class Run {
                     k,
                     maxRange
             );
-//            experiment.setPushToLowest();
 //            experiment.setSaveOutput();
             experiment.setSaveStats(false);
 

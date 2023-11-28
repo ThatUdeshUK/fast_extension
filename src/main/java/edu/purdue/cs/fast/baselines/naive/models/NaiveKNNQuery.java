@@ -1,6 +1,5 @@
 package edu.purdue.cs.fast.baselines.naive.models;
 
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.models.*;
 
@@ -8,17 +7,29 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-public class KNNQuery extends Query {
+public class NaiveKNNQuery extends Query {
     public Point location;
     public double ar;
     public int k;
     public PriorityQueue<DataObject> monitoredObjects;
 
-    public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, int st, int et) {
+    public NaiveKNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, int st, int et) {
         super(id, keywords, predicate, st, et);
         this.location = location;
         this.k = k;
         this.ar = Double.MAX_VALUE;
+    }
+
+    public static NaiveKNNQuery fromKNNQuery(KNNQuery query) {
+        return new NaiveKNNQuery(
+                query.id,
+                query.keywords,
+                query.location,
+                query.k,
+                query.predicate,
+                (int) query.st,
+                (int) query.et
+        );
     }
 
     public void pushWithLimitK(DataObject obj) {

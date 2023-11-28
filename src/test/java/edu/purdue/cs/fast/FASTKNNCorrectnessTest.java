@@ -1,23 +1,18 @@
 package edu.purdue.cs.fast;
 
-import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
+import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
+import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
 class FASTKNNCorrectnessTest {
-    private final PlacesKNNExperiment experiment;
+    private final PlacesKNNExpireExperiment experiment;
 
     public FASTKNNCorrectnessTest() {
         FAST fast = new FAST(
@@ -29,7 +24,7 @@ class FASTKNNCorrectnessTest {
                 9
         );
 
-        experiment = new PlacesKNNExperiment(
+        experiment = new PlacesKNNExpireExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 fast,
@@ -77,22 +72,58 @@ class FASTKNNCorrectnessTest {
     }
 
     private List<List<Integer>> readGroundTruth() {
-        String path = System.getProperty("user.dir") + "/data/places_knn_ground_truth_seed_7.csv";
-        ArrayList<List<Integer>> out = new ArrayList<>();
+        System.out.println("Running naive FAST KNN as the ground truth");
+        NaiveFAST goldFast = new NaiveFAST(
+                new Rectangle(
+                        new Point(0.0, 0.0),
+                        new Point(512, 512)
+                ),
+                512,
+                9
+        );
 
-        try {
-            FileReader fileReader = new FileReader(path);
-            BufferedReader br = new BufferedReader(fileReader);
+        PlacesKNNExpireExperiment goldExperiment = new PlacesKNNExpireExperiment(
+                null,
+                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
+                goldFast,
+                "places_knn_seacnn",
+                1000,
+                100,
+                5,
+                0.0,
+                5,
+                512
+        );
+        goldExperiment.setSeed(7);
+        goldExperiment.setSaveStats(false);
 
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] trimed = line.substring(1, line.length() - 1).split(", ");
-                out.add(Arrays.stream(trimed).filter((q) -> !q.isBlank()).map(Integer::parseInt).toList());
-            }
-        } catch (IOException ignore) {
+        goldExperiment.init();
+        goldExperiment.create();
+        goldExperiment.search();
 
-        }
+        List<List<Integer>> results = goldExperiment.getResults().stream()
+                .map((list) -> list.stream().map((q) -> q.id).toList())
+                .toList();
 
-        return out;
+        System.out.println("Naive FAST KNN Done!");
+
+        return results;
+//        String path = System.getProperty("user.dir") + "/data/places_knn_ground_truth_seed_7.csv";
+//        ArrayList<List<Integer>> out = new ArrayList<>();
+//
+//        try {
+//            FileReader fileReader = new FileReader(path);
+//            BufferedReader br = new BufferedReader(fileReader);
+//
+//            String line;
+//            while ((line = br.readLine()) != null) {
+//                String[] trimed = line.substring(1, line.length() - 1).split(", ");
+//                out.add(Arrays.stream(trimed).filter((q) -> !q.isBlank()).map(Integer::parseInt).toList());
+//            }
+//        } catch (IOException ignore) {
+//
+//        }
+//
+//        return out;
     }
 }

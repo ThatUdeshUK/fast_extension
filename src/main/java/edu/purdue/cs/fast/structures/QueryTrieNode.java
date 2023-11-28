@@ -104,7 +104,7 @@ public class QueryTrieNode extends TextualNode {
             results.add(q);
         }
         if (q instanceof KNNQuery query) {
-            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)) {
+            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && query.et > FAST.timestamp) {
                 results.add(query);
                 return query.pushUntilK(obj);
             }

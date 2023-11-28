@@ -41,7 +41,7 @@ public class QueriesReader extends FileSpout {
 	static int prevLocCount = 0;
 
 	public static RandomGenerator r;
-	static Integer i = new Integer(0);
+	static Integer i = 0;
 
 	public void ack(Object msgId) {
 	}

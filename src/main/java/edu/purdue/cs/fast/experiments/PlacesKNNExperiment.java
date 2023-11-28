@@ -2,15 +2,13 @@ package edu.purdue.cs.fast.experiments;
 
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
-import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PlacesKNNExperiment extends PlacesExperiment {
-    private final int k;
-    private boolean pushToLowest;
+    protected final int k;
 
     public PlacesKNNExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
                                int numQueries, int numObjects, int numKeywords, double srRate, int k, int maxRange) {
@@ -64,9 +62,5 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         } catch (InvalidOutputFile e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    public void setPushToLowest() {
-        this.pushToLowest = true;
     }
 }

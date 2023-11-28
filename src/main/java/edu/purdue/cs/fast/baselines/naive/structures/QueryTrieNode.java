@@ -6,9 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
-import edu.purdue.cs.fast.baselines.naive.models.KNNQuery;
+import edu.purdue.cs.fast.baselines.naive.models.NaiveKNNQuery;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextHelpers;
 import edu.purdue.cs.fast.structures.QueryNode;
@@ -24,17 +23,17 @@ public class QueryTrieNode extends TextualNode {
     }
 
     public void find(DataObject obj, ArrayList<String> keywords, int start, List<Query> results) {
-        FAST.objectSearchTrieNodeCounter++;
+        NaiveFAST.objectSearchTrieNodeCounter++;
 
         if (finalQueries != null)
             for (Query q : finalQueries) {
-                FAST.objectSearchTrieFinalNodeCounter++;
+                NaiveFAST.objectSearchTrieFinalNodeCounter++;
                 searchQueries(obj, results, q);
             }
 
         if (queries != null)
             for (Query q : queries.allQueries()) {
-                FAST.objectSearchTrieNodeCounter++;
+                NaiveFAST.objectSearchTrieNodeCounter++;
                 searchQueries(obj, results, q);
             }
 
@@ -45,17 +44,17 @@ public class QueryTrieNode extends TextualNode {
                 if (node == null)
                     continue;
 
-                FAST.objectSearchTrieHashAccess++;
+                NaiveFAST.objectSearchTrieHashAccess++;
                 if (node instanceof QueryNode) {
-                    FAST.objectSearchTrieNodeCounter++;
+                    NaiveFAST.objectSearchTrieNodeCounter++;
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
                         if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
                                 query.et > NaiveFAST.timestamp)
                             results.add(query);
                     }
-                    if (((QueryNode) node).query instanceof KNNQuery) {
-                        KNNQuery query = (KNNQuery) ((QueryNode) node).query;
+                    if (((QueryNode) node).query instanceof NaiveKNNQuery) {
+                        NaiveKNNQuery query = (NaiveKNNQuery) ((QueryNode) node).query;
                         if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords) &&
                                 query.et > NaiveFAST.timestamp) {
                             query.pushWithLimitK(obj);
@@ -65,14 +64,14 @@ public class QueryTrieNode extends TextualNode {
                     }
                 } else if (node instanceof QueryListNode) {
                     for (MinimalRangeQuery query : ((QueryListNode) node).queries.mbrQueries()) {
-                        FAST.objectSearchTrieNodeCounter++;
+                        NaiveFAST.objectSearchTrieNodeCounter++;
                         if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange)
                                 && TextHelpers.containsTextually(keywords, query.keywords) &&
                                 query.et > NaiveFAST.timestamp)
                             results.add(query);
                     }
-                    for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
-                        FAST.objectSearchTrieNodeCounter++;
+                    for (NaiveKNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
+                        NaiveFAST.objectSearchTrieNodeCounter++;
                         if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)  && TextHelpers.containsTextually(keywords, query.keywords) &&
                                 query.et > NaiveFAST.timestamp) {
                             query.pushWithLimitK(obj);
@@ -90,8 +89,7 @@ public class QueryTrieNode extends TextualNode {
         if (q instanceof MinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((MinimalRangeQuery) q).spatialRange)) {
             results.add(q);
         }
-        if (q instanceof KNNQuery) {
-            KNNQuery query = (KNNQuery) q;
+        if (q instanceof NaiveKNNQuery query) {
             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                     query.et > NaiveFAST.timestamp) {
                 query.pushWithLimitK(obj);
