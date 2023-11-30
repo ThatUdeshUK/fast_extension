@@ -45,9 +45,10 @@ public class Point {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof Point c))
+        if (!(o instanceof Point))
             return false;
 
+        Point c = (Point) o;
         return (Double.compare(c.x, this.x) == 0 && Double.compare(c.y, this.y) == 0);
     }
 

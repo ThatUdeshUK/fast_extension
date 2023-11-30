@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import edu.purdue.cs.fast.experiments.Experiment;
+import edu.purdue.cs.fast.experiments.PlacesExperiment;
+import edu.purdue.cs.fast.helper.CleanMethod;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.structures.*;
@@ -39,10 +42,9 @@ public class FAST implements SpatialKeywordIndex {
     public static int Trie_SPLIT_THRESHOLD = 2;
     public static int Degradation_Ratio = 2;
     public static int Trie_OVERLALL_MERGE_THRESHOLD = 2;
-    public static int CLEANING_INTERVAL = 1000;
+    public static int CLEANING_INTERVAL = 100;
     public static int NUMBER_OF_ACTIVE_QUERIES = 1000000;
     public static int MAX_ENTRIES_PER_CLEANING_INTERVAL = 10;
-    public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     public static int totalVisited = 0;
     public static int spatialOverlappingQueries = 0;
     public static int timestamp = 0;
@@ -60,11 +62,13 @@ public class FAST implements SpatialKeywordIndex {
     public static int objectSearchTrieFinalNodeCounter = 0;
     public static double localXstep;
     public static double localYstep;
+    public static int maxLevel;
+    public static CleanMethod cleanMethod = CleanMethod.NO;
+    public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     public int gridGranularity;
     public Rectangle bounds;
     public double globalXRange;
     public double globalYRange;
-    public int maxLevel;
     public SpatialCell cellBeingCleaned;
     public boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
     public int minInsertedLevel;
@@ -82,7 +86,7 @@ public class FAST implements SpatialKeywordIndex {
         this.gridGranularity = xGridGranularity;
         FAST.localXstep = (this.globalXRange / this.gridGranularity);
         FAST.localYstep = (this.globalYRange / this.gridGranularity);
-        this.maxLevel = Math.min((int) (Math.log(gridGranularity) / Math.log(2)), maxLevel);
+        FAST.maxLevel = Math.min((int) (Math.log(gridGranularity) / Math.log(2)), maxLevel);
         this.minInsertedLevel = -1;
         this.maxInsertedLevel = -1;
         this.minInsertedLevelInterleaved = -1;
@@ -105,6 +109,8 @@ public class FAST implements SpatialKeywordIndex {
         cleaningIterator = null;
         cellBeingCleaned = null;
         lastCellCleaningDone = true;
+
+        Run.logger.info("Index initialized!");
     }
 
     public static Integer calcCoordinate(int level, int x, int y, int gridGranularity) {
@@ -140,7 +146,7 @@ public class FAST implements SpatialKeywordIndex {
             addContinuousKNNQuery((KNNQuery) query);
         }
 
-//		if (queryTimeStampCounter % CLEANING_INTERVAL == 0)
+//		if (FAST.cleanMethod != CleanMethod.NO && timestamp % CLEANING_INTERVAL == 0)
 //			cleanNextSetOfEntries();
     }
 
@@ -216,7 +222,7 @@ public class FAST implements SpatialKeywordIndex {
                         si += 1;
 
                     double sj = j;
-                    if (j + 1 < x)
+                    if (j + 1 < y)
                         sj += 1;
 
                     double d = Math.sqrt((si - x) * (si - x) + (sj - y) * (sj - y));
@@ -278,10 +284,7 @@ public class FAST implements SpatialKeywordIndex {
             SpatialCell spatialCellOptimized = index.get(cellCoordinates);
             if (spatialCellOptimized != null) {
                 // TODO - DANGER you removed `keywords =`
-                if (level == maxInsertedLevel)
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
-                else
-                    spatialCellOptimized.searchQueries(dataObject, keywords, result, null);
+                spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
             }
             step /= 2;
             granualrity <<= 1;
@@ -289,10 +292,15 @@ public class FAST implements SpatialKeywordIndex {
         if (!descendingKNNQueries.isEmpty()) {
             reinsertDescendedKNNQueries(descendingKNNQueries);
         }
+
+        if (FAST.cleanMethod != CleanMethod.NO && timestamp % CLEANING_INTERVAL == 0)
+            cleanNextSetOfEntries();
+
         return result;
     }
 
     public void cleanNextSetOfEntries() {
+        Run.logger.debug("Cleaning!");
         if (cleaningIterator == null || !cleaningIterator.hasNext())
             cleaningIterator = index.entrySet().iterator();
         SpatialCell cell;
@@ -300,6 +308,7 @@ public class FAST implements SpatialKeywordIndex {
             cell = cleaningIterator.next().getValue();
         else
             cell = cellBeingCleaned;
+        Run.logger.debug("Cleaning cell: " + cell.coordinate + " at level: " + cell.level);
         boolean cleaningDone = cell.clean();
         if (!cleaningDone) {
             cellBeingCleaned = cell;
@@ -343,8 +352,12 @@ public class FAST implements SpatialKeywordIndex {
         return minkeyword;
     }
 
-    public void setPushToLowest() {
-        pushToLowest = true;
+    public void setPushToLowest(boolean pushToLowest) {
+        this.pushToLowest = pushToLowest;
+    }
+
+    public void setCleaning(CleanMethod method) {
+        FAST.cleanMethod = method;
     }
 
     public void printFrequencies() {
@@ -363,7 +376,11 @@ public class FAST implements SpatialKeywordIndex {
         if (level == 4)
             return;
 
-        System.out.print("|" + "──".repeat(level) + keyword + " -> ");
+        System.out.print("|");
+        for (int i = 0; i < level; i++) {
+            System.out.print("──");
+        }
+        System.out.print(keyword + " -> ");
 
         if (node instanceof QueryNode) {
             System.out.println(((QueryNode) node).query.id);
@@ -372,10 +389,13 @@ public class FAST implements SpatialKeywordIndex {
         } else if (node instanceof QueryTrieNode) {
             if (((QueryTrieNode) node).queries != null) {
                 printQueryList(((QueryTrieNode) node).queries);
+            } else {
+                System.out.println();
             }
-            System.out.println();
-            if (((QueryTrieNode) node).subtree != null)
+
+            if (((QueryTrieNode) node).subtree != null && !((QueryTrieNode) node).subtree.isEmpty()) {
                 ((QueryTrieNode) node).subtree.forEach((t, u) -> printTextualNode(t, u, level + 1));
+            }
         }
     }
 
@@ -384,7 +404,7 @@ public class FAST implements SpatialKeywordIndex {
         for (Query query : queries) {
             s.append(query.id).append(", ");
         }
-        System.out.print(s + "\n");
+        System.out.println(s);
     }
 
 }

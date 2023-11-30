@@ -4,9 +4,7 @@ import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.MinimalRangeQuery;
 import edu.purdue.cs.fast.models.Query;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class HybridList implements Iterable<Query> {
     private final ArrayList<MinimalRangeQuery> mbrQueries;
@@ -40,14 +38,6 @@ public class HybridList implements Iterable<Query> {
         }
     }
 
-    public void remove(Query query) {
-        if (query instanceof MinimalRangeQuery) {
-            this.mbrQueries.remove((MinimalRangeQuery) query);
-        } else if (query instanceof KNNQuery) {
-            this.kNNQueries.remove((KNNQuery) query);
-        }
-    }
-
     public boolean contains(Query query) {
         if (query instanceof MinimalRangeQuery) {
             return this.mbrQueries.contains((MinimalRangeQuery) query);
@@ -67,34 +57,70 @@ public class HybridList implements Iterable<Query> {
 
     @Override
     public Iterator<Query> iterator() {
-        return new HybridIterator(this.mbrQueries, this.kNNQueries);
-    }
-}
-
-class HybridIterator implements Iterator<Query> {
-    private int i = 0;
-    private final List<MinimalRangeQuery> a;
-    private final List<KNNQuery> b;
-
-    public HybridIterator(List<MinimalRangeQuery> mbrQueries, List<KNNQuery> knnQueries) {
-        this.a = mbrQueries;
-        this.b = knnQueries;
+        return new HybridIterator();
     }
 
-    @Override
-    public boolean hasNext() {
-        return i < a.size() + b.size();
-    }
+    private class HybridIterator implements Iterator<Query> {
+        int cursor;       // index of next element to return
+        int lastRet = -1; // index of last element returned; -1 if no such
+        int expectedCount = mbrQueries.size() + kNNQueries.size();
 
-    @Override
-    public Query next() {
-        Query out = null;
-        if (i < a.size()) {
-            out = a.get(i);
-        } else if (i - a.size() < b.size()) {
-            out = b.get(i - a.size());
+        HybridIterator() {}
+
+        @Override
+        public boolean hasNext() {
+            return cursor < mbrQueries.size() + kNNQueries.size();
         }
-        i++;
-        return out;
+
+        @Override
+        public void remove() {
+            if (lastRet < 0)
+                throw new IllegalStateException();
+            checkForComodification();
+
+            try {
+                Query query = getItemAtIndex(lastRet);
+
+                if (query instanceof MinimalRangeQuery) {
+                    mbrQueries.remove((MinimalRangeQuery) query);
+                } else if (query instanceof KNNQuery) {
+                    kNNQueries.remove((KNNQuery) query);
+                }
+
+                cursor = lastRet;
+                lastRet = -1;
+                expectedCount--;
+            } catch (IndexOutOfBoundsException ex) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @Override
+        public Query next() {
+            checkForComodification();
+            int i = cursor;
+            if (i >= mbrQueries.size() + kNNQueries.size())
+                throw new NoSuchElementException();
+
+            Query out = getItemAtIndex(i);
+            lastRet = i;
+            cursor = i + 1;
+            return out;
+        }
+
+        private Query getItemAtIndex(int i) {
+            Query out = null;
+            if (i < mbrQueries.size()) {
+                out = mbrQueries.get(i);
+            } else if (i - mbrQueries.size() < kNNQueries.size()) {
+                out = kNNQueries.get(i - mbrQueries.size());
+            }
+            return out;
+        }
+
+        final void checkForComodification() {
+            if (expectedCount != mbrQueries.size() + kNNQueries.size())
+                throw new ConcurrentModificationException();
+        }
     }
 }

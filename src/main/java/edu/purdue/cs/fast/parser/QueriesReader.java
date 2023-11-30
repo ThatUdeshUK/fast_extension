@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import edu.purdue.cs.fast.helper.Command;
-import edu.purdue.cs.fast.helper.LatLong;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.helper.QueryType;
 import edu.purdue.cs.fast.helper.RandomGenerator;

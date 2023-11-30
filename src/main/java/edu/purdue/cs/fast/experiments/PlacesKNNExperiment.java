@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
+import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.parser.Place;
@@ -11,15 +12,8 @@ public class PlacesKNNExperiment extends PlacesExperiment {
     protected final int k;
 
     public PlacesKNNExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
-                               int numQueries, int numObjects, int numKeywords, double srRate, int k, int maxRange) {
-        super(outputPath, inputPath, index, maxRange);
-
-        this.name = name;
-        this.numQueries = numQueries;
-        this.numObjects = numObjects;
-        this.numKeywords = numKeywords;
-        this.srRate = srRate;
-
+                               int numQueries, int numObjects, int numKeywords, int k, int maxRange) {
+        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, 0.0, maxRange);
         this.k = k;
     }
 
@@ -39,13 +33,13 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         System.gc();
         System.gc();
 
-        System.out.print("Creating index -> ");
+        Run.logger.info("Creating index!");
         create();
-        System.out.println("Done! Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Time=" + this.creationTime);
 
-        System.out.print("Searching -> ");
+        Run.logger.info("Searching!");
         search();
-        System.out.println("Done! Time=" + searchTime);
+        Run.logger.info("Search Done! Time=" + searchTime);
 
         List<String> headers = new ArrayList<>();
         headers.add("num_queries");
@@ -60,7 +54,7 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         try {
             save(headers, values);
         } catch (InvalidOutputFile e) {
-            System.out.println(e.getMessage());
+            Run.logger.error(e.getMessage());
         }
     }
 }

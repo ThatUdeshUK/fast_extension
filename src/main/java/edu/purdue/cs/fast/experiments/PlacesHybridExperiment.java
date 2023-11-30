@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
+import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.SpatioTextualConstants;
@@ -12,30 +13,10 @@ public class PlacesHybridExperiment extends PlacesExperiment {
     private final double knnRatio;
     private final int k;
 
-    public PlacesHybridExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, int maxRange) {
-        super(outputPath, inputPath, index, maxRange);
-
-        this.name = "places_knn_00";
-        this.numQueries = 2500000;
-        this.numObjects = 100000;
-        this.numKeywords = 3;
-        this.srRate = 0.01;
-
-        this.k = 5;
-        this.knnRatio = 0.0;
-    }
-
     public PlacesHybridExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
                                   int numQueries, int numObjects, int numKeywords, double srRate, int k,
                                   double knnRatio, int maxRange) {
-        super(outputPath, inputPath, index, maxRange);
-
-        this.name = name;
-        this.numQueries = numQueries;
-        this.numObjects = numObjects;
-        this.numKeywords = numKeywords;
-        this.srRate = srRate;
-
+        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, srRate, maxRange);
         this.k = k;
         this.knnRatio = knnRatio;
     }
@@ -59,13 +40,13 @@ public class PlacesHybridExperiment extends PlacesExperiment {
     public void run() {
         init();
 
-        System.out.print("Creating index -> ");
+        Run.logger.info("Creating index!");
         create();
-        System.out.println("Done! Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Time=" + this.creationTime);
 
-        System.out.print("Searching -> ");
+        Run.logger.info("Searching!");
         search();
-        System.out.println("Done! Time=" + searchTime);
+        Run.logger.info("Search Done! Time=" + searchTime);
 
         List<String> headers = new ArrayList<>();
         headers.add("num_queries");
@@ -84,7 +65,7 @@ public class PlacesHybridExperiment extends PlacesExperiment {
         try {
             save(headers, values);
         } catch (InvalidOutputFile e) {
-            System.out.println(e.getMessage());
+            Run.logger.error(e.getMessage());
         }
     }
 }

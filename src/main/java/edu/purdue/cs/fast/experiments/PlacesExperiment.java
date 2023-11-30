@@ -1,6 +1,7 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.gson.Gson;
+import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.*;
@@ -21,14 +22,15 @@ public class PlacesExperiment extends Experiment<Place> {
     protected int maxRange;
     protected final Random randomizer;
 
-    public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, int maxRange) {
-        this.name = "places";
+    public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
+                            int numQueries, int numObjects, int numKeywords, double srRate, int maxRange) {
+        this.name = name;
         this.outputPath = outputPath;
         this.inputPath = inputPath;
-        this.numQueries = 1000000;
-        this.numObjects = 100000;
-        this.numKeywords = 3;
-        this.srRate = 0.01;
+        this.numQueries = numQueries;
+        this.numObjects = numObjects;
+        this.numKeywords = numKeywords;
+        this.srRate = srRate;
         this.index = index;
         this.maxRange = maxRange;
         this.randomizer = new Random(seed);
@@ -48,7 +50,7 @@ public class PlacesExperiment extends Experiment<Place> {
             BufferedReader br = new BufferedReader(fileReader);
             int lineCount = numQueries + numObjects;
 
-            System.out.print("Parsing the Places file -> ");
+            Run.logger.info("Parsing the Places file!");
             long start = System.currentTimeMillis();
             Gson gson = new Gson();
             while (places.size() < lineCount) {
@@ -66,17 +68,17 @@ public class PlacesExperiment extends Experiment<Place> {
                 }
             }
             long end = System.currentTimeMillis();
-            System.out.println("Done! Time=" + (end - start));
+            Run.logger.info("Done! Time=" + (end - start));
 
             for (Place place : places) {
                 place.scale(new Point(minX, minY), new Point(maxX, maxY), maxRange - 1);
             }
 
-            System.out.print("Shuffling -> ");
+            Run.logger.info("Shuffling!");
             start = System.currentTimeMillis();
             Collections.shuffle(places, randomizer);
             end = System.currentTimeMillis();
-            System.out.println("Done! Time=" + (end - start));
+            Run.logger.info("Shuffling Done! Time=" + (end - start));
         } catch (IOException e) {
             throw new RuntimeException("Wrong path is given: " + inputPath);
         }
@@ -108,13 +110,13 @@ public class PlacesExperiment extends Experiment<Place> {
     public void run() {
         init();
 
-        System.out.print("Creating index -> ");
+        Run.logger.info("Creating index!");
         create();
-        System.out.println("Done! Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Time=" + this.creationTime);
 
-        System.out.print("Searching -> ");
+        Run.logger.info("Searching!");
         search();
-        System.out.println("Done! Time=" + searchTime);
+        Run.logger.info("Search Done! Time=" + searchTime);
 
         List<String> headers = new ArrayList<>();
         headers.add("num_queries");
@@ -129,7 +131,7 @@ public class PlacesExperiment extends Experiment<Place> {
         try {
             save(headers, values);
         } catch (InvalidOutputFile e) {
-            System.out.println(e.getMessage());
+            Run.logger.error(e.getMessage());
         }
     }
 }

@@ -45,8 +45,10 @@ public class Rectangle {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof Rectangle c))
+        if (!(o instanceof Rectangle))
             return false;
+
+        Rectangle c = (Rectangle) o;
         return (c.min.equals(this.min) && c.max.equals(this.max));
     }
 

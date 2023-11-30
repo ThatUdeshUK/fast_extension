@@ -21,6 +21,7 @@ package edu.purdue.cs.fast.helper;
 
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
+import edu.purdue.cs.fast.parser.LatLong;
 
 import java.util.ArrayList;
 
@@ -305,6 +306,17 @@ public class SpatialHelper {
             return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) <= ar * ar;
         }
         return false;
+    }
+
+    public static boolean overlapsSpatially(Rectangle bounds, Point location, double ar) {
+        Point boundCenter = new Point((bounds.max.x + bounds.min.x)/2, (bounds.max.y + bounds.min.y)/2);
+        boolean overlap = overlapsSpatially(boundCenter, location, ar);
+
+        // TODO - KNN Query shrinks into a cell
+        if (overlapsSpatially(location, bounds)) {
+            return true;
+        }
+        return overlap;
     }
 
     public static Boolean overlapsSpatially(Rectangle rectangle1, Rectangle rectangle2) {

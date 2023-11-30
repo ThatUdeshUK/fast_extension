@@ -303,17 +303,17 @@ public class NaiveFAST implements SpatialKeywordIndex {
         if (level == 4)
             return;
 
-        System.out.print("|" + "──".repeat(level) + keyword + " -> ");
+//        System.out.print("|" + "──".repeat(level) + keyword + " -> ");
 
         if (node instanceof QueryNode) {
             System.out.println(((QueryNode) node).query.id);
         } else if (node instanceof QueryListNode) {
             List<Query> queries = ((QueryListNode) node).queries.allQueries();
-            System.out.println(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
+//            System.out.println(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
         } else if (node instanceof QueryTrieNode) {
             if (((QueryTrieNode) node).queries != null) {
                 List<Query> queries = ((QueryTrieNode) node).queries.allQueries();
-                System.out.print(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
+//                System.out.print(String.join(", ", queries.stream().map((Query q) -> q.id + "").toList()));
             }
             System.out.println();
             if (((QueryTrieNode) node).subtree != null)

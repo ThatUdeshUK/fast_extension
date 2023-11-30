@@ -89,7 +89,8 @@ public class QueryTrieNode extends TextualNode {
         if (q instanceof MinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((MinimalRangeQuery) q).spatialRange)) {
             results.add(q);
         }
-        if (q instanceof NaiveKNNQuery query) {
+        if (q instanceof NaiveKNNQuery) {
+            NaiveKNNQuery query = (NaiveKNNQuery) q;
             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                     query.et > NaiveFAST.timestamp) {
                 query.pushWithLimitK(obj);

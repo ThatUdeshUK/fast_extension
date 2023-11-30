@@ -2,6 +2,7 @@ package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
+import edu.purdue.cs.fast.helper.CleanMethod;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 class FASTKNNCorrectnessTest {
@@ -23,6 +25,7 @@ class FASTKNNCorrectnessTest {
                 512,
                 9
         );
+        fast.setCleaning(CleanMethod.EXPIRE_KNN);
 
         experiment = new PlacesKNNExpireExperiment(
                 null,
@@ -32,7 +35,6 @@ class FASTKNNCorrectnessTest {
                 1000,
                 100,
                 5,
-                0.0,
                 5,
                 512
         );
@@ -50,8 +52,8 @@ class FASTKNNCorrectnessTest {
         System.out.println("Search Completed!");
 
         List<List<Integer>> results = experiment.getResults().stream()
-                .map((list) -> list.stream().map((q) -> q.id).toList())
-                .toList();
+                .map((list) -> list.stream().map((q) -> q.id).collect(Collectors.toList()))
+                .collect(Collectors.toList());
 
         List<List<Integer>> groundTruths = readGroundTruth();
 
@@ -59,14 +61,14 @@ class FASTKNNCorrectnessTest {
             List<Integer> result = results.get(i);
             List<Integer> groundTruth = groundTruths.get(i);
 
-            List<Integer> resultSorted = result.stream().sorted().toList();
-            List<Integer> groundTruthSorted = groundTruth.stream().sorted().toList();
+            List<Integer> resultSorted = result.stream().sorted().collect(Collectors.toList());
+            List<Integer> groundTruthSorted = groundTruth.stream().sorted().collect(Collectors.toList());
             if (result.size() != groundTruth.size()) {
                 System.out.println("Results: \t\t" + resultSorted);
                 System.out.println("Ground Truth: \t" + groundTruthSorted);
             }
 
-            Assertions.assertArrayEquals(resultSorted.toArray(Integer[]::new), groundTruthSorted.toArray(Integer[]::new));
+            Assertions.assertArrayEquals(resultSorted.toArray(), groundTruthSorted.toArray());
             System.out.println("Test passed: " + i);
         }
     }
@@ -90,7 +92,6 @@ class FASTKNNCorrectnessTest {
                 1000,
                 100,
                 5,
-                0.0,
                 5,
                 512
         );
@@ -102,8 +103,8 @@ class FASTKNNCorrectnessTest {
         goldExperiment.search();
 
         List<List<Integer>> results = goldExperiment.getResults().stream()
-                .map((list) -> list.stream().map((q) -> q.id).toList())
-                .toList();
+                .map((list) -> list.stream().map((q) -> q.id).collect(Collectors.toList()))
+                .collect(Collectors.toList());
 
         System.out.println("Naive FAST KNN Done!");
 

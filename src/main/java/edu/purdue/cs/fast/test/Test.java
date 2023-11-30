@@ -21,7 +21,7 @@ import com.google.common.base.Stopwatch;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.KeywordFrequency;
-import edu.purdue.cs.fast.helper.LatLong;
+import edu.purdue.cs.fast.parser.LatLong;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.helper.QueryType;
 import edu.purdue.cs.fast.helper.RandomGenerator;

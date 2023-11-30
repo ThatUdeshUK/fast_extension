@@ -1,16 +1,22 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.common.base.Stopwatch;
+import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
+import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+//import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -43,14 +49,14 @@ public abstract class Experiment<T> {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
             index.addContinuousQuery(q);
-
-//            if (index instanceof FAST)
-//                System.out.println("FAST - Qid:" + q.id + " st: " + q.st + " et: " + q.et + " t: " + FAST.timestamp);
-//            else if (index instanceof NaiveFAST)
-//                System.out.println("NaiveFAST - Qid:" + q.id + " st: " + q.st + " et: " + q.et + " t: " + NaiveFAST.timestamp);
         }
         stopwatch.stop();
-//        createMem = GraphLayout.parseInstance(fast).totalSize();
+        long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+        Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+        long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+        Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+        createMem = indexMemorySize;
+//        createMem = GraphLayout.parseInstance(index).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
@@ -62,12 +68,6 @@ public abstract class Experiment<T> {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
-//
-//            if (index instanceof FAST)
-//                System.out.println("FAST - Oid:" + o.id + " st: " + o.st + " et: " + o.et + " t: " + FAST.timestamp);
-//            else if (index instanceof NaiveFAST)
-//                System.out.println("NaiveFAST - Oid:" + o.id + " st: " + o.st + " et: " + o.et + " t: " + NaiveFAST.timestamp);
-
             List<Query> res = index.searchQueries(o);
             if (saveTimeline) {
                 assert searchTimeWatch != null;
@@ -77,7 +77,12 @@ public abstract class Experiment<T> {
             results.add(res);
         }
         totalTimeWatch.stop();
-//        searchMem = GraphLayout.parseInstance(fast).totalSize();
+        long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+        Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+        long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+        Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+        searchMem = indexMemorySize;
+//        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
@@ -86,7 +91,7 @@ public abstract class Experiment<T> {
             return;
 
         if (outputPath == null) {
-            System.out.println("No output file specified. Skipping saving!");
+            Run.logger.error("No output file specified. Skipping saving!");
             return;
         }
 
@@ -133,7 +138,7 @@ public abstract class Experiment<T> {
                     FileWriter outputFW = new FileWriter(getSuffixedPath("output", keys, values));
                     BufferedWriter outputBW = new BufferedWriter(outputFW);
                     for (List<Query> v : results) {
-                        outputBW.write(v.stream().map((query) -> query.id).sorted().toList() + "\n");
+                        outputBW.write(Arrays.toString(v.stream().map((query) -> query.id).sorted().toArray()) + "\n");
                     }
                     outputBW.close();
                     outputFW.close();
