@@ -23,12 +23,12 @@ class FASTKNNTest {
 
         // TODO - Address tie-breaking
         this.objects = L.of(
-                new DataObject(1, new Point(7.0, 8.0), L.of("k1", "k2"), 5, 100),
-                new DataObject(2, new Point(5.0, 5.0), L.of("k1", "k2"), 6, 100),
-                new DataObject(3, new Point(2.0, 6.0), L.of("k1", "k2"), 7, 100),
-                new DataObject(4, new Point(1.0, 1.0), L.of("k1", "k2"), 8, 100),
-                new DataObject(5, new Point(5.0, 6.0), L.of("k1", "k2"), 9, 100),
-                new DataObject(6, new Point(7.0, 9.0), L.of("k1", "k2"), 10, 100)
+                new DataObject(1, new Point(7.0, 8.0), L.of("k1", "k2"), 5, 7),
+                new DataObject(2, new Point(5.0, 5.0), L.of("k1", "k2"), 6, 9),
+                new DataObject(3, new Point(2.0, 6.0), L.of("k1", "k2"), 7, 10),
+                new DataObject(4, new Point(1.0, 1.0), L.of("k1", "k2"), 8, 10),
+                new DataObject(5, new Point(5.0, 6.0), L.of("k1", "k2"), 9, 11),
+                new DataObject(6, new Point(7.0, 9.0), L.of("k1", "k2"), 10, 11)
 //                new DataObject(7, new Point(7.0, 8.0), L.of("k1", "k2"), 7, 100) // Fails as it's a tie-breaker
         );
 

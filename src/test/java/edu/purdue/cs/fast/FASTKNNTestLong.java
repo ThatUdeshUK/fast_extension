@@ -30,20 +30,26 @@ class FASTKNNTestLong {
         );
 
         this.objects = L.of(
-                new DataObject(1, new Point(7.0, 8.0), L.of("k1", "k2"), 1, 100),
-                new DataObject(2, new Point(5.0, 5.0), L.of("k1", "k2"), 2, 100),
-                new DataObject(3, new Point(2.0, 6.0), L.of("k1", "k2"), 3, 100),
-                new DataObject(4, new Point(1.0, 1.0), L.of("k1", "k2"), 4, 100),
-                new DataObject(5, new Point(5.0, 6.0), L.of("k1", "k2"), 5, 100)
+                new DataObject(1, new Point(7.0, 8.0), L.of("k1", "k2"), 13, 15),
+                new DataObject(2, new Point(5.0, 5.0), L.of("k1", "k2"), 14, 16),
+                new DataObject(3, new Point(2.0, 6.0), L.of("k1", "k2"), 15, 100),
+                new DataObject(4, new Point(1.0, 1.0), L.of("k1", "k2"), 16, 100),
+                new DataObject(5, new Point(5.0, 6.0), L.of("k1", "k2"), 17, 100),
+                new DataObject(6, new Point(1.0, 1.0), L.of("k1", "k2"), 18, 100),
+                new DataObject(7, new Point(5.0, 5.0), L.of("k1", "k2"), 19, 100),
+                new DataObject(8, new Point(5.0, 6.0), L.of("k1", "k2"), 20, 100)
         );
 
         this.answers = L.of(
                 new Answer(1, 2, 3, 8, 10, 11),
-                new Answer(1, 2, 3),
-                new Answer(1, 3),
+                new Answer(1, 2, 3, 8, 10, 11),
+                new Answer(1, 3, 11),
+                new Answer(2, 10, 11),
+                new Answer(1, 2, 3, 8, 10, 11),
                 new Answer(),
-                new Answer(1, 2, 3)
-        );
+                new Answer(1, 2, 3, 8, 10, 11),
+                new Answer(1, 2, 3, 10, 11)
+                );
     }
 
     @Test
@@ -82,13 +88,15 @@ class FASTKNNTestLong {
 
         System.out.println("-----Search Test-----");
         for (int i = 0; i < answers.size(); i++) {
-            List<Integer> fastAns = testFAST.searchQueries(objects.get(i)).stream().map((Query query) -> query.id).collect(Collectors.toList());
+            System.out.println("Searching: " + objects.get(i));
+            List<Query> fastAnsRaw = testFAST.searchQueries(objects.get(i));
+            List<Integer> fastAns = fastAnsRaw.stream().map((Query query) -> query.id).collect(Collectors.toList());
             System.out.println(fastAns + " | " + answers.get(i).toString());
 
             testFAST.printIndex();
             System.out.println("------------\n");
 
-//            Assertions.assertArrayEquals(fastAns.stream().sorted().toArray(), answers.get(i).toArray());
+            Assertions.assertArrayEquals(fastAns.stream().sorted().toArray(), answers.get(i).answers.toArray());
         }
     }
 }

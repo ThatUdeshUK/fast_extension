@@ -51,11 +51,13 @@ public abstract class Experiment<T> {
             index.addContinuousQuery(q);
         }
         stopwatch.stop();
-        long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-        Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-        long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
-        Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-        createMem = indexMemorySize;
+        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
+            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+            createMem = indexMemorySize;
+        }
 //        createMem = GraphLayout.parseInstance(index).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
@@ -77,11 +79,13 @@ public abstract class Experiment<T> {
             results.add(res);
         }
         totalTimeWatch.stop();
-        long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-        Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-        long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
-        Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-        searchMem = indexMemorySize;
+        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
+            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+            searchMem = indexMemorySize;
+        }
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }

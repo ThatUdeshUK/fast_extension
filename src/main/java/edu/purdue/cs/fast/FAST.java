@@ -23,17 +23,12 @@
  */
 package edu.purdue.cs.fast;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import edu.purdue.cs.fast.experiments.Experiment;
-import edu.purdue.cs.fast.experiments.PlacesExperiment;
 import edu.purdue.cs.fast.helper.CleanMethod;
+import edu.purdue.cs.fast.helper.ExpireTimeComparator;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.structures.*;
@@ -77,6 +72,7 @@ public class FAST implements SpatialKeywordIndex {
     public int maxInsertedLevelInterleaved;
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
+    public PriorityQueue<DataObject> expiringObjects;
     private boolean pushToLowest = false;
 
     public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
@@ -93,6 +89,7 @@ public class FAST implements SpatialKeywordIndex {
         this.maxInsertedLevelInterleaved = -1;
         index = new ConcurrentHashMap<>();
         keywordFrequencyMap = new HashMap<>();
+        expiringObjects = new PriorityQueue<>(new ExpireTimeComparator());
 
         queryInsertInvListNodeCounter = 0;
         queryInsertTrieNodeCounter = 0;
@@ -143,6 +140,7 @@ public class FAST implements SpatialKeywordIndex {
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
         } else if (query instanceof KNNQuery) {
+            ((KNNQuery) query).currentLevel = maxLevel;
             addContinuousKNNQuery((KNNQuery) query);
         }
 
@@ -254,11 +252,12 @@ public class FAST implements SpatialKeywordIndex {
         }
     }
 
-    private void reinsertDescendedKNNQueries(ArrayList<KNNQuery> descendingKNNQueries) {
+    private void reinsertKNNQueries(List<KNNQuery> descendingKNNQueries) {
         for (KNNQuery query : descendingKNNQueries) {
             int level = 0;
             if (!pushToLowest)
-                level = query.calcMinSpatialLevel();
+                level = Math.min(query.calcMinSpatialLevel(), maxLevel);
+            query.currentLevel = level;
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (gridGranularity / Math.pow(2, level));
             double levelStep = ((bounds.max.x - bounds.min.x) / levelGranularity);
@@ -270,9 +269,28 @@ public class FAST implements SpatialKeywordIndex {
     @Override
     public List<Query> searchQueries(DataObject dataObject) {
         timestamp++;
+        expiringObjects.add(dataObject);
+        List<Query> results = internalSearchQueries(dataObject, false);
 
+        // Vacuum cleaning
+        if (FAST.cleanMethod != CleanMethod.NO && timestamp % CLEANING_INTERVAL == 0)
+            cleanNextSetOfEntries();
+
+        // Object expiring
+//        Run.logger.debug(timestamp + ", " + expiringObjects.peek());
+        while (expiringObjects.peek() != null && expiringObjects.peek().et <= timestamp) {
+            expireQueries(expiringObjects.poll());
+
+        }
+
+        return results;
+    }
+
+    private List<Query> internalSearchQueries(DataObject dataObject, boolean isExpiry) {
         List<Query> result = new LinkedList<>();
-        ArrayList<KNNQuery> descendingKNNQueries = new ArrayList<>();
+        List<KNNQuery> descendingKNNQueries = null;
+        if (!isExpiry)
+            descendingKNNQueries = new LinkedList<>();
 
         if (minInsertedLevel == -1)
             return result;
@@ -289,14 +307,29 @@ public class FAST implements SpatialKeywordIndex {
             step /= 2;
             granualrity <<= 1;
         }
-        if (!descendingKNNQueries.isEmpty()) {
-            reinsertDescendedKNNQueries(descendingKNNQueries);
+        if (descendingKNNQueries != null && !descendingKNNQueries.isEmpty()) {
+            reinsertKNNQueries(descendingKNNQueries);
         }
 
-        if (FAST.cleanMethod != CleanMethod.NO && timestamp % CLEANING_INTERVAL == 0)
-            cleanNextSetOfEntries();
-
         return result;
+    }
+
+    public void expireQueries(DataObject dataObject) {
+//        Run.logger.debug("Obj expire: " + dataObject.id);
+        int oldTimestamp = timestamp;
+        FAST.timestamp = 0;
+        List<Query> results = internalSearchQueries(dataObject, true);
+        FAST.timestamp = oldTimestamp;
+        List<KNNQuery> ascending = new ArrayList<>();
+        results.forEach(query -> {
+            if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != maxLevel) {
+                ((KNNQuery) query).getMonitoredObjects().remove(dataObject);
+                ((KNNQuery) query).ar = Double.MAX_VALUE;
+                ascending.add((KNNQuery) query);
+            }
+        });
+//        Run.logger.debug("Ascending queries: " + ascending);
+        reinsertKNNQueries(ascending);
     }
 
     public void cleanNextSetOfEntries() {
@@ -407,4 +440,36 @@ public class FAST implements SpatialKeywordIndex {
         System.out.println(s);
     }
 
+    public HashSet<KNNQuery> allKNNQueries() {
+        HashSet<KNNQuery> allKNN = new HashSet<>();
+
+        index.forEach((key, cell) -> {
+            addKNNQueriesFromTextualNodes(cell.textualIndex, allKNN);
+        });
+        return allKNN;
+    }
+
+    private void addKNNQueriesFromTextualNodes(Map<String, TextualNode> textualIndex, HashSet<KNNQuery> result) {
+        if (textualIndex == null)
+            return;
+
+        textualIndex.forEach((keyword, node) -> {
+
+            if (node instanceof QueryNode) {
+                Query query = ((QueryNode) node).query;
+                if (query instanceof KNNQuery) {
+                    result.add((KNNQuery) query);
+                }
+            } else if (node instanceof QueryListNode) {
+                if (((QueryListNode) node).queries != null) {
+                    result.addAll(((QueryListNode) node).queries.kNNQueries());
+                }
+            } else if (node instanceof QueryTrieNode) {
+                if (((QueryTrieNode) node).queries != null) {
+                    result.addAll(((QueryTrieNode) node).queries.kNNQueries());
+                    addKNNQueriesFromTextualNodes(((QueryTrieNode) node).subtree, result);
+                }
+            }
+        });
+    }
 }

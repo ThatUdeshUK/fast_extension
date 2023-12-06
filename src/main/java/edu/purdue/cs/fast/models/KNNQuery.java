@@ -12,6 +12,7 @@ public class KNNQuery extends Query {
     public double ar;
     public int k;
 
+    public int currentLevel = -1;
     private PriorityQueue<DataObject> monitoredObjects;
     private final Rectangle spatialBox;
 
@@ -35,6 +36,9 @@ public class KNNQuery extends Query {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }
 
+        if (monitoredObjects.contains(obj))
+            return monitoredObjects.size() >= k;
+
         monitoredObjects.add(obj);
         boolean kFilled = monitoredObjects.size() >= k;
         if (monitoredObjects.size() > k) {
@@ -53,7 +57,15 @@ public class KNNQuery extends Query {
     }
 
     public int calcMinSpatialLevel() {
+        return _calcMinSpatialLevel();
+    }
+
+    private int _calcMinSpatialLevel() {
         return Math.max((int) (Math.log((ar / FAST.localXstep)) / Math.log(2)), 0);
+    }
+
+    private int _calcMinSpatialLevel2() {
+        return Math.max((int) (Math.log((ar * 2 / FAST.localXstep)) / Math.log(2)), 0);
     }
 
     public PriorityQueue<DataObject> getMonitoredObjects() {
@@ -77,6 +89,7 @@ public class KNNQuery extends Query {
                 ", location=" + location +
                 ", k=" + k +
                 ", ar=" + ar +
+                ", cl=" + currentLevel +
                 '}';
     }
 

@@ -1,27 +1,22 @@
 package edu.purdue.cs.fast;
 
+import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.*;
 import edu.purdue.cs.fast.helper.CleanMethod;
-import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.PriorityQueue;
 
-public class Run {
+public class RunNaive {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "dynamic_v5";
-        Workload workload = Workload.KNN_OBJ_EXPIRE;
+        String name = "expiring";
+        Workload workload = Workload.KNN_EXPIRE;
         double srRate = 0.01;
         int k = 5;
         double knnRatio = 0.05;
@@ -38,10 +33,10 @@ public class Run {
         numQueriesList.add(500000);
         numQueriesList.add(1000000);
         numQueriesList.add(2500000);
-//        numQueriesList.add(5000000);
+////        numQueriesList.add(5000000);
 
         for (int numQueries : numQueriesList) {
-            FAST fast = new FAST(
+            NaiveFAST fast = new NaiveFAST(
                     new Rectangle(
                             new Point(0.0, 0.0),
                             new Point(maxRange, maxRange)
@@ -49,8 +44,6 @@ public class Run {
                     fineGridGran,
                     maxLevel
             );
-            fast.setPushToLowest(pushToLowest);
-            fast.setCleaning(cleanMethod);
 
             PlacesExperiment experiment;
             String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
@@ -81,7 +74,7 @@ public class Run {
                     break;
                 case KNN_OBJ_EXPIRE:
                     experiment = new PlacesKNNObjExpireExperiment(
-                            Paths.get(args[0], "results/output_places_US_knn_obj_exp.csv").toString(),
+                            Paths.get(args[0], "results/output_places_US_knn_naive_obj_exp.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange
                     );
                     break;

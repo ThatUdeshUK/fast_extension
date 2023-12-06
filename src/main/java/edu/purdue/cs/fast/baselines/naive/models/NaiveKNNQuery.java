@@ -3,6 +3,7 @@ package edu.purdue.cs.fast.baselines.naive.models;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.models.*;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -36,6 +37,14 @@ public class NaiveKNNQuery extends Query {
         if (monitoredObjects == null) {
             monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
         }
+
+        List<DataObject> toRemove = new ArrayList<>();
+        monitoredObjects.forEach(query -> {
+            if (query.et < obj.st) {
+                toRemove.add(query);
+            }
+        });
+        toRemove.forEach(o -> monitoredObjects.remove(o));
 
         if (!monitoredObjects.contains(obj)) {
             monitoredObjects.add(obj);

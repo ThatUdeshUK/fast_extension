@@ -326,6 +326,13 @@ public class SpatialHelper {
                 && (rectangle1.max.y >= rectangle2.min.y || Math.abs(rectangle1.max.y - rectangle2.min.y) < .000001);
     }
 
+    public static Boolean coversSpatially(Rectangle rectangle1, Rectangle rectangle2) {
+        return (rectangle1.min.x <= rectangle2.min.x || Math.abs(rectangle1.min.x - rectangle2.min.x) < .000001)
+                && (rectangle1.max.x >= rectangle2.max.x || Math.abs(rectangle1.max.x - rectangle2.max.x) < .000001)
+                && (rectangle1.min.y <= rectangle2.min.y || Math.abs(rectangle1.min.y - rectangle2.min.y) < .000001)
+                && (rectangle1.max.y >= rectangle2.max.y || Math.abs(rectangle1.max.y - rectangle2.max.y) < .000001);
+    }
+
     public static Rectangle spatialIntersect(Rectangle rect1, Rectangle rect2) {
         return new Rectangle(
                 new Point(

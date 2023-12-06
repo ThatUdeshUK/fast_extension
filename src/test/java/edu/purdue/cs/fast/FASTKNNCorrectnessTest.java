@@ -2,6 +2,7 @@ package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
+import edu.purdue.cs.fast.experiments.PlacesKNNObjExpireExperiment;
 import edu.purdue.cs.fast.helper.CleanMethod;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 
 class FASTKNNCorrectnessTest {
-    private final PlacesKNNExpireExperiment experiment;
+    private final PlacesKNNObjExpireExperiment experiment;
 
     public FASTKNNCorrectnessTest() {
         FAST fast = new FAST(
@@ -27,7 +28,7 @@ class FASTKNNCorrectnessTest {
         );
         fast.setCleaning(CleanMethod.EXPIRE_KNN);
 
-        experiment = new PlacesKNNExpireExperiment(
+        experiment = new PlacesKNNObjExpireExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 fast,
@@ -84,7 +85,7 @@ class FASTKNNCorrectnessTest {
                 9
         );
 
-        PlacesKNNExpireExperiment goldExperiment = new PlacesKNNExpireExperiment(
+        PlacesKNNObjExpireExperiment goldExperiment = new PlacesKNNObjExpireExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 goldFast,

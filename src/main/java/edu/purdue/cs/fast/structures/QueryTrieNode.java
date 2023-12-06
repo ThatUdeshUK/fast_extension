@@ -1,9 +1,6 @@
 package edu.purdue.cs.fast.structures;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 
 import edu.purdue.cs.fast.FAST;
@@ -20,8 +17,8 @@ public class QueryTrieNode extends TextualNode {
     public QueryTrieNode() {
     }
 
-    public void find(DataObject obj, ArrayList<String> keywords, int start, List<Query> results,
-                     ArrayList<KNNQuery> descendingKNNQueries) {
+    public void find(SpatialCell parent, DataObject obj, ArrayList<String> keywords, int start, List<Query> results,
+                     List<KNNQuery> descendingKNNQueries) {
         FAST.objectSearchTrieNodeCounter++;
 
         if (finalQueries != null)
@@ -37,15 +34,23 @@ public class QueryTrieNode extends TextualNode {
             }
             ArrayList<KNNQuery> toRemove = new ArrayList<>();
             for (KNNQuery q : queries.kNNQueries()) {
+                FAST.objectSearchTrieNodeCounter++;
+                if (q.et <= FAST.timestamp || q.currentLevel != parent.level)
+                    continue;
 //            for (Iterator<KNNQuery> it = queries.kNNQueries().iterator(); it.hasNext(); ) {
 //                KNNQuery q = it.next();
-                FAST.objectSearchTrieNodeCounter++;
                 boolean kFilled = searchQueries(obj, results, q);
-                if (kFilled && descendingKNNQueries != null) {
+                if (descendingKNNQueries != null && parent.level == FAST.maxLevel && kFilled) {
                     descendingKNNQueries.add(q);
 //                    it.remove();
                     toRemove.add(q);
                 }
+//                else if (descendingKNNQueries != null && parent.level != FAST.maxLevel && parent.level != 0 &&
+//                        queries.kNNQueries().size() > 100 &&
+//                        SpatialHelper.coversSpatially(parent.bounds, q.spatialBox())) {
+//                    descendingKNNQueries.add(q);
+//                    toRemove.add(q);
+//                }
             }
             toRemove.forEach((query -> queries.kNNQueries().remove(query)));
         }
@@ -62,44 +67,37 @@ public class QueryTrieNode extends TextualNode {
                     FAST.objectSearchTrieNodeCounter++;
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp)
+                        if (query.et > FAST.timestamp && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) &&
+                                TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     }
                     if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp) {
+                        if (query.et > FAST.timestamp && query.currentLevel == parent.level &&
+                                SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
+                                TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
-                            if (query.pushUntilK(obj) && descendingKNNQueries != null) {
-                                descendingKNNQueries.add(query);
-                                subtree.put(keyword, null);
-                            }
+                            query.pushUntilK(obj);
                         }
                     }
                 } else if (node instanceof QueryListNode) {
                     for (MinimalRangeQuery query : ((QueryListNode) node).queries.mbrQueries()) {
                         FAST.objectSearchTrieNodeCounter++;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange)
-                                && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp)
+                        if (query.et > FAST.timestamp && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange)
+                                && TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     }
-                    ArrayList<KNNQuery> toRemove = new ArrayList<>();
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.objectSearchTrieNodeCounter++;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp) {
+                        if (query.et > FAST.timestamp && query.currentLevel == parent.level &&
+                                SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
+                                TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
-                            if (query.pushUntilK(obj) && descendingKNNQueries != null) {
-                                descendingKNNQueries.add(query);
-                                toRemove.add(query);
-                            }
+                            query.pushUntilK(obj);
                         }
                     }
-                    toRemove.forEach(query -> ((QueryListNode) node).queries.kNNQueries().remove(query));
                 } else if (node instanceof QueryTrieNode) {
-                    ((QueryTrieNode) node).find(obj, keywords, i + 1, results, descendingKNNQueries);
+                    ((QueryTrieNode) node).find(parent, obj, keywords,i + 1, results, descendingKNNQueries);
                 }
             }
     }
@@ -110,7 +108,7 @@ public class QueryTrieNode extends TextualNode {
         }
         if (q instanceof KNNQuery) {
             KNNQuery query = (KNNQuery) q;
-            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) && query.et > FAST.timestamp) {
+            if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)) {
                 results.add(query);
                 return query.pushUntilK(obj);
             }
@@ -118,14 +116,14 @@ public class QueryTrieNode extends TextualNode {
         return false;
     }
 
-    public int clean(Rectangle bounds, QueryListNode combinedQueries) {
+    public int clean(int level, Rectangle bounds, QueryListNode combinedQueries) {
         int operations = 0;
         if (queries != null) {
             Iterator<Query> queriesItr = queries.iterator();
             while (queriesItr.hasNext()) {
                 Query q = queriesItr.next();
                 if (q.et < FAST.timestamp || (FAST.cleanMethod == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
-                        !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar)))
+                        (((KNNQuery) q).currentLevel != level || !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar))))
                     queriesItr.remove();
                 else {
                     combinedQueries.queries.add(q);
@@ -142,7 +140,7 @@ public class QueryTrieNode extends TextualNode {
                 if (node instanceof QueryNode) {
                     Query q = ((QueryNode) node).query;
                     if (q.et < FAST.timestamp || (FAST.cleanMethod == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
-                            !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar)))
+                            (((KNNQuery) q).currentLevel != level || !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar))))
                         trieCellsItr.remove();
                     else {
                         combinedQueries.queries.add(q);
@@ -153,7 +151,7 @@ public class QueryTrieNode extends TextualNode {
                     while (queriesInternalItr.hasNext()) {
                         Query q = queriesInternalItr.next();
                         if (q.et < FAST.timestamp || (FAST.cleanMethod == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
-                                !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar)))
+                                (((KNNQuery) q).currentLevel != level || !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar))))
                             queriesInternalItr.remove();
                         else {
                             combinedQueries.queries.add(q);
@@ -163,7 +161,7 @@ public class QueryTrieNode extends TextualNode {
                     if (((QueryListNode) node).queries.isEmpty())
                         trieCellsItr.remove();
                 } else if (node instanceof QueryTrieNode) {
-                    operations += ((QueryTrieNode) node).clean(bounds, combinedQueries);
+                    operations += ((QueryTrieNode) node).clean(level, bounds, combinedQueries);
                     if (((QueryTrieNode) node).queries == null && ((QueryTrieNode) node).subtree == null)
                         trieCellsItr.remove();
                 }

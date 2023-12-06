@@ -10,4 +10,9 @@ public class Answer {
     public Answer(Integer... answers) {
         this.answers = Arrays.stream(answers).collect(Collectors.toList());
     }
+
+    @Override
+    public String toString() {
+        return answers.toString();
+    }
 }

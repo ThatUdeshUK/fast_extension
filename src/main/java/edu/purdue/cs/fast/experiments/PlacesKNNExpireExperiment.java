@@ -17,7 +17,7 @@ public class PlacesKNNExpireExperiment extends PlacesKNNExperiment {
         this.queries = new ArrayList<>();
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
-            int et = this.randomizer.nextInt(numObjects);
+            int et = this.randomizer.nextInt((int) (numObjects));
             queries.add(place.toKNNQuery(i, numKeywords, k, numQueries + et)); // Sets the random expiry
         }
     }
