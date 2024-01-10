@@ -2,6 +2,7 @@ package edu.purdue.cs.fast.models;
 
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.helper.TextualPredicate;
+import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
 import java.util.Comparator;
 import java.util.List;
@@ -13,7 +14,7 @@ public class KNNQuery extends Query {
     public int k;
 
     public int currentLevel = -1;
-    private PriorityQueue<DataObject> monitoredObjects;
+    private BoundedPriorityQueue<DataObject> monitoredObjects;
     private final Rectangle spatialBox;
 
     public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, long st, long et) {
@@ -33,18 +34,11 @@ public class KNNQuery extends Query {
      */
     public boolean pushUntilK(DataObject obj) {
         if (monitoredObjects == null) {
-            monitoredObjects = new PriorityQueue<>(k, new EuclideanComparator(location));
+            monitoredObjects = new BoundedPriorityQueue<>(k, new EuclideanComparator(location));
         }
-
-        if (monitoredObjects.contains(obj))
-            return monitoredObjects.size() >= k;
 
         monitoredObjects.add(obj);
-        boolean kFilled = monitoredObjects.size() >= k;
-        if (monitoredObjects.size() > k) {
-            monitoredObjects.poll();
-        }
-
+        boolean kFilled = monitoredObjects.isFull();
         if (kFilled) {
             assert monitoredObjects.peek() != null;
 
@@ -56,16 +50,16 @@ public class KNNQuery extends Query {
         return kFilled;
     }
 
+    /**
+     * Calculate the optimal level for a KNN query based on it's AR
+     *
+     * @return Optimal level for the KNN query
+     */
     public int calcMinSpatialLevel() {
-        return _calcMinSpatialLevel();
-    }
-
-    private int _calcMinSpatialLevel() {
-        return Math.max((int) (Math.log((ar / FAST.localXstep)) / Math.log(2)), 0);
-    }
-
-    private int _calcMinSpatialLevel2() {
-        return Math.max((int) (Math.log((ar * 2 / FAST.localXstep)) / Math.log(2)), 0);
+        return Math.max((int) (Math.log((ar / FAST.context.localXstep)) / Math.log(2)), 0);
+//        return Math.max((int) (Math.log((ar * 2 / FAST.context.localXstep)) / Math.log(2)), 0);
+//        return Math.max(((int) (Math.log((ar * 2 / FAST.context.localXstep)) / Math.log(2)))+1, 0);
+//        return Math.max((int) Math.ceil(Math.log((ar * 2 / FAST.context.localXstep)) / Math.log(2)), 0);
     }
 
     public PriorityQueue<DataObject> getMonitoredObjects() {

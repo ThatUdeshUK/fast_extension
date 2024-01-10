@@ -1,9 +1,10 @@
-package edu.purdue.cs.fast;
+package edu.purdue.cs.fast.baselines.ckqst;
 
+import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
+import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
-import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
@@ -14,31 +15,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-class FASTKNNCorrectnessTest {
-    private final PlacesKNNExpireExperiment experiment;
+class CkQSTCorrectnessTest {
+    private final PlacesKNNExperiment experiment;
 
-    public FASTKNNCorrectnessTest() {
-        FAST fast = new FAST(
-                new Rectangle(
-                        new Point(0.0, 0.0),
-                        new Point(512, 512)
-                ),
-                512,
-                9
-        );
-        fast.setCleaning(CleanMethod.EXPIRE_KNN);
+    public CkQSTCorrectnessTest() {
+        CkQST ckqst = new CkQST(512, 512, 9);
 
-        experiment = new PlacesKNNExpireExperiment(
+        experiment = new PlacesKNNExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
-                fast,
+                ckqst,
                 "places_knn_seacnn",
                 1000,
                 100,
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.KNNType.CkQST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -86,7 +79,7 @@ class FASTKNNCorrectnessTest {
                 9
         );
 
-        PlacesKNNExpireExperiment goldExperiment = new PlacesKNNExpireExperiment(
+        PlacesKNNExperiment goldExperiment = new PlacesKNNExperiment(
                 null,
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 goldFast,

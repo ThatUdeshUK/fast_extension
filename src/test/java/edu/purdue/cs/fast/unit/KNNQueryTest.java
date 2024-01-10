@@ -2,9 +2,11 @@ package edu.purdue.cs.fast.unit;
 
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.L;
+import edu.purdue.cs.fast.config.Context;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -40,13 +42,11 @@ class KNNQueryTest {
 
     @Test
     void calcMinSpatialLevel() {
-        int bound = 1024;
-        int gridGranularity = 512;
-        FAST.localXstep = (double) bound / gridGranularity;
-        int maxLevel = (int) (Math.log(gridGranularity) / Math.log(2));
-        for (int i = maxLevel; i >= 0; i--) {
+        Rectangle bound = new Rectangle(0, 0, 1024, 1024);
+        FAST.context = new Context(bound, 512, Integer.MAX_VALUE);
+        for (int i = FAST.context.maxLevel; i >= 0; i--) {
             int granI = (int) (512 / Math.pow(2, i));
-            System.out.println("Level: " + i + ", Granularity: " + granI + ", Cell Size:" + bound / granI);
+            System.out.println("Level: " + i + ", Granularity: " + granI + ", Cell Size:" + FAST.context.globalXRange / granI);
         }
 
         KNNQuery dummyQuery = new KNNQuery(0, L.of("k1", "k2"), new Point(192, 192), 3, null, 0, 100);

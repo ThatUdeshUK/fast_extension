@@ -27,45 +27,22 @@ public class PlacesHybridExperiment extends PlacesExperiment {
         int knnQueryCount = (int) (numQueries * knnRatio);
         for (int i = 0; i < knnQueryCount; i++) {
             Place place = places.get(i);
-            queries.add(place.toKNNQuery(i, numKeywords, k, numQueries + numObjects + 1));
+            queries.add(place.toKNNQuery(i, numKeywords, k, numPreObjects + numPreQueries + numQueries + numObjects + 1, PlacesKNNExperiment.KNNType.FAST));
         }
         int r = (int) (this.maxRange * srRate);
         for (int i = knnQueryCount; i < numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, this.maxRange, numKeywords, numQueries + numObjects + 1));
+            queries.add(place.toMinimalRangeQuery(i, r, this.maxRange, numKeywords, numPreObjects + numPreQueries + numQueries + numObjects + 1));
         }
     }
 
     @Override
-    public void run() {
-        init();
-
-        Run.logger.info("Creating index!");
-        create();
-        Run.logger.info("Creation Done! Time=" + this.creationTime);
-
-        Run.logger.info("Searching!");
-        search();
-        Run.logger.info("Search Done! Time=" + searchTime);
-
-        List<String> headers = new ArrayList<>();
-        headers.add("num_queries");
-        headers.add("num_objects");
-        headers.add("sr_rate");
-        headers.add("k");
-        headers.add("knn_ratio");
-
-        List<String> values = new ArrayList<>();
-        values.add("" + numQueries);
-        values.add("" + numObjects);
-        values.add("" + srRate);
-        values.add("" + k);
-        values.add("" + knnRatio);
-
-        try {
-            save(headers, values);
-        } catch (InvalidOutputFile e) {
-            Run.logger.error(e.getMessage());
-        }
+    protected Metadata generateMetadata() {
+        Metadata metadata = new Metadata();
+        metadata.add("num_queries", "" + numQueries);
+        metadata.add("num_objects", "" + numObjects);
+        metadata.add("k", "" + k);
+        metadata.add("knn_ratio", "" + knnRatio);
+        return metadata;
     }
 }

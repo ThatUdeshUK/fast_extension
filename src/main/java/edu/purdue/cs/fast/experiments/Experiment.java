@@ -7,17 +7,13 @@ import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 //import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Experiment<T> {
@@ -25,7 +21,9 @@ public abstract class Experiment<T> {
     protected String outputPath;
     protected SpatialKeywordIndex index;
     protected List<Query> queries;
+    protected List<Query> preQueries;
     protected List<DataObject> objects;
+    public List<DataObject> preObjects;
     protected long creationTime;
     protected long searchTime;
     protected long createMem;
@@ -34,7 +32,7 @@ public abstract class Experiment<T> {
     protected boolean saveTimeline = false;
     protected boolean saveOutput = false;
     protected int seed = 7;
-    protected ArrayList<List<Query>> results;
+    protected ArrayList<Collection<Query>> results;
     protected ArrayList<Long> searchTimeline = new ArrayList<>();
 
     abstract void init();
@@ -43,7 +41,27 @@ public abstract class Experiment<T> {
 
     protected abstract void generateObjects(List<T> list);
 
+    protected abstract Metadata generateMetadata();
+
     abstract void run();
+
+    public void preloadObjects() {
+        if (preObjects == null)
+            return;
+
+        for (DataObject o : preObjects) {
+            index.preloadObject(o);
+        }
+    }
+
+    public void preloadQueries() {
+        if (preQueries == null)
+            return;
+
+        for (Query q : preQueries) {
+            index.preloadQuery(q);
+        }
+    }
 
     public void create() {
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -70,7 +88,7 @@ public abstract class Experiment<T> {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
-            List<Query> res = index.searchQueries(o);
+            Collection<Query> res = index.searchQueries(o);
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();
@@ -90,7 +108,7 @@ public abstract class Experiment<T> {
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
-    public void save(List<String> keys, List<String> values) throws InvalidOutputFile {
+    public void save() throws InvalidOutputFile {
         if (!this.saveStats)
             return;
 
@@ -99,13 +117,15 @@ public abstract class Experiment<T> {
             return;
         }
 
+        Metadata meta = generateMetadata();
+
         File outputFile = new File(outputPath);
         boolean fileExists = outputFile.exists();
         if (!outputFile.isDirectory()) {
             try {
                 if (!fileExists && outputFile.createNewFile()) {
                     StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem");
-                    for (String k : keys) {
+                    for (String k : meta.getKeys()) {
                         header.append(",").append(k);
                     }
 
@@ -121,7 +141,7 @@ public abstract class Experiment<T> {
 
                 StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + createMem +
                         "," + searchMem);
-                for (String v : values) {
+                for (String v : meta.getValues()) {
                     line.append(",").append(v);
                 }
                 bw.write(line + "\n");
@@ -129,7 +149,7 @@ public abstract class Experiment<T> {
                 fw.close();
 
                 if (saveTimeline) {
-                    FileWriter timelineFW = new FileWriter(getSuffixedPath("timeline", keys, values));
+                    FileWriter timelineFW = new FileWriter(getSuffixedPath("timeline", meta.getKeys(), meta.getValues()));
                     BufferedWriter timelineBW = new BufferedWriter(timelineFW);
                     for (long v : searchTimeline) {
                         timelineBW.write(v + "\n");
@@ -139,16 +159,16 @@ public abstract class Experiment<T> {
                 }
 
                 if (saveOutput) {
-                    FileWriter outputFW = new FileWriter(getSuffixedPath("output", keys, values));
+                    FileWriter outputFW = new FileWriter(getSuffixedPath("output", meta.getKeys(), meta.getValues()));
                     BufferedWriter outputBW = new BufferedWriter(outputFW);
-                    for (List<Query> v : results) {
+                    for (Collection<Query> v : results) {
                         outputBW.write(Arrays.toString(v.stream().map((query) -> query.id).sorted().toArray()) + "\n");
                     }
                     outputBW.close();
                     outputFW.close();
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new InvalidOutputFile(outputPath);
             }
         } else {
             throw new InvalidOutputFile(outputPath);
@@ -167,7 +187,7 @@ public abstract class Experiment<T> {
         this.seed = seed;
     }
 
-    public ArrayList<List<Query>> getResults() {
+    public ArrayList<Collection<Query>> getResults() {
         return results;
     }
 
@@ -186,6 +206,29 @@ public abstract class Experiment<T> {
      */
     public void setSaveStats(boolean saveStats) {
         this.saveStats = saveStats;
+    }
+
+    public static class Metadata {
+        List<String> keys;
+        List<String> values;
+
+        public Metadata() {
+            this.keys = new ArrayList<>();
+            this.values = new ArrayList<>();
+        }
+
+        public void add(String key, String value) {
+            this.keys.add(key);
+            this.values.add(value);
+        }
+
+        public List<String> getKeys() {
+            return keys;
+        }
+
+        public List<String> getValues() {
+            return values;
+        }
     }
 }
 

@@ -25,6 +25,7 @@ replay_pid*
 
 /target
 /results
+/results_remote
 
 # IDE
 .idea

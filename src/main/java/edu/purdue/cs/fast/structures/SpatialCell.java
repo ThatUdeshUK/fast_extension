@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
-import edu.purdue.cs.fast.helper.CleanMethod;
+import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextHelpers;
@@ -63,7 +63,7 @@ public class SpatialCell {
         }
 
         if (!textualIndex.containsKey(keyword) && sharedQueries != null) {
-            FAST.numberOfHashEntries++;
+            FAST.context.numberOfHashEntries++;
             textualIndex.put(keyword, sharedQueries);
         } else {
             if (sharedQueries == null)
@@ -72,11 +72,11 @@ public class SpatialCell {
             TextualNode node = textualIndex.get(keyword);
             if (node instanceof QueryNode) {
                 Query exitingQuery = ((QueryNode) node).query;
-                if (exitingQuery.et > FAST.timestamp) { //checking for the support of the query
+                if (exitingQuery.et > FAST.context.timestamp) { //checking for the support of the query
                     if (sharedQueries.queries.contains(exitingQuery)) {
                         textualIndex.put(keyword, sharedQueries);
-                    } else if (sharedQueries.queries.mbrQueries().size() < FAST.Trie_SPLIT_THRESHOLD) {
-                        FAST.queryInsertInvListNodeCounter++;
+                    } else if (sharedQueries.queries.mbrQueries().size() < FAST.config.TRIE_SPLIT_THRESHOLD) {
+                        FAST.context.queryInsertInvListNodeCounter++;
                         sharedQueries.queries.add(exitingQuery);
                         textualIndex.put(keyword, sharedQueries);
                     } else
@@ -94,7 +94,7 @@ public class SpatialCell {
                     if (!sharedQueries.queries.contains(q))
                         nonSharedQueries.add(q);
                 }
-                if (!nonSharedQueries.isEmpty() && nonSharedQueries.size() + sharedQueries.queries.size() <= FAST.Trie_SPLIT_THRESHOLD) {
+                if (!nonSharedQueries.isEmpty() && nonSharedQueries.size() + sharedQueries.queries.size() <= FAST.config.TRIE_SPLIT_THRESHOLD) {
                     sharedQueries.queries.addAll(nonSharedQueries);
                     textualIndex.put(keyword, sharedQueries);
                 } else {
@@ -139,7 +139,7 @@ public class SpatialCell {
                         queue.addAll(((QueryListNode) textualIndex.get(term)).queries.mbrQueries());
                         queue.addAll(((QueryListNode) textualIndex.get(term)).queries.kNNQueries());
                         textualIndex.put(term, new QueryTrieNode());
-                        FAST.numberOfTrieNodes++;
+                        FAST.context.numberOfTrieNodes++;
                     }
                 }
             }
@@ -155,12 +155,12 @@ public class SpatialCell {
                     trieNode.subtree.put(keyword, new QueryNode(query));
                     inserted = true;
                 } else if (node instanceof QueryNode) {
-                    if (query instanceof KNNQuery && ((QueryNode) node).query == query) {
-                        inserted = true;
-                        continue;
-                    }
+//                    if (query instanceof KNNQuery && ((QueryNode) node).query == query) {
+//                        inserted = true;
+//                        continue;
+//                    }
 
-                    if (((QueryNode) node).query.et > FAST.timestamp) {
+                    if (((QueryNode) node).query.et > FAST.context.timestamp) {
                         QueryListNode newNode = new QueryListNode(((QueryNode) node).query);
                         newNode.queries.add(query);
                         trieNode.subtree.put(keyword, newNode);
@@ -169,28 +169,30 @@ public class SpatialCell {
                         trieNode.subtree.put(keyword, new QueryNode(query));
                     }
                     inserted = true;
-                } else if (node instanceof QueryListNode && ((QueryListNode) node).queries.size() <= FAST.Trie_SPLIT_THRESHOLD) {
-                    if (query instanceof KNNQuery && ((QueryListNode) node).queries.kNNQueries().contains(query)) {
-                        inserted = true;
-                        continue;
-                    }
+                } else if (node instanceof QueryListNode &&
+                        ((QueryListNode) node).queries.size() <= FAST.config.TRIE_SPLIT_THRESHOLD) {
+//                    if (query instanceof KNNQuery && ((QueryListNode) node).queries.kNNQueries().contains(query)) {
+//                        inserted = true;
+//                        continue;
+//                    }
 
                     ((QueryListNode) node).queries.add(query);
                     inserted = true;
-                } else if (node instanceof QueryListNode && ((QueryListNode) node).queries.size() > FAST.Trie_SPLIT_THRESHOLD) {
-                    if (query instanceof KNNQuery && ((QueryListNode) node).queries.kNNQueries().contains(query)) {
-                        inserted = true;
-                        continue;
-                    }
+                } else if (node instanceof QueryListNode &&
+                        ((QueryListNode) node).queries.size() > FAST.config.TRIE_SPLIT_THRESHOLD) {
+//                    if (query instanceof KNNQuery && ((QueryListNode) node).queries.kNNQueries().contains(query)) {
+//                        inserted = true;
+//                        continue;
+//                    }
 
                     QueryTrieNode newCell = new QueryTrieNode();
-                    FAST.numberOfTrieNodes++;
+                    FAST.context.numberOfTrieNodes++;
                     ((QueryListNode) node).queries.add(query);
                     newCell.subtree = new HashMap<>();
                     newCell.queries = new HybridList();
                     trieNode.subtree.put(keyword, newCell);
                     for (Query otherQuery : ((QueryListNode) node).queries) {
-                        if (otherQuery.et > FAST.timestamp) {
+                        if (otherQuery.et > FAST.context.timestamp) {
                             if (otherQuery.keywords.size() > (j + 1)) {
 
                                 QueryListNode otherCell = (QueryListNode) newCell.subtree.get(otherQuery.keywords.get(j + 1));
@@ -220,13 +222,13 @@ public class SpatialCell {
                         } else {
                             if (((QueryTrieNode) node).queries == null)
                                 ((QueryTrieNode) node).queries = new HybridList();
-                            if (query instanceof KNNQuery && ((QueryTrieNode) node).queries.kNNQueries().contains(query)) {
-                                inserted = true;
-                                continue;
-                            }
+//                            if (query instanceof KNNQuery && ((QueryTrieNode) node).queries.kNNQueries().contains(query)) {
+//                                inserted = true;
+//                                continue;
+//                            }
 
                             ((QueryTrieNode) node).queries.add(query);
-                            if (((QueryTrieNode) node).queries.mbrQueries().size() > FAST.Degradation_Ratio) {
+                            if (((QueryTrieNode) node).queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO) {
                                 findMBRQueriesToReinsert(((QueryTrieNode) node).queries.mbrQueries(), insertNextLevelQueries);
                             }
                         }
@@ -243,12 +245,12 @@ public class SpatialCell {
                 } else {
                     if (trieNode.queries == null)
                         trieNode.queries = new HybridList();
-                    if (query instanceof KNNQuery && (trieNode).queries.kNNQueries().contains(query)) {
-                        continue;
-                    }
+//                    if (query instanceof KNNQuery && (trieNode).queries.kNNQueries().contains(query)) {
+//                        continue;
+//                    }
 
                     trieNode.queries.add(query);
-                    if (trieNode.queries.mbrQueries().size() > FAST.Degradation_Ratio)
+                    if (trieNode.queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO)
                         findMBRQueriesToReinsert(trieNode.queries.mbrQueries(), insertNextLevelQueries);
                 }
             }
@@ -277,22 +279,22 @@ public class SpatialCell {
 
     public boolean insertAtKeyWord(String keyword, Query query, QueryListNode sharedQueries) {
         if (!textualIndex.containsKey(keyword)) {
-            FAST.numberOfHashEntries++;
-            FAST.queryInsertInvListNodeCounter++;
+            FAST.context.numberOfHashEntries++;
+            FAST.context.queryInsertInvListNodeCounter++;
             textualIndex.put(keyword, new QueryNode(query));
             return true;
         } else { //this keyword already exists in the index
             TextualNode node = textualIndex.get(keyword);
             if (node == null) {
-                FAST.queryInsertInvListNodeCounter++;
+                FAST.context.queryInsertInvListNodeCounter++;
                 textualIndex.put(keyword, new QueryNode(query));
                 return true;
             }
             if (node instanceof QueryNode) { //single query
                 Query exitingQuery = ((QueryNode) node).query;
-                if (exitingQuery.et > FAST.timestamp) { //checking for the support of the query
+                if (exitingQuery.et > FAST.context.timestamp) { //checking for the support of the query
                     QueryListNode rareQueries = new QueryListNode(exitingQuery);
-                    FAST.queryInsertInvListNodeCounter++;
+                    FAST.context.queryInsertInvListNodeCounter++;
                     rareQueries.queries.add(query);
                     textualIndex.put(keyword, rareQueries);
                 } else {
@@ -300,14 +302,16 @@ public class SpatialCell {
                     textualIndex.put(keyword, new QueryNode(query));
                 }
                 return true;
-            } else if ((node instanceof QueryListNode) && ((QueryListNode) node).queries.size() < FAST.Trie_SPLIT_THRESHOLD) { // this keyword is rare
+            } else if ((node instanceof QueryListNode) &&
+                    ((QueryListNode) node).queries.size() < FAST.config.TRIE_SPLIT_THRESHOLD) { // this keyword is rare
                 if ((node) != sharedQueries)
                     if (!((QueryListNode) node).queries.contains(query)) {
                         ((QueryListNode) node).queries.add(query);
-                        FAST.queryInsertInvListNodeCounter++;
+                        FAST.context.queryInsertInvListNodeCounter++;
                     }
                 return true;
-            } else if ((node instanceof QueryListNode) && ((QueryListNode) node).queries.size() >= FAST.Trie_SPLIT_THRESHOLD) { // this keyword is not rare
+            } else if ((node instanceof QueryListNode) &&
+                    ((QueryListNode) node).queries.size() >= FAST.config.TRIE_SPLIT_THRESHOLD) { // this keyword is not rare
                 if (node != sharedQueries) {
                     return ((QueryListNode) node).queries.contains(query);
                 } else {
@@ -355,17 +359,19 @@ public class SpatialCell {
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
             TextualNode node = textualIndex.get(keyword);
-            FAST.objectSearchInvListHashAccess++;
+            FAST.context.objectSearchInvListHashAccess++;
             if (node != null) {
                 if (node instanceof QueryNode) {
                     if (((QueryNode) node).query instanceof MinimalRangeQuery) {
                         MinimalRangeQuery query = (MinimalRangeQuery) ((QueryNode) node).query;
-                        if (keywords.size() >= query.keywords.size() && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp)
+                        if (query.et > FAST.context.timestamp && keywords.size() >= query.keywords.size() &&
+                                SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) &&
+                                TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (keywords.size() >= query.keywords.size() && query.et > FAST.timestamp && query.currentLevel == level &&
+                        if (keywords.size() >= query.keywords.size() && query.et > FAST.context.timestamp &&
+                                query.currentLevel == level &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
@@ -374,14 +380,14 @@ public class SpatialCell {
                     }
                 } else if (node instanceof QueryListNode) {
                     for (MinimalRangeQuery query : ((QueryListNode) node).queries.mbrQueries()) {
-                        FAST.objectSearchInvListNodeCounter++;
-                        if (SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) && TextHelpers.containsTextually(keywords, query.keywords) &&
-                                query.et > FAST.timestamp)
+                        FAST.context.objectSearchInvListNodeCounter++;
+                        if (query.et > FAST.context.timestamp && SpatialHelper.overlapsSpatially(obj.location, query.spatialRange) &&
+                                TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     }
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
-                        FAST.objectSearchInvListNodeCounter++;
-                        if (query.et > FAST.timestamp && query.currentLevel == level &&
+                        FAST.context.objectSearchInvListNodeCounter++;
+                        if (query.et > FAST.context.timestamp && query.currentLevel == level &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
@@ -397,7 +403,7 @@ public class SpatialCell {
         for (int i = 0; i < remainingKeywords.size(); i++) {
             String keyword = remainingKeywords.get(i);
             Object keyWordIndex = textualIndex.get(keyword);
-            FAST.totalTrieAccess++;
+            FAST.context.totalTrieAccess++;
             ((QueryTrieNode) keyWordIndex).find(this, obj, remainingKeywords, i + 1, results, descendingKNNQueries);
         }
     }
@@ -416,14 +422,14 @@ public class SpatialCell {
         if (cleaningIterator == null || !cleaningIterator.hasNext())
             cleaningIterator = textualIndex.entrySet().iterator();
         int numberOfVisitedEntries = 0;
-        while (cleaningIterator.hasNext() && numberOfVisitedEntries < FAST.MAX_ENTRIES_PER_CLEANING_INTERVAL) {
+        while (cleaningIterator.hasNext() && numberOfVisitedEntries < FAST.config.MAX_ENTRIES_PER_CLEANING_INTERVAL) {
             Entry<String, TextualNode> nextNode = cleaningIterator.next();
             TextualNode node = nextNode.getValue();
             String keyword = nextNode.getKey();
             if (node instanceof QueryNode) {
                 numberOfVisitedEntries++;
                 Query q = ((QueryNode) node).query;
-                if (q.et < FAST.timestamp || (FAST.cleanMethod == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
+                if (q.et < FAST.context.timestamp || (FAST.config.CLEAN_METHOD == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
                         (((KNNQuery) q).currentLevel != level || !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar)))) {
                     node = null;
                 }
@@ -431,7 +437,7 @@ public class SpatialCell {
                 Iterator<Query> queriesIterator = ((QueryListNode) node).queries.iterator();
                 while (queriesIterator.hasNext()) {
                     Query q = queriesIterator.next();
-                    if (q.et < FAST.timestamp || (FAST.cleanMethod == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
+                    if (q.et < FAST.context.timestamp || (FAST.config.CLEAN_METHOD == CleanMethod.EXPIRE_KNN && q instanceof KNNQuery &&
                             (((KNNQuery) q).currentLevel != level || !SpatialHelper.overlapsSpatially(bounds, ((KNNQuery) q).location, ((KNNQuery) q).ar))))
                         queriesIterator.remove();
                     numberOfVisitedEntries++;
@@ -450,10 +456,10 @@ public class SpatialCell {
                 QueryListNode combinedQueries = new QueryListNode();
                 numberOfVisitedEntries += ((QueryTrieNode) node).clean(level, bounds, combinedQueries);
                 if (((QueryTrieNode) node).queries == null && ((QueryTrieNode) node).subtree == null
-                        && FAST.keywordFrequencyMap.get(keyword).queryCount <= FAST.Trie_OVERLALL_MERGE_THRESHOLD)
+                        && FAST.keywordFrequencyMap.get(keyword).queryCount <= FAST.config.TRIE_OVERALL_MERGE_THRESHOLD)
                     node = null;
-                else if (combinedQueries.queries.size() < FAST.Trie_OVERLALL_MERGE_THRESHOLD
-                        && FAST.keywordFrequencyMap.get(keyword).queryCount <= FAST.Trie_OVERLALL_MERGE_THRESHOLD)
+                else if (combinedQueries.queries.size() < FAST.config.TRIE_OVERALL_MERGE_THRESHOLD
+                        && FAST.keywordFrequencyMap.get(keyword).queryCount <= FAST.config.TRIE_OVERALL_MERGE_THRESHOLD)
                     textualIndex.put(keyword, combinedQueries);
             }
             if (node == null)

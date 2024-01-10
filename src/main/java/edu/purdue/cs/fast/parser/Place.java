@@ -2,6 +2,9 @@ package edu.purdue.cs.fast.parser;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
+import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.*;
 
 import java.util.ArrayList;
@@ -50,9 +53,16 @@ public class Place {
         return new MinimalRangeQuery(qid, keywords, toRectangle(r, maxRange), null, qid, expireTimestamp);
     }
 
-    public KNNQuery toKNNQuery(int qid, int numKeywords, int k, int expireTimestamp) {
+    public Query toKNNQuery(int qid, int numKeywords, int k, int expireTimestamp, PlacesKNNExperiment.KNNType knnType) {
         ArrayList<String> keywords = new ArrayList<>(properties.tags.subList(0, Math.min(properties.tags.size(), numKeywords)));
-        return new KNNQuery(qid, keywords, coordinate(), k, null, qid, expireTimestamp);
+
+        if (knnType == PlacesKNNExperiment.KNNType.FAST)
+            return new KNNQuery(qid, keywords, coordinate(), k, null, qid, expireTimestamp);
+        else if (knnType == PlacesKNNExperiment.KNNType.CkQST) {
+            return new CkQuery(qid, keywords, coordinate().x, coordinate().y, k, qid, expireTimestamp);
+        } else {
+            throw new RuntimeException("Not implemented!");
+        }
     }
 
     public DataObject toDataObject(int oid, int expireTimestamp) {

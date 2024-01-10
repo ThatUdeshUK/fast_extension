@@ -132,8 +132,8 @@ public class Test {
         System.gc();
         System.gc();
 
-        FAST.Trie_SPLIT_THRESHOLD = threshold;
-        FAST.Degradation_Ratio = degerationThreshold;
+        FAST.config.TRIE_SPLIT_THRESHOLD = threshold;
+        FAST.config.DEGRADATION_RATIO = degerationThreshold;
 
         FAST localHybridPyramidIndexExperiment = new FAST(
                 new Rectangle(new Point(0.0, 0.0),
@@ -159,8 +159,6 @@ public class Test {
         String toReturn = "";
         Long dataProcessingDuration;
         Long queryRegisterationduration;
-        FAST.totalVisited = 0;
-        FAST.spatialOverlappingQueries = 0;
         int queryTasks = 0;
         double sumQueryKeywords = 0;
         double sumOfObjectsKeywords = 0;
@@ -184,21 +182,21 @@ public class Test {
         metadata += "\nImportableQuery register Time per query (nanos)    = " + queryRegisterationduration / queries.size();
         metadata += "\nTotal query evalautors                   = " + queryTasks;
         metadata += "\nqueryInsertInvListNodeCounter            = "
-                + FAST.queryInsertInvListNodeCounter;
+                + FAST.context.queryInsertInvListNodeCounter;
         metadata += "\nqueryInsertTrieNodeCounter               = "
-                + FAST.queryInsertTrieNodeCounter;
+                + FAST.context.queryInsertTrieNodeCounter;
         metadata += "\nTotal node insertions                    = "
-                + (FAST.queryInsertTrieNodeCounter
-                + FAST.queryInsertInvListNodeCounter);
+                + (FAST.context.queryInsertTrieNodeCounter
+                + FAST.context.queryInsertInvListNodeCounter);
         metadata += "\ntotalQueryInsertionsIncludingReplications= "
-                + FAST.totalQueryInsertionsIncludingReplications;
+                + FAST.context.totalQueryInsertionsIncludingReplications;
         metadata += "\nAverage query replications               = "
-                + FAST.totalQueryInsertionsIncludingReplications
+                + FAST.context.totalQueryInsertionsIncludingReplications
                 / (double) queries.size();
         metadata += "\nnumberOfHashEntries                      = "
-                + FAST.numberOfHashEntries;
+                + FAST.context.numberOfHashEntries;
         metadata += "\nnumberOfTrieNodes                        = "
-                + FAST.numberOfTrieNodes;
+                + FAST.context.numberOfTrieNodes;
         metadata += "\nAverage ranked inv list length           = " + localIndex.getAverageRankedInvListSize();
         metadata += "\nAverage query keywords size              = " + sumQueryKeywords / queries.size();
 
@@ -239,34 +237,34 @@ public class Test {
         System.out.println(" Local" + " DataProcessing Time per object (nano)= "
                 + (dataProcessingDuration / dataObjects.size() / 5) + " with qulified tuples:" + totalEmiitedCount
                 + "total query count = " + querycount + "total visted  = "
-                + FAST.totalVisited + "totalspatial overlapping  = "
-                + FAST.spatialOverlappingQueries);
+                + FAST.context.totalVisited + "totalspatial overlapping  = "
+                + FAST.context.spatialOverlappingQueries);
 
         metadata += "\nAverage object keywords        = " + sumOfObjectsKeywords / dataObjects.size() / 5;
         metadata += "\nobjectSearchInvListNodeCounter = "
-                + FAST.objectSearchInvListNodeCounter / 5;
+                + FAST.context.objectSearchInvListNodeCounter / 5;
         metadata += "\nobjectSearchTrieNodeCounter    = "
-                + FAST.objectSearchTrieNodeCounter / 5;
+                + FAST.context.objectSearchTrieNodeCounter / 5;
         metadata += "\nTotal search node access       = "
-                + ((FAST.objectSearchTrieNodeCounter
-                + FAST.objectSearchInvListNodeCounter)) / 5;
+                + ((FAST.context.objectSearchTrieNodeCounter
+                + FAST.context.objectSearchInvListNodeCounter)) / 5;
         metadata += "\nobjectSearchInvListHashAccess  = "
-                + FAST.objectSearchInvListHashAccess / 5;
+                + FAST.context.objectSearchInvListHashAccess / 5;
         metadata += "\nobjectSearchTrieHashAccess     = "
-                + FAST.objectSearchTrieHashAccess / 5;
-        metadata += "\nTotoal trie access             = " + FAST.totalTrieAccess / 5;
+                + FAST.context.objectSearchTrieHashAccess / 5;
+        metadata += "\nTotoal trie access             = " + FAST.context.totalTrieAccess / 5;
         metadata += "\nAverage operations per trie    = "
-                + (FAST.objectSearchTrieNodeCounter
-                + FAST.objectSearchTrieHashAccess)
-                / (FAST.totalTrieAccess + 1);
+                + (FAST.context.objectSearchTrieNodeCounter
+                + FAST.context.objectSearchTrieHashAccess)
+                / (FAST.context.totalTrieAccess + 1);
         metadata += "\nTotal hash aceesses            = "
-                + ((FAST.objectSearchTrieHashAccess
-                + FAST.objectSearchInvListHashAccess)) / 5;
+                + ((FAST.context.objectSearchTrieHashAccess
+                + FAST.context.objectSearchInvListHashAccess)) / 5;
         metadata += "\nTotal operations               = "
-                + (((FAST.objectSearchTrieHashAccess
-                + FAST.objectSearchInvListHashAccess)
-                + (FAST.objectSearchTrieNodeCounter
-                + FAST.objectSearchInvListNodeCounter)))
+                + (((FAST.context.objectSearchTrieHashAccess
+                + FAST.context.objectSearchInvListHashAccess)
+                + (FAST.context.objectSearchTrieNodeCounter
+                + FAST.context.objectSearchInvListNodeCounter)))
                 / 5;
 
         toReturn = toReturn + "querytime," + (queryRegisterationduration / queries.size()) + ",objectime,"

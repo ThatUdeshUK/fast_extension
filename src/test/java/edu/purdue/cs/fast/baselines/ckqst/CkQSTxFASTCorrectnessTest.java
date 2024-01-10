@@ -1,43 +1,42 @@
-package edu.purdue.cs.fast;
+package edu.purdue.cs.fast.baselines.ckqst;
 
+import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.Run;
+import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
-import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 
-class FASTKNNCleanTest {
-    private final PlacesKNNExpireExperiment experiment;
+class CkQSTxFASTCorrectnessTest {
 
-    public FASTKNNCleanTest() {
-        FAST fast = new FAST(
-                new Rectangle(
-                        new Point(0.0, 0.0),
-                        new Point(512, 512)
-                ),
-                512,
-                9
-        );
-        fast.setCleaning(CleanMethod.EXPIRE_KNN);
+    private final int numQueries = 1000000;
+    private final int numObjects = 100000;
+    private final PlacesKNNExperiment experiment;
 
-        experiment = new PlacesKNNExpireExperiment(
+    public CkQSTxFASTCorrectnessTest() {
+        CkQST ckqst = new CkQST(512, 512, 9);
+
+        experiment = new PlacesKNNExperiment(
                 null,
-                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_10000.json").toString(),
-                fast,
+                Paths.get(System.getProperty("user.dir") + "/../data/places_dump_US.geojson").toString(),
+                ckqst,
                 "places_knn_seacnn",
-                5000,
-                2500,
+                numObjects,
+                0,
+                numQueries,
+                numObjects,
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.KNNType.CkQST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -45,12 +44,7 @@ class FASTKNNCleanTest {
 
     @Test
     public void testCorrectness() {
-        experiment.init();
-        System.out.println("Test data loaded!");
-        experiment.create();
-        System.out.println("Index Created!");
-        experiment.search();
-        System.out.println("Search Completed!");
+        experiment.run();
 
         List<List<Integer>> results = experiment.getResults().stream()
                 .map((list) -> list.stream().map((q) -> q.id).collect(Collectors.toList()))
@@ -65,9 +59,15 @@ class FASTKNNCleanTest {
             List<Integer> resultSorted = result.stream().sorted().collect(Collectors.toList());
             List<Integer> groundTruthSorted = groundTruth.stream().sorted().collect(Collectors.toList());
             if (result.size() != groundTruth.size()) {
-                System.out.println();
-                System.out.println("Results: \t\t" + resultSorted);
-                System.out.println("Ground Truth: \t" + groundTruthSorted);
+//                System.out.println("Results: \t\t" + resultSorted);
+//                System.out.println("Ground Truth: \t" + groundTruthSorted);
+                HashSet<Integer> inter = new HashSet<>(groundTruthSorted);
+                resultSorted.forEach(inter::remove);
+                System.out.println("Missing: \t" + inter);
+
+                HashSet<Integer> inter2 = new HashSet<>(resultSorted);
+                groundTruthSorted.forEach(inter2::remove);
+                System.out.println("Extras: \t" + inter2);
             }
 
             Assertions.assertArrayEquals(resultSorted.toArray(), groundTruthSorted.toArray());
@@ -76,8 +76,8 @@ class FASTKNNCleanTest {
     }
 
     private List<List<Integer>> readGroundTruth() {
-        System.out.println("Running FAST KNN without cleaning as the ground truth");
-        FAST goldFast = new FAST(
+        System.out.println("Running FAST KNN as the ground truth");
+        FAST fast = new FAST(
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)
@@ -86,26 +86,33 @@ class FASTKNNCleanTest {
                 9
         );
 
-        PlacesKNNExpireExperiment goldExperiment = new PlacesKNNExpireExperiment(
+        PlacesKNNExperiment fastExperiment = new PlacesKNNExperiment(
                 null,
-                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_10000.json").toString(),
-                goldFast,
+                Paths.get(System.getProperty("user.dir") + "/../data/places_dump_US.geojson").toString(),
+                fast,
                 "places_knn_seacnn",
-                5000,
-                2500,
+                numObjects,
+                0,
+                numQueries,
+                numObjects,
                 5,
                 5,
                 512,
                 PlacesKNNExperiment.KNNType.FAST
         );
-        goldExperiment.setSeed(7);
-        goldExperiment.setSaveStats(false);
+        fastExperiment.setSeed(7);
+        fastExperiment.setSaveStats(false);
+        fastExperiment.init();
 
-        goldExperiment.init();
-        goldExperiment.create();
-        goldExperiment.search();
+        System.gc();
+        System.gc();
+        System.gc();
 
-        List<List<Integer>> results = goldExperiment.getResults().stream()
+        fastExperiment.create();
+        fastExperiment.preloadObjects();
+        fastExperiment.search();
+
+        List<List<Integer>> results = fastExperiment.getResults().stream()
                 .map((list) -> list.stream().map((q) -> q.id).collect(Collectors.toList()))
                 .collect(Collectors.toList());
 

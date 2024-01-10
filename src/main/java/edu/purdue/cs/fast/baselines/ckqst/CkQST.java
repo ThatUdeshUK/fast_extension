@@ -1,42 +1,74 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import edu.purdue.cs.fast.SpatialKeywordIndex;
-import edu.purdue.cs.fast.baselines.ckqst.structures.OrderedInvertedIndex;
+import edu.purdue.cs.fast.baselines.ckqst.models.CkObject;
+import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.baselines.ckqst.structures.CostBasedQuadTree;
+import edu.purdue.cs.fast.baselines.ckqst.structures.ObjectIndex;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CkQST implements SpatialKeywordIndex {
-    private final OrderedInvertedIndex index;
+    public static int xRange = 10;
+    public static int yRange = 10;
+    public static int maxHeight = 9;
+
+    public static double thetaU;
+    private ObjectIndex objectIndex;
+    private final CostBasedQuadTree queryIndex;
     private int timestamp = 0;
 
     public CkQST() {
-        index = new OrderedInvertedIndex(0);
+        queryIndex = new CostBasedQuadTree(0, 0, xRange, yRange, maxHeight);
+        thetaU = 0.5;
     }
 
+    public CkQST(int xRange, int yRange, int maxHeight) {
+        CkQST.xRange = xRange;
+        CkQST.yRange = yRange;
+        CkQST.maxHeight = maxHeight;
+        queryIndex = new CostBasedQuadTree(0, 0, xRange, yRange, maxHeight);
+        thetaU = 0.5;
+    }
 
-    public void addContinuousQuery(KNNQuery query) {
+    @Override
+    public void preloadObject(DataObject object) {
+        if (objectIndex == null)
+            objectIndex = new ObjectIndex();
 
+        objectIndex.insert(new CkObject(object));
     }
 
     @Override
     public void addContinuousQuery(Query query) {
         timestamp++;
-        if (query.getClass() == KNNQuery.class)
-            index.insertQueryPL((KNNQuery) query);
-        else
+        if (query.getClass() == CkQuery.class) {
+            if (objectIndex != null) {
+                objectIndex.search(query).forEach(object -> {
+                    if (new HashSet<>(object.keywords).containsAll(query.keywords))
+                        ((CkQuery) query).updateSR(object);
+                });
+            }
+            queryIndex.insert((CkQuery) query);
+        } else
             throw new RuntimeException("CkQST only support KNNQueries!");
     }
 
     @Override
-    public List<Query> searchQueries(DataObject dataObject) {
+    public Collection<Query> searchQueries(DataObject dataObject) {
         timestamp++;
-        throw new RuntimeException("Not implemented!");
+//        if (dataObject.id == 1000 + 91) {
+//            System.out.println("DEBUG!");
+//        }
+        return queryIndex.searchObject(new CkObject(dataObject));
     }
 
     public void printIndex() {
-        System.out.println(index);
+        System.out.println(queryIndex);
     }
 }

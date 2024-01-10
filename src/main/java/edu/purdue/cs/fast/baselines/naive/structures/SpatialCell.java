@@ -380,6 +380,9 @@ public class SpatialCell {
     }
 
     public ArrayList<String> searchQueries(DataObject obj, List<String> keywords, List<Query> finalQueries) {
+        if (obj.id == 73) {
+            System.out.println(keywords);
+        }
         ArrayList<String> remainingKeywords = new ArrayList<>();
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);

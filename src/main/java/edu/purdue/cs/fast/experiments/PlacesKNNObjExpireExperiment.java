@@ -8,8 +8,8 @@ import java.util.List;
 
 public class PlacesKNNObjExpireExperiment extends PlacesKNNExpireExperiment {
     public PlacesKNNObjExpireExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
-                                        int numQueries, int numObjects, int numKeywords, int k, int maxRange) {
-        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, k, maxRange);
+                                        int numQueries, int numObjects, int numKeywords, int k, int maxRange, KNNType knnType) {
+        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, k, maxRange, knnType);
     }
 
     @Override

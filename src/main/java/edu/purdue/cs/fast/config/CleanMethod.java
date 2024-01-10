@@ -1,4 +1,4 @@
-package edu.purdue.cs.fast.helper;
+package edu.purdue.cs.fast.config;
 
 public enum CleanMethod {
     NO,

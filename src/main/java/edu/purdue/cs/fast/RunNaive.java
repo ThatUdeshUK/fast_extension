@@ -2,7 +2,7 @@ package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.*;
-import edu.purdue.cs.fast.helper.CleanMethod;
+import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.apache.logging.log4j.LogManager;
@@ -63,19 +63,22 @@ public class RunNaive {
                 case KNN:
                     experiment = new PlacesKNNExperiment(
                             Paths.get(args[0], "results/output_places_US_knn.csv").toString(),
-                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange
+                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
+                            PlacesKNNExperiment.KNNType.FAST
                     );
                     break;
                 case KNN_EXPIRE:
                     experiment = new PlacesKNNExpireExperiment(
                             Paths.get(args[0], "results/output_places_US_knn_exp.csv").toString(),
-                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange
+                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
+                            PlacesKNNExperiment.KNNType.FAST
                     );
                     break;
                 case KNN_OBJ_EXPIRE:
                     experiment = new PlacesKNNObjExpireExperiment(
                             Paths.get(args[0], "results/output_places_US_knn_naive_obj_exp.csv").toString(),
-                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange
+                            ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
+                            PlacesKNNExperiment.KNNType.FAST
                     );
                     break;
                 default:
