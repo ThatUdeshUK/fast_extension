@@ -207,7 +207,7 @@ public class Test {
             for (DataObject obj : dataObjects) {
 
                 sumOfObjectsKeywords += obj.keywords.size();
-                List<Query> result = localIndex.searchQueries(obj);
+                List<Query> result = localIndex.insertObject(obj);
                 if (verifyCorrectness)
                     // if (result.size() > 0) {
 //                    verifyCorrectness(trieIndex, obj, result, localIndex);
@@ -309,7 +309,7 @@ public class Test {
                 }
 
             }
-            localIndex.searchQueries(obj);
+            localIndex.insertObject(obj);
             ;
 
         } else if (totalResult > result.size()) {
@@ -319,7 +319,7 @@ public class Test {
                     if (q.id == 657746)
                         System.out.println("missing");
                     System.err.println("Error missing query" + q.toString());
-                    localIndex.searchQueries(obj);
+                    localIndex.insertObject(obj);
                 }
             }
         }

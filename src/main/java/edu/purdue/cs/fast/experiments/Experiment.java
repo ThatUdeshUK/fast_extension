@@ -66,7 +66,7 @@ public abstract class Experiment<T> {
     public void create() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
-            index.addContinuousQuery(q);
+            index.insertQuery(q);
         }
         stopwatch.stop();
         if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
@@ -88,7 +88,7 @@ public abstract class Experiment<T> {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
-            Collection<Query> res = index.searchQueries(o);
+            Collection<Query> res = index.insertObject(o);
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();

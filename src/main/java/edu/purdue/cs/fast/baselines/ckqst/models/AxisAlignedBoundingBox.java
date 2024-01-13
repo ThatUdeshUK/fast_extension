@@ -1,7 +1,9 @@
 package edu.purdue.cs.fast.baselines.ckqst.models;
 
 
-public class AxisAlignedBoundingBox extends XYPoint {
+import edu.purdue.cs.fast.models.Point;
+
+public class AxisAlignedBoundingBox extends Point implements Comparable<Object> {
 
     public double height = 0;
     public double width = 0;
@@ -11,7 +13,7 @@ public class AxisAlignedBoundingBox extends XYPoint {
     private double maxX = 0;
     private double maxY = 0;
 
-    public AxisAlignedBoundingBox(XYPoint upperLeft, double width, double height) {
+    public AxisAlignedBoundingBox(Point upperLeft, double width, double height) {
         super(upperLeft.x, upperLeft.y);
         this.width = width;
         this.height = height;
@@ -22,7 +24,7 @@ public class AxisAlignedBoundingBox extends XYPoint {
         maxY = upperLeft.y+height;
     }
 
-    public void set(XYPoint upperLeft, double width, double height) {
+    public void set(Point upperLeft, double width, double height) {
         set(upperLeft.x, upperLeft.y);
         this.width = width;
         this.height = height;
@@ -40,7 +42,7 @@ public class AxisAlignedBoundingBox extends XYPoint {
         return width;
     }
 
-    public boolean containsPoint(XYPoint p) {
+    public boolean containsPoint(Point p) {
         if (p.x>=maxX) return false;
         if (p.x<minX) return false;
         if (p.y>=maxY) return false;

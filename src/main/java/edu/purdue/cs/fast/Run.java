@@ -21,13 +21,13 @@ public class Run {
         if (args.length > 2)
             name = args[2];
 
-        Workload workload = Workload.KNN;
+        Workload workload = Workload.KNN_OBJ_EXPIRE;
         double srRate = 0.01;
         int k = 5;
         double knnRatio = 0.05;
         int numKeywords = 5;
-        int numPreObjects = 100000;
-        int numObjects = 100000;
+        int numPreObjects = 0;
+        int numObjects = 4000;
         int fineGridGran = 512;
         int maxLevel = 9;
         int maxRange = 512;
@@ -35,9 +35,9 @@ public class Run {
         CleanMethod cleanMethod = CleanMethod.NO;
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-//        numQueriesList.add(100000);
-        numQueriesList.add(500000);
-        numQueriesList.add(1000000);
+        numQueriesList.add(10000);
+//        numQueriesList.add(500000);
+//        numQueriesList.add(1000000);
 //        numQueriesList.add(2500000);
 //        numQueriesList.add(5000000);
 //        numQueriesList.add(10000000);
@@ -97,7 +97,7 @@ public class Run {
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, srRate, maxRange
                     );
             }
-            experiment.setSaveStats(true);
+            experiment.setSaveStats(false);
             experiment.run();
 
 //            try {

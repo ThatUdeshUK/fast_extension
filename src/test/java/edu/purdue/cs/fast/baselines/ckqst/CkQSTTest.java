@@ -5,7 +5,6 @@ import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Query;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -47,14 +46,14 @@ class CkQSTTest {
         CkQST testCkQST = new CkQST();
 
         for (Query query : this.queries) {
-            testCkQST.addContinuousQuery(query);
+            testCkQST.insertQuery(query);
         }
         testCkQST.printIndex();
 
         System.out.println("-----Search Test-----");
         for (int i = 0; i < objects.size(); i++) {
             System.out.println(objects.get(i));
-            List<Integer> fastAns = testCkQST.searchQueries(objects.get(i)).stream().map((Query query) -> query.id).collect(Collectors.toList());
+            List<Integer> fastAns = testCkQST.insertObject(objects.get(i)).stream().map((Query query) -> query.id).collect(Collectors.toList());
             System.out.println(fastAns);
 
 //            testCkQST.printIndex();

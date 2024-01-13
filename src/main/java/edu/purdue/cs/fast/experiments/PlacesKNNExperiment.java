@@ -1,11 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
-import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
-import edu.purdue.cs.fast.baselines.ckqst.CkQST;
-import edu.purdue.cs.fast.baselines.ckqst.models.CkObject;
-import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
-import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.util.*;

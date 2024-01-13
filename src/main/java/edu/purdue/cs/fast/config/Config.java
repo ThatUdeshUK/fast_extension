@@ -8,4 +8,5 @@ public class Config {
     public int MAX_ENTRIES_PER_CLEANING_INTERVAL = 10;
     public CleanMethod CLEAN_METHOD = CleanMethod.NO;
     public boolean PUSH_TO_LOWEST = false;
+//    public int RHO = 2;
 }

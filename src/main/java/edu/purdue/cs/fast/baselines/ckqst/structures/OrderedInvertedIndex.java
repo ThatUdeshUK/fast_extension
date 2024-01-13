@@ -1,8 +1,8 @@
 package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
-import edu.purdue.cs.fast.baselines.ckqst.models.CkObject;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
 
 import java.util.*;
@@ -262,7 +262,7 @@ public class OrderedInvertedIndex {
         return C_PL_V + CkQST.thetaU * (1 + Math.log(numB + 1)); // CPLu = O(1 + log |B|)
     }
 
-    public void searchObject(CkObject obj, Collection<Query> results) {
+    public void searchObject(DataObject obj, Collection<Query> results) {
         // ASSUMPTION: Paper doesn't include details on find the PL. We are doing an exhaustive search.
         for (int i = 0; i < obj.keywords.size(); i++) {
             String keyword = obj.keywords.get(i);
@@ -276,7 +276,7 @@ public class OrderedInvertedIndex {
         }
     }
 
-    private void searchOneKey(String oneKey, CkObject obj, Collection<Query> results) {
+    private void searchOneKey(String oneKey, DataObject obj, Collection<Query> results) {
         if (postingLists.containsKey(oneKey)) {
             List<Block> oneKeyBlockList = postingLists.get(oneKey);
 
@@ -286,7 +286,7 @@ public class OrderedInvertedIndex {
                         System.out.println("DEBUG it");
                         Block  b = oneKeyBlockList.get(0);
                     }
-                    if (query.containsPoint(obj)) {
+                    if (query.containsPoint(obj.location)) {
                         if (!results.contains(query)) {
                             results.add(query);
                             query.updateSR(obj);
@@ -297,12 +297,12 @@ public class OrderedInvertedIndex {
         }
     }
 
-    private void searchTwoKey(String key, int idxJ, CkObject obj, Collection<Query> results) {
+    private void searchTwoKey(String key, int idxJ, DataObject obj, Collection<Query> results) {
         if (postingLists.containsKey(key)) {
             List<Block> blockList = postingLists.get(key);
             if (obj.keywords.size() == 2 && !blockList.isEmpty()) {
                 for (CkQuery query : blockList.get(0).getQueries()) {
-                    if (query.containsPoint(obj)) {
+                    if (query.containsPoint(obj.location)) {
                         if (!results.contains(query)) {
                             results.add(query);
                             query.updateSR(obj);
@@ -332,7 +332,7 @@ public class OrderedInvertedIndex {
                                 match = false;
                             }
 
-                            if (match && query.containsPoint(obj)) {
+                            if (match && query.containsPoint(obj.location)) {
                                 if (!results.contains(query)) {
                                     results.add(query);
                                     query.updateSR(obj);

@@ -54,7 +54,7 @@ class FASTKNNTest {
         );
 
         for (Query query : this.queries) {
-            testFAST.addContinuousQuery(query);
+            testFAST.insertQuery(query);
         }
 
         testFAST.printFrequencies();
@@ -73,13 +73,13 @@ class FASTKNNTest {
         );
 
         for (Query query : this.queries) {
-            testFAST.addContinuousQuery(query);
+            testFAST.insertQuery(query);
         }
 
         System.out.println("-----Search Test-----");
         for (int i = 0; i < answers.size(); i++) {
             System.out.println(objects.get(i));
-            List<Integer> fastAns = testFAST.searchQueries(objects.get(i)).stream().map((Query query) -> query.id).collect(Collectors.toList());
+            List<Integer> fastAns = testFAST.insertObject(objects.get(i)).stream().map((Query query) -> query.id).collect(Collectors.toList());
             System.out.println(fastAns + " | " + answers.get(i).toString());
 
             testFAST.printIndex();

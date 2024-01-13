@@ -12,6 +12,7 @@ public class KNNQuery extends Query {
     public Point location;
     public double ar;
     public int k;
+    public int kHat;
 
     public int currentLevel = -1;
     private BoundedPriorityQueue<DataObject> monitoredObjects;
@@ -21,6 +22,7 @@ public class KNNQuery extends Query {
         super(id, keywords, predicate, st, et);
         this.location = location;
         this.k = k;
+        this.kHat = k; //+ FAST.config.RHO;
         this.ar = Double.MAX_VALUE;
         this.spatialBox = new Rectangle(0, 0, 0, 0);
     }
@@ -33,13 +35,28 @@ public class KNNQuery extends Query {
      * @return Whether the KNN query currently monitors `k` objects or not
      */
     public boolean pushUntilK(DataObject obj) {
+        return pushUntilK_(obj, k);
+    }
+
+    /**
+     * Push objects until there are `k + rho` number of objects. Once it's filled upto `k + rho`,
+     * the `ar` of the KNNQuery is updated.
+     *
+     * @param obj DataObject to be added
+     * @return Whether the KNN query currently monitors `k + rho` objects or not
+     */
+    public boolean pushUntilKHat(DataObject obj) {
+        return pushUntilK_(obj, kHat);
+    }
+
+    private boolean pushUntilK_(DataObject obj, int kStar) {
         if (monitoredObjects == null) {
-            monitoredObjects = new BoundedPriorityQueue<>(k, new EuclideanComparator(location));
+            monitoredObjects = new BoundedPriorityQueue<>(kStar, new EuclideanComparator(location));
         }
 
         monitoredObjects.add(obj);
-        boolean kFilled = monitoredObjects.isFull();
-        if (kFilled) {
+        boolean kStarFilled = monitoredObjects.isFull();
+        if (kStarFilled) {
             assert monitoredObjects.peek() != null;
 
             Point o = monitoredObjects.peek().location;
@@ -47,7 +64,20 @@ public class KNNQuery extends Query {
             double maxY = o.y - location.y;
             this.ar = Math.sqrt(maxX * maxX + maxY * maxY);
         }
-        return kFilled;
+        return kStarFilled;
+    }
+
+    /**
+     * Whether there are `k` number of objects.
+     *
+     * @return Whether the KNN query currently monitors `k` objects or not
+     */
+    public boolean kFilled() {
+        if (monitoredObjects == null) {
+            return false;
+        }
+
+        return monitoredObjects.isFull();
     }
 
     /**
@@ -84,6 +114,7 @@ public class KNNQuery extends Query {
                 ", k=" + k +
                 ", ar=" + ar +
                 ", cl=" + currentLevel +
+                ", et=" + et +
                 '}';
     }
 

@@ -354,7 +354,7 @@ public class SpatialCell {
     }
 
     public void searchQueries(DataObject obj, List<String> keywords, List<Query> results,
-                              List<KNNQuery> descendingKNNQueries) {
+                              List<KNNQuery> descendingKNNQueries, boolean isExpiry) {
         ArrayList<String> remainingKeywords = new ArrayList<>();
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
@@ -370,12 +370,13 @@ public class SpatialCell {
                             results.add(query);
                     } else if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if (keywords.size() >= query.keywords.size() && query.et > FAST.context.timestamp &&
+                        if (keywords.size() >= query.keywords.size() && (query.et > FAST.context.timestamp || isExpiry) &&
                                 query.currentLevel == level &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
-                            query.pushUntilK(obj);
+                            if (!isExpiry)
+                                query.pushUntilKHat(obj);
                         }
                     }
                 } else if (node instanceof QueryListNode) {
@@ -387,11 +388,12 @@ public class SpatialCell {
                     }
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.context.objectSearchInvListNodeCounter++;
-                        if (query.et > FAST.context.timestamp && query.currentLevel == level &&
+                        if ((query.et > FAST.context.timestamp || isExpiry) && query.currentLevel == level &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
-                            query.pushUntilK(obj);
+                            if (!isExpiry)
+                                query.pushUntilKHat(obj);
                         }
                     }
                 } else if (node instanceof QueryTrieNode) {
@@ -404,7 +406,7 @@ public class SpatialCell {
             String keyword = remainingKeywords.get(i);
             Object keyWordIndex = textualIndex.get(keyword);
             FAST.context.totalTrieAccess++;
-            ((QueryTrieNode) keyWordIndex).find(this, obj, remainingKeywords, i + 1, results, descendingKNNQueries);
+            ((QueryTrieNode) keyWordIndex).find(this, obj, remainingKeywords, i + 1, results, descendingKNNQueries, isExpiry);
         }
     }
 

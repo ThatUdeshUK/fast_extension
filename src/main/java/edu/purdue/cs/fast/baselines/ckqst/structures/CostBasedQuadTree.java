@@ -2,9 +2,9 @@ package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
 import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
-import edu.purdue.cs.fast.baselines.ckqst.models.CkObject;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
-import edu.purdue.cs.fast.baselines.ckqst.models.XYPoint;
+import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Query;
 
 import java.util.*;
@@ -23,7 +23,7 @@ public class CostBasedQuadTree {
     private QuadNode root;
 
     public CostBasedQuadTree(double x, double y, double width, double height, int maxHeight) {
-        XYPoint xyPoint = new XYPoint(x, y);
+        Point xyPoint = new Point(x, y);
         AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(xyPoint, width, height);
         QuadNode.maxHeight = maxHeight;
         root = new QuadNode(aabb);
@@ -41,7 +41,7 @@ public class CostBasedQuadTree {
     /**
      * Stream object through the quadtree.
      */
-    public Collection<Query> searchObject(CkObject object) {
+    public Collection<Query> searchObject(DataObject object) {
         Set<Query> results = new HashSet<>();
         this.root.searchObject(object, results);
         return results;
@@ -171,17 +171,17 @@ public class CostBasedQuadTree {
             northWest = new QuadNode(aabbNW);
             northWest.height = height + 1;
 
-            XYPoint xyNE = new XYPoint(aabb.x + w, aabb.y);
+            Point xyNE = new Point(aabb.x + w, aabb.y);
             AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE, w, h);
             northEast = new QuadNode(aabbNE);
             northEast.height = height + 1;
 
-            XYPoint xySW = new XYPoint(aabb.x, aabb.y + h);
+            Point xySW = new Point(aabb.x, aabb.y + h);
             AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(xySW, w, h);
             southWest = new QuadNode(aabbSW);
             southWest.height = height + 1;
 
-            XYPoint xySE = new XYPoint(aabb.x + w, aabb.y + h);
+            Point xySE = new Point(aabb.x + w, aabb.y + h);
             AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE, w, h);
             southEast = new QuadNode(aabbSE);
             southEast.height = height + 1;
@@ -242,9 +242,9 @@ public class CostBasedQuadTree {
          * @param object  Object to be matched with the queries contained in this node.
          * @param results Queries matching with the streamed object.
          */
-        protected void searchObject(CkObject object, Collection<Query> results) {
+        protected void searchObject(DataObject object, Collection<Query> results) {
             // Automatically abort if the range does not collide with this quad
-            if (!aabb.containsPoint(object))
+            if (!aabb.containsPoint(object.location))
                 return;
 
             // TODO - Search ordered inverted index
@@ -326,7 +326,7 @@ public class CostBasedQuadTree {
             return getString(tree.getRoot(), "", true);
         }
 
-        private static <T extends XYPoint> String getString(QuadNode node, String prefix, boolean isTail) {
+        private static <T extends Point> String getString(QuadNode node, String prefix, boolean isTail) {
             StringBuilder builder = new StringBuilder();
 
             builder.append(prefix).append(isTail ? "└── " : "├── ").append(" node={").append(node.toString()).append("}\n");

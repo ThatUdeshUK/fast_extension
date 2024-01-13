@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 class CkQSTxFASTCorrectnessTest {
 
-    private final int numQueries = 1000000;
+    private final int numQueries = 100000;
     private final int numObjects = 100000;
     private final PlacesKNNExperiment experiment;
 

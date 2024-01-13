@@ -30,20 +30,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.config.Context;
+import edu.purdue.cs.fast.helper.ExpireTimeComparator;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.structures.*;
 
 
-public class FAST implements SpatialKeywordIndex {
+public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     public static Context context;
     public static Config config;
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
-    //    public PriorityQueue<DataObject> expiringObjects;
+    public PriorityQueue<DataObject> expiringObjects;
     private SpatialCell cellBeingCleaned;
-    private boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
+    private final boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
     private int minInsertedLevel;
     private int maxInsertedLevel;
 
@@ -52,10 +53,10 @@ public class FAST implements SpatialKeywordIndex {
         config = new Config();
         index = new ConcurrentHashMap<>();
         keywordFrequencyMap = new HashMap<>();
+        expiringObjects = new PriorityQueue<>(new ExpireTimeComparator());
 
         this.minInsertedLevel = -1;
         this.maxInsertedLevel = -1;
-//        expiringObjects = new PriorityQueue<>(new ExpireTimeComparator());
 
         cleaningIterator = null;
         cellBeingCleaned = null;
@@ -90,11 +91,11 @@ public class FAST implements SpatialKeywordIndex {
 
     @Override
     public void preloadObject(DataObject object) {
-        searchQueries(object);
+        insertObject(object);
     }
 
     @Override
-    public void addContinuousQuery(Query query) {
+    public Collection<DataObject> insertQuery(Query query) {
         context.timestamp++;
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
@@ -105,6 +106,7 @@ public class FAST implements SpatialKeywordIndex {
 
 //		if (FAST.cleanMethod != CleanMethod.NO && context.timestamp % CLEANING_INTERVAL == 0)
 //			cleanNextSetOfEntries();
+        return null;
     }
 
     public void addContinuousKNNQuery(KNNQuery query) {
@@ -226,9 +228,9 @@ public class FAST implements SpatialKeywordIndex {
     }
 
     @Override
-    public List<Query> searchQueries(DataObject dataObject) {
+    public List<Query> insertObject(DataObject dataObject) {
         context.timestamp++;
-//        expiringObjects.add(dataObject);
+        expiringObjects.add(dataObject);
         List<Query> results = internalSearchQueries(dataObject, false);
 
         // Vacuum cleaning
@@ -236,10 +238,8 @@ public class FAST implements SpatialKeywordIndex {
             cleanNextSetOfEntries();
 
         // Object expiring
-//        Run.logger.debug(timestamp + ", " + expiringObjects.peek());
-//        while (expiringObjects.peek() != null && expiringObjects.peek().et <= timestamp) {
+//        while (expiringObjects.peek() != null && expiringObjects.peek().et <= context.timestamp) {
 //            expireQueries(expiringObjects.poll());
-//
 //        }
 
         return results;
@@ -263,7 +263,7 @@ public class FAST implements SpatialKeywordIndex {
             SpatialCell spatialCellOptimized = index.get(cellCoordinates);
             if (spatialCellOptimized != null) {
                 // TODO - DANGER you removed `keywords =`
-                spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries);
+                spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries, isExpiry);
             }
             step /= 2;
             granualrity <<= 1;
@@ -275,23 +275,33 @@ public class FAST implements SpatialKeywordIndex {
         return result;
     }
 
-//    public void expireQueries(DataObject dataObject) {
-////        Run.logger.debug("Obj expire: " + dataObject.id);
-//        int oldTimestamp = timestamp;
-//        FAST.timestamp = 0;
-//        List<Query> results = internalSearchQueries(dataObject, true);
-//        FAST.timestamp = oldTimestamp;
-//        List<KNNQuery> ascending = new ArrayList<>();
-//        results.forEach(query -> {
-//            if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != maxLevel) {
-//                ((KNNQuery) query).getMonitoredObjects().remove(dataObject);
-//                ((KNNQuery) query).ar = Double.MAX_VALUE;
-//                ascending.add((KNNQuery) query);
-//            }
-//        });
+    public void expireQueries(DataObject dataObject) {
+//        Run.logger.debug("Obj expire: " + dataObject.id);
+        if (dataObject.id == 114) {
+            System.out.println("DEBUG!");
+        }
+        List<Query> results = internalSearchQueries(dataObject, true);
+        if (!results.isEmpty() && dataObject.id == 114) {
+            Run.logger.debug(context.timestamp + ", " + dataObject);
+            System.out.println(results);
+        }
+        List<KNNQuery> ascending = new ArrayList<>();
+        results.forEach(query -> {
+            if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != context.maxLevel) {
+                boolean before = ((KNNQuery) query).kFilled();
+                ((KNNQuery) query).getMonitoredObjects().remove(dataObject);
+                assert before != ((KNNQuery) query).kFilled();
+                ((KNNQuery) query).ar = Double.MAX_VALUE;
+                ascending.add((KNNQuery) query);
+            }
+        });
 ////        Run.logger.debug("Ascending queries: " + ascending);
-//        reinsertKNNQueries(ascending);
-//    }
+        reinsertKNNQueries(ascending);
+
+        for (KNNQuery query : ascending) {
+            assert query.currentLevel == context.maxLevel;
+        }
+    }
 
     public void cleanNextSetOfEntries() {
         Run.logger.debug("Cleaning!");

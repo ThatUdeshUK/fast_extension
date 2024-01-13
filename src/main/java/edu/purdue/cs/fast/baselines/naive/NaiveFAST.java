@@ -23,11 +23,7 @@
  */
 package edu.purdue.cs.fast.baselines.naive;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,7 +37,7 @@ import edu.purdue.cs.fast.structures.KeywordFrequency;
 import edu.purdue.cs.fast.structures.QueryNode;
 import edu.purdue.cs.fast.structures.TextualNode;
 
-public class NaiveFAST implements SpatialKeywordIndex {
+public class NaiveFAST implements SpatialKeywordIndex<Query, DataObject> {
     public static int Trie_SPLIT_THRESHOLD = 2;
     public static int Degradation_Ratio = 2;
     public static int Trie_OVERLALL_MERGE_THRESHOLD = 2;
@@ -113,7 +109,7 @@ public class NaiveFAST implements SpatialKeywordIndex {
     }
 
     @Override
-    public void addContinuousQuery(Query query) {
+    public Collection<DataObject> insertQuery(Query query) {
         timestamp++;
         if (query instanceof MinimalRangeQuery) {
             addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
@@ -122,6 +118,7 @@ public class NaiveFAST implements SpatialKeywordIndex {
         } else if (query instanceof NaiveKNNQuery) {
             addContinuousKNNQuery((NaiveKNNQuery) query);
         }
+        return null;
     }
 
     public void addContinuousKNNQuery(NaiveKNNQuery query) {
@@ -243,7 +240,7 @@ public class NaiveFAST implements SpatialKeywordIndex {
     }
 
     @Override
-    public List<Query> searchQueries(DataObject dataObject) {
+    public List<Query> insertObject(DataObject dataObject) {
         timestamp++;
         List<Query> result = new LinkedList<>();
         if (minInsertedLevel == -1)

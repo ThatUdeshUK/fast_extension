@@ -5,9 +5,9 @@ import edu.purdue.cs.fast.models.Query;
 
 import java.util.Collection;
 
-public interface SpatialKeywordIndex {
-    default void preloadObject(DataObject object) {};
-    default void preloadQuery(Query query) {};
-    void addContinuousQuery(Query query);
-    Collection<Query> searchQueries(DataObject dataObject);
+public interface SpatialKeywordIndex<Q extends Query, O extends DataObject> {
+    default void preloadObject(O object) {};
+    default void preloadQuery(Q query) {};
+    Collection<O> insertQuery(Q query);
+    Collection<Q> insertObject(O dataObject);
 }

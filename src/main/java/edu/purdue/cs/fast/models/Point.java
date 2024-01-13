@@ -19,7 +19,7 @@
  */
 package edu.purdue.cs.fast.models;
 
-public class Point {
+public class Point implements Comparable<Object> {
     public double x;
     public double y;
 
@@ -29,6 +29,11 @@ public class Point {
     }
 
     public Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void set(double x, double y) {
         this.x = x;
         this.y = y;
     }
@@ -52,4 +57,21 @@ public class Point {
         return (Double.compare(c.x, this.x) == 0 && Double.compare(c.y, this.y) == 0);
     }
 
+    @Override
+    public int compareTo(Object o) {
+        if (!(o instanceof Point))
+            throw new RuntimeException("Cannot compare object.");
+
+        Point p = (Point) o;
+
+        int xComp = 0;
+        if (this.x < p.x)
+            xComp = -1;
+        if (this.x > p.x)
+            xComp = 1;
+        if (xComp != 0)
+            return xComp;
+
+        return Double.compare(this.y, p.y);
+    }
 }
