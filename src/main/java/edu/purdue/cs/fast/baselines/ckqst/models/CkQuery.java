@@ -8,7 +8,7 @@ import java.util.List;
 public class CkQuery extends Query {
     public Point location;
     public double sr;
-    public BoundedPriorityQueue<Double> srs;
+//    public BoundedPriorityQueue<Double> srs;
     public int k;
 
     public CkQuery(int id, List<String> keywords, double x, double y, int k, long st, long et) {
@@ -28,32 +28,32 @@ public class CkQuery extends Query {
         return false;
     }
 
-    public void updateSR(DataObject obj) {
-        // ASSUMPTION: Paper doesn't include details on how to maintain the SR. We are maintaining a priority queue.
-        if (srs == null) {
-            srs = new BoundedPriorityQueue<>(k, (a, b) -> {
-                if (b - a > 0) {
-                    return 1;
-                } else if (b - a < 0) {
-                    return -1;
-                } else
-                    return 0;
-            });
-        }
-
-        double deltaY = obj.location.y - location.y;
-        double deltaX = obj.location.x - location.x;
-        double newSr = Math.sqrt(deltaY * deltaY + deltaX * deltaX);
-        srs.add(newSr);
-//        if (id == 3002 && obj.id <= 1000) {
-//            System.out.println("DEBUG!");
-//            System.out.println(srs);
+//    public void updateSR(DataObject obj) {
+//        // ASSUMPTION: Paper doesn't include details on how to maintain the SR. We are maintaining a priority queue.
+//        if (srs == null) {
+//            srs = new BoundedPriorityQueue<>(k, (a, b) -> {
+//                if (b - a > 0) {
+//                    return 1;
+//                } else if (b - a < 0) {
+//                    return -1;
+//                } else
+//                    return 0;
+//            });
 //        }
-
-        if (srs.size() >= k && !srs.isEmpty()) {
-            sr = srs.peek();
-        }
-    }
+//
+//        double deltaY = obj.location.y - location.y;
+//        double deltaX = obj.location.x - location.x;
+//        double newSr = Math.sqrt(deltaY * deltaY + deltaX * deltaX);
+//        srs.add(newSr);
+////        if (id == 3002 && obj.id <= 1000) {
+////            System.out.println("DEBUG!");
+////            System.out.println(srs);
+////        }
+//
+//        if (srs.size() >= k && !srs.isEmpty()) {
+//            sr = srs.peek();
+//        }
+//    }
 
     @Override
     public String toString() {

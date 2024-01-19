@@ -3,97 +3,60 @@ package edu.purdue.cs.fast.baselines.ckqst.structures;
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
 import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.baselines.quadtree.BaseQuadTree;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Query;
 
 import java.util.*;
 
-/**
- * A quadtree is a tree data structure in which each internal node has exactly four children. Quadtrees
- * are most often used to partition a two dimensional space by recursively subdividing it into four
- * quadrants or regions. The regions may be square or rectangular, or may have arbitrary shapes.
- * <p>
- * http://en.wikipedia.org/wiki/Quadtree
- *
- * @author Justin Wetherell <phishman3579@gmail.com>
- */
-@SuppressWarnings("unchecked")
-public class CostBasedQuadTree {
-    private QuadNode root;
+public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
+    private final CostBasedQuadNode root;
 
     public CostBasedQuadTree(double x, double y, double width, double height, int maxHeight) {
-        Point xyPoint = new Point(x, y);
-        AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(xyPoint, width, height);
-        QuadNode.maxHeight = maxHeight;
-        root = new QuadNode(aabb);
+        Point point = new Point(x, y);
+        AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(point, width, height);
+        CostBasedQuadNode.maxHeight = maxHeight;
+        root = new CostBasedQuadNode(aabb);
     }
 
-    /**
-     * Get the root node.
-     *
-     * @return Root QuadNode.
-     */
-    protected QuadNode getRoot() {
+    @Override
+    protected BaseQuadNode<DataObject, Query> getRoot() {
         return root;
     }
 
-    /**
-     * Stream object through the quadtree.
-     */
-    public Collection<Query> searchObject(DataObject object) {
+    @Override
+    public Collection<Query> search(DataObject dataObject) {
         Set<Query> results = new HashSet<>();
-        this.root.searchObject(object, results);
+        this.root.search(dataObject, results);
         return results;
     }
 
-    /**
-     * Insert a query into tree.
-     *
-     * @param query Query to be inserted into the tree.
-     */
-    public boolean insert(CkQuery query) {
-        return this.root.insert(query);
-    }
-
-    /**
-     * Remove a query from tree.
-     *
-     * @param query Query to be removed from the tree.
-     */
-    public boolean remove(CkQuery query) {
-        return this.root.remove(query);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public String toString() {
-        return TreePrinter.getString(this);
+    public boolean insert(Query object) {
+        return this.root.insert(object);
     }
 
-    protected static class QuadNode implements Comparable<QuadNode> {
-        protected final AxisAlignedBoundingBox aabb;
-        protected QuadNode northWest = null;
-        protected QuadNode northEast = null;
-        protected QuadNode southWest = null;
-        protected QuadNode southEast = null;
+    @Override
+    public boolean remove(Query object) {
+        return this.root.remove(object);
+    }
+
+    protected static class CostBasedQuadNode extends BaseQuadNode<DataObject, Query> {
         protected static int maxHeight = 0;
         protected OrderedInvertedIndex textualIndex = new OrderedInvertedIndex();
         protected int height = 1;
 
-        protected QuadNode(AxisAlignedBoundingBox aabb) {
-            this.aabb = aabb;
+        protected CostBasedQuadNode(AxisAlignedBoundingBox aabb) {
+            super(aabb);
         }
 
         /**
-         * Insert query into tree.
-         *
-         * @param q Query object to insert into tree.
-         * @return True if successfully inserted.
+         * {@inheritDoc}
          */
-        protected boolean insert(CkQuery q) {
+        @Override
+        public boolean insert(Query query) {
+            CkQuery q = (CkQuery) query;
 //            if (q.id == 3002)
 //                System.out.println("DEBUG! Ins!");
             // Ignore objects which do not belong in this quad tree
@@ -111,21 +74,21 @@ public class CostBasedQuadTree {
                 double childrenUCost = 0;
                 if (isLeaf())
                     subdivide();
-                childrenVCost += northEast.verifyCost(q);
-                childrenVCost += northWest.verifyCost(q);
-                childrenVCost += southEast.verifyCost(q);
-                childrenVCost += southWest.verifyCost(q);
+                childrenVCost += ((CostBasedQuadNode) northEast).verifyCost(q);
+                childrenVCost += ((CostBasedQuadNode) northWest).verifyCost(q);
+                childrenVCost += ((CostBasedQuadNode) southEast).verifyCost(q);
+                childrenVCost += ((CostBasedQuadNode) southWest).verifyCost(q);
 
-                childrenUCost += northEast.updateCost(q);
-                childrenUCost += northWest.updateCost(q);
-                childrenUCost += southEast.updateCost(q);
-                childrenUCost += southWest.updateCost(q);
+                childrenUCost += ((CostBasedQuadNode) northEast).updateCost(q);
+                childrenUCost += ((CostBasedQuadNode) northWest).updateCost(q);
+                childrenUCost += ((CostBasedQuadNode) southEast).updateCost(q);
+                childrenUCost += ((CostBasedQuadNode) southWest).updateCost(q);
 
                 if (childrenVCost + CkQST.thetaU * childrenUCost < nodeVCost + CkQST.thetaU * nodeUCost) {
-                    northEast.textualIndex.insertQueryPL(q);
-                    northWest.textualIndex.insertQueryPL(q);
-                    southEast.textualIndex.insertQueryPL(q);
-                    southWest.textualIndex.insertQueryPL(q);
+                    ((CostBasedQuadNode) northEast).textualIndex.insertQueryPL(q);
+                    ((CostBasedQuadNode) northWest).textualIndex.insertQueryPL(q);
+                    ((CostBasedQuadNode) southEast).textualIndex.insertQueryPL(q);
+                    ((CostBasedQuadNode) southWest).textualIndex.insertQueryPL(q);
                     return true;
                 }
 
@@ -137,6 +100,11 @@ public class CostBasedQuadTree {
             if (isLeaf())
                 subdivide();
             return insertIntoChildren(q);
+        }
+
+        @Override
+        public boolean remove(Query o) {
+            throw new RuntimeException("Not implemented!");
         }
 
         private boolean isMinimal(CkQuery q) {
@@ -168,23 +136,23 @@ public class CostBasedQuadTree {
             double w = aabb.width / 2d;
 
             AxisAlignedBoundingBox aabbNW = new AxisAlignedBoundingBox(aabb, w, h);
-            northWest = new QuadNode(aabbNW);
-            northWest.height = height + 1;
+            northWest = new CostBasedQuadNode(aabbNW);
+            ((CostBasedQuadNode) northWest).height = height + 1;
 
             Point xyNE = new Point(aabb.x + w, aabb.y);
             AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE, w, h);
-            northEast = new QuadNode(aabbNE);
-            northEast.height = height + 1;
+            northEast = new CostBasedQuadNode(aabbNE);
+            ((CostBasedQuadNode) northEast).height = height + 1;
 
             Point xySW = new Point(aabb.x, aabb.y + h);
             AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(xySW, w, h);
-            southWest = new QuadNode(aabbSW);
-            southWest.height = height + 1;
+            southWest = new CostBasedQuadNode(aabbSW);
+            ((CostBasedQuadNode) southWest).height = height + 1;
 
             Point xySE = new Point(aabb.x + w, aabb.y + h);
             AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE, w, h);
-            southEast = new QuadNode(aabbSE);
-            southEast.height = height + 1;
+            southEast = new CostBasedQuadNode(aabbSE);
+            ((CostBasedQuadNode) southEast).height = height + 1;
         }
 
         private boolean insertIntoChildren(CkQuery q) {
@@ -228,126 +196,31 @@ public class CostBasedQuadTree {
         }
 
         /**
-         * How many Queries this node contains.
-         *
-         * @return Number of Queries this node contains.
-         */
-        protected int size() {
-            return textualIndex.countQueries;
-        }
-
-        /**
          * Find all objects which appear within a range.
          *
          * @param object  Object to be matched with the queries contained in this node.
          * @param results Queries matching with the streamed object.
          */
-        protected void searchObject(DataObject object, Collection<Query> results) {
+        @Override
+        protected void search(DataObject object, Collection<Query> results) {
             // Automatically abort if the range does not collide with this quad
             if (!aabb.containsPoint(object.location))
                 return;
 
-            // TODO - Search ordered inverted index
             textualIndex.searchObject(object, results);
-//            for (CkQuery q : points) {
-//                if (q.containsPoint(q))
-//                    pointsInRange.add(q);
-//            }
 
             // Otherwise, add the points from the children
             if (!isLeaf()) {
-                northWest.searchObject(object, results);
-                northEast.searchObject(object, results);
-                southWest.searchObject(object, results);
-                southEast.searchObject(object, results);
+                ((CostBasedQuadNode) northWest).search(object, results);
+                ((CostBasedQuadNode) northEast).search(object, results);
+                ((CostBasedQuadNode) southWest).search(object, results);
+                ((CostBasedQuadNode) southEast).search(object, results);
             }
         }
 
-        /**
-         * Is current node a leaf node.
-         *
-         * @return True if node is a leaf node.
-         */
-        protected boolean isLeaf() {
-            return (northWest == null && northEast == null && southWest == null && southEast == null);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
         @Override
-        public int hashCode() {
-            int hash = aabb.hashCode();
-            hash = hash * 13 + ((northWest != null) ? northWest.hashCode() : 1);
-            hash = hash * 17 + ((northEast != null) ? northEast.hashCode() : 1);
-            hash = hash * 19 + ((southWest != null) ? southWest.hashCode() : 1);
-            hash = hash * 23 + ((southEast != null) ? southEast.hashCode() : 1);
-            return hash;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null)
-                return false;
-            if (!(obj instanceof QuadNode))
-                return false;
-
-            QuadNode qNode = (QuadNode) obj;
-            return this.compareTo(qNode) == 0;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @SuppressWarnings("rawtypes")
-        @Override
-        public int compareTo(QuadNode o) {
-            return this.aabb.compareTo(o.aabb);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append(aabb.toString()).append(textualIndex.toString());
-            return builder.toString();
-        }
-    }
-
-    protected static class TreePrinter {
-
-        public static String getString(CostBasedQuadTree tree) {
-            if (tree.getRoot() == null) return "Tree has no nodes.";
-            return getString(tree.getRoot(), "", true);
-        }
-
-        private static <T extends Point> String getString(QuadNode node, String prefix, boolean isTail) {
-            StringBuilder builder = new StringBuilder();
-
-            builder.append(prefix).append(isTail ? "└── " : "├── ").append(" node={").append(node.toString()).append("}\n");
-            List<QuadNode> children = null;
-            if (node.northWest != null || node.northEast != null || node.southWest != null || node.southEast != null) {
-                children = new ArrayList<>(4);
-                if (node.northWest != null) children.add(node.northWest);
-                if (node.northEast != null) children.add(node.northEast);
-                if (node.southWest != null) children.add(node.southWest);
-                if (node.southEast != null) children.add(node.southEast);
-            }
-            if (children != null) {
-                for (int i = 0; i < children.size() - 1; i++) {
-                    builder.append(getString(children.get(i), prefix + (isTail ? "    " : "│   "), false));
-                }
-                if (!children.isEmpty()) {
-                    builder.append(getString(children.get(children.size() - 1), prefix + (isTail ? "    " : "│   "), true));
-                }
-            }
-
-            return builder.toString();
+        protected int size() {
+            throw new RuntimeException("Not implemented!");
         }
     }
 }

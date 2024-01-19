@@ -54,6 +54,10 @@ public class KNNQuery extends Query {
             monitoredObjects = new BoundedPriorityQueue<>(kStar, new EuclideanComparator(location));
         }
 
+//        if (id == 6474) {
+//            System.out.println("obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + ar + ", keys:" + keywords + ", cl:" + currentLevel);
+//        }
+
         monitoredObjects.add(obj);
         boolean kStarFilled = monitoredObjects.isFull();
         if (kStarFilled) {
@@ -118,7 +122,7 @@ public class KNNQuery extends Query {
                 '}';
     }
 
-    static class EuclideanComparator implements Comparator<DataObject> {
+    public static class EuclideanComparator implements Comparator<DataObject> {
         private final Point point;
 
         public EuclideanComparator(Point point) {

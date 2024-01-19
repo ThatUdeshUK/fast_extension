@@ -246,8 +246,10 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     private List<Query> internalSearchQueries(DataObject dataObject, boolean isExpiry) {
-//        if (dataObject.id == 1000 + 91)
+//        if (dataObject.id == 200 + 11) {
 //            System.out.println("DEBUG!");
+//            System.out.println("Streaming obj:" + dataObject);
+//        }
         List<Query> result = new LinkedList<>();
         List<KNNQuery> descendingKNNQueries = null;
         if (!isExpiry)
@@ -277,14 +279,14 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
 
     public void expireQueries(DataObject dataObject) {
 //        Run.logger.debug("Obj expire: " + dataObject.id);
-        if (dataObject.id == 114) {
-            System.out.println("DEBUG!");
-        }
+//        if (dataObject.id == 114) {
+//            System.out.println("DEBUG!");
+//        }
         List<Query> results = internalSearchQueries(dataObject, true);
-        if (!results.isEmpty() && dataObject.id == 114) {
-            Run.logger.debug(context.timestamp + ", " + dataObject);
-            System.out.println(results);
-        }
+//        if (!results.isEmpty() && dataObject.id == 114) {
+//            Run.logger.debug(context.timestamp + ", " + dataObject);
+//            System.out.println(results);
+//        }
         List<KNNQuery> ascending = new ArrayList<>();
         results.forEach(query -> {
             if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != context.maxLevel) {

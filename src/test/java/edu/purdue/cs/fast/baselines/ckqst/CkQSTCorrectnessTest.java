@@ -26,6 +26,8 @@ class CkQSTCorrectnessTest {
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 ckqst,
                 "places_knn_seacnn",
+                100,
+                0,
                 1000,
                 100,
                 5,
@@ -39,12 +41,7 @@ class CkQSTCorrectnessTest {
 
     @Test
     public void testCorrectness() {
-        experiment.init();
-        System.out.println("Test data loaded!");
-        experiment.create();
-        System.out.println("Index Created!");
-        experiment.search();
-        System.out.println("Search Completed!");
+        experiment.run();
 
         List<List<Integer>> results = experiment.getResults().stream()
                 .map((list) -> list.stream().map((q) -> q.id).collect(Collectors.toList()))
@@ -70,7 +67,7 @@ class CkQSTCorrectnessTest {
 
     private List<List<Integer>> readGroundTruth() {
         System.out.println("Running naive FAST KNN as the ground truth");
-        NaiveFAST goldFast = new NaiveFAST(
+        FAST goldFast = new FAST(
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)
@@ -84,6 +81,8 @@ class CkQSTCorrectnessTest {
                 Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
                 goldFast,
                 "places_knn_seacnn",
+                100,
+                0,
                 1000,
                 100,
                 5,
@@ -93,9 +92,14 @@ class CkQSTCorrectnessTest {
         );
         goldExperiment.setSeed(7);
         goldExperiment.setSaveStats(false);
-
         goldExperiment.init();
+
+        System.gc();
+        System.gc();
+        System.gc();
+
         goldExperiment.create();
+        goldExperiment.preloadObjects();
         goldExperiment.search();
 
         List<List<Integer>> results = goldExperiment.getResults().stream()

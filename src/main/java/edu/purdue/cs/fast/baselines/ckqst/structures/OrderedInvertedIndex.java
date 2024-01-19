@@ -46,9 +46,9 @@ public class OrderedInvertedIndex {
             return;
         }
 
-        if (query.id == 6) {
-            System.out.println("DEBUG!");
-        }
+//        if (query.id == 6) {
+//            System.out.println("DEBUG!");
+//        }
         List<Block> bList = this.postingLists.get(key);
         int br = getMinBlock(query, bList); // Line 3
 
@@ -282,14 +282,14 @@ public class OrderedInvertedIndex {
 
             if (!oneKeyBlockList.isEmpty()) {
                 for (CkQuery query : oneKeyBlockList.get(0).getQueries()) {
-                    if (obj.id == 73 && query.id == 81039 && oneKey.equals("contractor_contractor")) {
-                        System.out.println("DEBUG it");
-                        Block  b = oneKeyBlockList.get(0);
+                    if (query.id == 6474 && oneKey.equals("home_home")) {
+//                        System.out.println("DEBUG it");
+                        System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
                     }
                     if (query.containsPoint(obj.location)) {
                         if (!results.contains(query)) {
                             results.add(query);
-                            query.updateSR(obj);
+//                            query.updateSR(obj);
                         }
                     }
                 }
@@ -302,10 +302,14 @@ public class OrderedInvertedIndex {
             List<Block> blockList = postingLists.get(key);
             if (obj.keywords.size() == 2 && !blockList.isEmpty()) {
                 for (CkQuery query : blockList.get(0).getQueries()) {
+//                    if (query.id == 6474 && key.equals("organization_welfare")) {
+////                        System.out.println("DEBUG it");
+//                        System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
+//                    }
                     if (query.containsPoint(obj.location)) {
                         if (!results.contains(query)) {
                             results.add(query);
-                            query.updateSR(obj);
+//                            query.updateSR(obj);
                         }
                     }
                 }
@@ -326,6 +330,10 @@ public class OrderedInvertedIndex {
 //                    }
                     if (b.minw == null || b.minw.compareTo(obj.keywords.get(j)) <= 0) {
                         for (CkQuery query : b.getQueries()) {
+                            if (query.id == 6474 && key.equals("organization_welfare")) {
+//                        System.out.println("DEBUG it");
+                                System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
+                            }
                             boolean match = query.keywords.size() <= obj.keywords.size();
 
                             if (match && query.keywords.size() > 2 && !new HashSet<>(obj.keywords).containsAll(query.keywords)) {
@@ -335,7 +343,7 @@ public class OrderedInvertedIndex {
                             if (match && query.containsPoint(obj.location)) {
                                 if (!results.contains(query)) {
                                     results.add(query);
-                                    query.updateSR(obj);
+//                                    query.updateSR(obj);
                                 }
                             }
                         }

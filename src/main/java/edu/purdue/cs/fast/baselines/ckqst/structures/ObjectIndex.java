@@ -6,15 +6,14 @@ import edu.purdue.cs.fast.models.Query;
 
 import java.util.*;
 
-public class ObjectIndex implements SpatialKeywordIndex<Query, DataObject> {
+public class ObjectIndex  {
     private final HashMap<String, LinkedList<DataObject>> index;
 
     public ObjectIndex() {
         this.index = new HashMap<>();
     }
 
-    @Override
-    public Collection<DataObject> insertQuery(Query query) {
+    public Collection<DataObject> search(Query query) {
         HashSet<DataObject> set = null;
         for (String key : query.keywords) {
             if (index.containsKey(key)) {
@@ -34,8 +33,7 @@ public class ObjectIndex implements SpatialKeywordIndex<Query, DataObject> {
         return results;
     }
 
-    @Override
-    public Collection<Query> insertObject(DataObject dataObject) {
+    public Collection<Query> insert(DataObject dataObject) {
         for (String key: dataObject.keywords) {
             if (!index.containsKey(key)) {
                 // Create new entry in object index.
