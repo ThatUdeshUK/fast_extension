@@ -8,12 +8,12 @@ import java.util.*;
 
 public class HybridList implements Iterable<Query> {
     private final ArrayList<MinimalRangeQuery> mbrQueries;
-    private final LinkedList<KNNQuery> kNNQueries;
+    private final ArrayList<KNNQuery> kNNQueries;
 
     // TODO - Remove eager init
     public HybridList() {
         this.mbrQueries = new ArrayList<>();
-        this.kNNQueries = new LinkedList<>();
+        this.kNNQueries = new ArrayList<>();
     }
 
     public List<MinimalRangeQuery> mbrQueries() {

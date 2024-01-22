@@ -32,60 +32,47 @@ public class QueryTrieNode extends TextualNode {
                 FAST.context.objectSearchTrieNodeCounter++;
                 searchQueries(obj, results, q, isExpiry);
             }
-//            ArrayList<KNNQuery> toRemove = new ArrayList<>();
-            for (Iterator<KNNQuery> it = queries.kNNQueries().iterator(); it.hasNext(); ) {
-                KNNQuery q = it.next();
-//            for (KNNQuery q : queries.kNNQueries()) {
-                FAST.context.objectSearchTrieNodeCounter++;
-                if ((q.et <= FAST.context.timestamp && !isExpiry) || q.currentLevel != parent.level)
-                    continue;
 
-                boolean kFilled = searchQueries(obj, results, q, isExpiry);
-                if (descendingKNNQueries != null && parent.level == FAST.context.maxLevel && kFilled) {
-                    descendingKNNQueries.add(q);
-                    it.remove();
-//                    toRemove.add(q);
+            if (FAST.config.INCREMENTAL_DESCENT) {
+                SpatialCell.SpatialOverlapComparator soc = new SpatialCell.SpatialOverlapComparator(parent.bounds);
+                List<KNNQuery> knnQueries = queries.kNNQueries();
+                knnQueries.sort(soc);
+                int queriesSize = knnQueries.size();
+                int descendedCount = 0;
+                for (int i = queriesSize - 1; i >= 0; i--) {
+                    KNNQuery q = knnQueries.get(i);
+//                    if (q.currentLevel != parent.level)
+//                        continue;
+
+                    if (q.et > FAST.context.timestamp || isExpiry) {
+                        searchQueries(obj, results, q, isExpiry);
+                    }
+
+                    if (q.currentLevel >= FAST.context.minInsertedLevel + 1 && q.ar < Double.MAX_VALUE &&
+                            descendedCount < queriesSize / 2) {
+                        if (q.id == 65) { // || q.id == 453
+                            System.out.println("Pushing down: " + q.id + ", from: " + q.currentLevel + ", x: " + q.location.x
+                                    + ", y: " + q.location.y + ", ar: " + q.ar + ", list_size: " + queriesSize + ", coz: " + obj.id);
+                        }
+                        q = knnQueries.remove(i);
+                        descendingKNNQueries.add(q);
+                        descendedCount++;
+                    }
                 }
-//                else if (descendingKNNQueries != null && parent.level != FAST.maxLevel && parent.level != 0 &&
-//                        queries.kNNQueries().size() > 100 &&
-//                        SpatialHelper.coversSpatially(parent.bounds, q.spatialBox())) {
-//                    descendingKNNQueries.add(q);
-//                    toRemove.add(q);
-//                }
+            } else {
+                for (Iterator<KNNQuery> it = queries.kNNQueries().iterator(); it.hasNext(); ) {
+                    KNNQuery q = it.next();
+                    FAST.context.objectSearchTrieNodeCounter++;
+                    if ((q.et <= FAST.context.timestamp && !isExpiry) || q.currentLevel != parent.level)
+                        continue;
 
-//                if (descendingKNNQueries != null && parent.level == FAST.context.maxLevel && kFilled) {
-//                    int initLevel = 0;
-//                    if (!FAST.config.PUSH_TO_LOWEST)
-//                        initLevel = Math.min(q.calcMinSpatialLevel(), FAST.context.maxLevel);
-//
-//                    for (int level = initLevel; level > 0; level--) {
-//                        int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
-//                        double levelStep = ((FAST.context.globalXRange) / levelGranularity);
-//
-//                        double minX = ((int) (q.location.x / levelStep)) * levelStep;
-//                        double minY = ((int) (q.location.y / levelStep)) * levelStep;
-//                        double maxX = minX + levelStep;
-//                        double maxY = minY + levelStep;
-//
-//                        boolean canPlace = SpatialHelper.coversSpatially(minX, minY, maxX, maxY, q.spatialBox());
-//                        if (canPlace) {
-//                            q.currentLevel = level;
-//                            ReinsertEntry entry = new ReinsertEntry(
-//                                    SpatialHelper.spatialIntersect(FAST.context.bounds, q.spatialBox()),
-//                                    q,
-//                                    level,
-//                                    levelStep,
-//                                    levelGranularity
-//                            );
-//                            descendingKNNQueries.add(entry);
-////                    it.remove();
-//                            toRemove.add(q);
-//                            break;
-//                        }
-//                    }
-//                }
+                    boolean kFilled = searchQueries(obj, results, q, isExpiry);
+                    if (descendingKNNQueries != null && parent.level == FAST.context.maxLevel && kFilled) {
+                        descendingKNNQueries.add(q);
+                        it.remove();
+                    }
+                }
             }
-//            toRemove.forEach((query -> queries.kNNQueries().remove(query)));
         }
 
         if (subtree != null)
@@ -106,7 +93,7 @@ public class QueryTrieNode extends TextualNode {
                     }
                     if (((QueryNode) node).query instanceof KNNQuery) {
                         KNNQuery query = (KNNQuery) ((QueryNode) node).query;
-                        if ((query.et > FAST.context.timestamp || isExpiry) && query.currentLevel == parent.level &&
+                        if ((query.et > FAST.context.timestamp || isExpiry) && (FAST.config.INCREMENTAL_DESCENT || query.currentLevel == parent.level) &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
@@ -123,7 +110,7 @@ public class QueryTrieNode extends TextualNode {
                     }
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.context.objectSearchTrieNodeCounter++;
-                        if ((query.et > FAST.context.timestamp || isExpiry) && query.currentLevel == parent.level &&
+                        if ((query.et > FAST.context.timestamp || isExpiry) && (FAST.config.INCREMENTAL_DESCENT || query.currentLevel == parent.level) &&
                                 SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar) &&
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
@@ -143,6 +130,9 @@ public class QueryTrieNode extends TextualNode {
         }
         if (q instanceof KNNQuery) {
             KNNQuery query = (KNNQuery) q;
+            if (query.id ==  135 && obj.id == 135) {
+                System.out.println("DEBUG!");
+            }
             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)) {
                 results.add(query);
                 if (!isExpiry)
@@ -210,3 +200,4 @@ public class QueryTrieNode extends TextualNode {
         return operations;
     }
 }
+

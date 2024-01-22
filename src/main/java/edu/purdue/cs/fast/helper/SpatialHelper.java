@@ -19,6 +19,7 @@
  */
 package edu.purdue.cs.fast.helper;
 
+import com.google.common.math.DoubleMath;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import edu.purdue.cs.fast.parser.LatLong;
@@ -298,12 +299,14 @@ public class SpatialHelper {
     }
 
     public static Boolean overlapsSpatially(Point point, Point loc, double ar) {
-//        return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) < ar * ar;
         boolean isInRectangle = point.x >= loc.x - ar && point.x <= loc.x + ar &&
                 point.y >= loc.y - ar && point.y <= loc.y + ar;
 
         if (isInRectangle) {
-            return (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y) <= ar * ar;
+            double lhs = (point.x - loc.x) * (point.x - loc.x) + (point.y - loc.y) * (point.y - loc.y);
+            double rhs = ar * ar;
+
+            return lhs <= rhs || lhs - rhs < .00000001;
         }
         return false;
     }

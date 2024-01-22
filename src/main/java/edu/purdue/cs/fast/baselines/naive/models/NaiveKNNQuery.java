@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.baselines.naive.models;
 
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.models.*;
 
@@ -51,6 +52,9 @@ public class NaiveKNNQuery extends Query {
             if (monitoredObjects.size() > k) {
                 monitoredObjects.poll();
             }
+//            if (id == 65) {
+//                System.out.println("naive - obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + SpatialHelper.getDistanceInBetween(location, monitoredObjects.peek().location) + ", keys:" + keywords);
+//            }
         }
     }
 

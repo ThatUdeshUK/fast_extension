@@ -40,13 +40,11 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     public static Context context;
     public static Config config;
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
+    private final boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
     public PriorityQueue<DataObject> expiringObjects;
     private SpatialCell cellBeingCleaned;
-    private final boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
-    private int minInsertedLevel;
-    private int maxInsertedLevel;
 
     public FAST(Rectangle bounds, Integer xGridGranularity, int maxLevel) {
         context = new Context(bounds, xGridGranularity, maxLevel);
@@ -55,8 +53,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         keywordFrequencyMap = new HashMap<>();
         expiringObjects = new PriorityQueue<>(new ExpireTimeComparator());
 
-        this.minInsertedLevel = -1;
-        this.maxInsertedLevel = -1;
+        context.minInsertedLevel = -1;
+        context.maxInsertedLevel = -1;
 
         cleaningIterator = null;
         cellBeingCleaned = null;
@@ -67,6 +65,14 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
 
     public static Integer calcCoordinate(int level, int x, int y, int gridGranularity) {
         return (level << 22) + y * gridGranularity + x;
+    }
+
+    public static Integer mapDataPointToPartition(int level, Point point, double step, int granularity) {
+        double x = point.x;
+        double y = point.y;
+        int xCell = (int) ((x) / step);
+        int yCell = (int) ((y) / step);
+        return calcCoordinate(level, xCell, yCell, granularity);
     }
 
     public double getAverageRankedInvListSize() {
@@ -110,9 +116,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     public void addContinuousKNNQuery(KNNQuery query) {
-        if (minInsertedLevel == -1) {
-            maxInsertedLevel = context.maxLevel;
-            minInsertedLevel = context.maxLevel;
+        if (context.minInsertedLevel == -1) {
+            context.maxInsertedLevel = context.maxLevel;
+            context.minInsertedLevel = context.maxLevel;
         }
 
         String minKeyword = getMinKeyword(context.maxLevel, query);
@@ -159,19 +165,19 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         int levelXMaxCell = (int) ((entry.range.max.x - .001) / levelStep);
         int levelYMaxCell = (int) ((entry.range.max.y - .001) / levelStep);
 
-        if (minInsertedLevel == -1)
-            minInsertedLevel = maxInsertedLevel = level;
-        if (level < minInsertedLevel)
-            minInsertedLevel = level;
-        if (level > maxInsertedLevel)
-            maxInsertedLevel = level;
+        if (context.minInsertedLevel == -1)
+            context.minInsertedLevel = context.maxInsertedLevel = level;
+        if (level < context.minInsertedLevel)
+            context.minInsertedLevel = level;
+        if (level > context.maxInsertedLevel)
+            context.maxInsertedLevel = level;
         String minKeyword = getMinKeyword(level, entry.query);
 
         int coodinate;
         QueryListNode sharedQueries = null;
         for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
             for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
-                if (entry.query instanceof KNNQuery) {
+                if (entry.query instanceof KNNQuery && (levelXMinCell != levelXMaxCell && levelYMinCell != levelYMaxCell)) {
                     double x = (((KNNQuery) entry.query).location.x / levelStep);
                     double y = (((KNNQuery) entry.query).location.y / levelStep);
                     double r = (((KNNQuery) entry.query).ar / levelStep);
@@ -214,15 +220,28 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     private void reinsertKNNQueries(List<KNNQuery> descendingKNNQueries) {
+
         for (KNNQuery query : descendingKNNQueries) {
+            if (query.id == 65 && query.currentLevel == 8) {
+                System.out.println("debug!");
+            }
             int level = 0;
-            if (!FAST.config.PUSH_TO_LOWEST)
-                level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
-            query.currentLevel = level;
+            if (FAST.config.INCREMENTAL_DESCENT) {
+                query.currentLevel--;
+                level = query.currentLevel;
+            } else {
+                if (!FAST.config.PUSH_TO_LOWEST)
+                    level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
+                query.currentLevel = level;
+            }
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
             double levelStep = ((FAST.context.bounds.max.x - FAST.context.bounds.min.x) / levelGranularity);
-            singleQueryInsert(level, new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, query.spatialBox()), query), levelStep, levelGranularity, insertNextLevelQueries);
+            ReinsertEntry entry = new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, query.spatialBox()), query);
+            if (entry.query.id == 65) {
+                System.out.println("Reinserting: " + query + ", area: " + entry.range);
+            }
+            singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
             assert insertNextLevelQueries.isEmpty();
         }
     }
@@ -246,7 +265,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     private List<Query> internalSearchQueries(DataObject dataObject, boolean isExpiry) {
-//        if (dataObject.id == 200 + 11) {
+//        if (dataObject.id == 118) {
 //            System.out.println("DEBUG!");
 //            System.out.println("Streaming obj:" + dataObject);
 //        }
@@ -255,17 +274,20 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         if (!isExpiry)
             descendingKNNQueries = new LinkedList<>();
 
-        if (minInsertedLevel == -1)
+        if (context.minInsertedLevel == -1)
             return result;
-        double step = (maxInsertedLevel == 0) ? context.localXstep : (context.localXstep * (2 << (maxInsertedLevel - 1)));
-        int granualrity = context.gridGranularity >> maxInsertedLevel;
+        double step = (context.maxInsertedLevel == 0) ? context.localXstep : (context.localXstep * (2 << (context.maxInsertedLevel - 1)));
+        int granualrity = context.gridGranularity >> context.maxInsertedLevel;
         List<String> keywords = dataObject.keywords;
-        for (int level = maxInsertedLevel; level >= minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
+        for (int level = context.maxInsertedLevel; level >= context.minInsertedLevel && keywords != null && !keywords.isEmpty(); level--) {
             Integer cellCoordinates = mapDataPointToPartition(level, dataObject.location, step, granualrity);
             SpatialCell spatialCellOptimized = index.get(cellCoordinates);
             if (spatialCellOptimized != null) {
                 // TODO - DANGER you removed `keywords =`
-                spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries, isExpiry);
+                List<String> tempKeywords = spatialCellOptimized.searchQueries(dataObject, keywords, result, descendingKNNQueries, isExpiry);
+                if (config.INCREMENTAL_DESCENT) {
+                    keywords = tempKeywords;
+                }
             }
             step /= 2;
             granualrity <<= 1;
@@ -321,14 +343,6 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         }
         if (cell.textualIndex == null)
             cleaningIterator.remove();
-    }
-
-    public static Integer mapDataPointToPartition(int level, Point point, double step, int granularity) {
-        double x = point.x;
-        double y = point.y;
-        int xCell = (int) ((x) / step);
-        int yCell = (int) ((y) / step);
-        return calcCoordinate(level, xCell, yCell, granularity);
     }
 
     public String getMinKeyword(int level, Query query) {
@@ -442,3 +456,4 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         });
     }
 }
+

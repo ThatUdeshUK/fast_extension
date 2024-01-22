@@ -13,6 +13,8 @@ public class Context {
     public final double localYstep;
     public int totalVisited = 0;
     public int timestamp = 0;
+    public int minInsertedLevel;
+    public int maxInsertedLevel;
     public int spatialOverlappingQueries = 0;
     public int queryInsertInvListNodeCounter = 0;
     public int queryInsertTrieNodeCounter = 0;

@@ -54,11 +54,10 @@ public class KNNQuery extends Query {
             monitoredObjects = new BoundedPriorityQueue<>(kStar, new EuclideanComparator(location));
         }
 
-//        if (id == 6474) {
-//            System.out.println("obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + ar + ", keys:" + keywords + ", cl:" + currentLevel);
-//        }
+        if (!monitoredObjects.contains(obj))
+            monitoredObjects.add(obj);
+        else return monitoredObjects.isFull();
 
-        monitoredObjects.add(obj);
         boolean kStarFilled = monitoredObjects.isFull();
         if (kStarFilled) {
             assert monitoredObjects.peek() != null;
@@ -68,6 +67,9 @@ public class KNNQuery extends Query {
             double maxY = o.y - location.y;
             this.ar = Math.sqrt(maxX * maxX + maxY * maxY);
         }
+//        if (id == 65) {
+//            System.out.println("obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + ar + ", keys:" + keywords + ", cl:" + currentLevel);
+//        }
         return kStarFilled;
     }
 

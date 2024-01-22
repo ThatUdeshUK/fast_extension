@@ -24,19 +24,19 @@ public class RunCkQST {
 
         int k = 5;
         int numKeywords = 5;
-        int numPreObjects = 0;
-        int numObjects = 1000000;
+        int numPreObjects = 100000;
+        int numObjects = 100000;
         int maxRange = 512;
         int maxHeight = 9;
         CleanMethod cleanMethod = CleanMethod.NO;
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-//        numQueriesList.add(1000);
-//        numQueriesList.add(500000);
-//        numQueriesList.add(1000000);
+        numQueriesList.add(100000);
+        numQueriesList.add(500000);
+        numQueriesList.add(1000000);
         numQueriesList.add(2500000);
-//        numQueriesList.add(5000000);
-//        numQueriesList.add(10000000);
+        numQueriesList.add(5000000);
+        numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
 
         for (int numQueries : numQueriesList) {
@@ -44,7 +44,7 @@ public class RunCkQST {
 
             String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
             PlacesExperiment experiment = new PlacesKNNExperiment(
-                    Paths.get(args[0], "output_places_US_ckqst_Obj1M.csv").toString(),
+                    Paths.get(args[0], "output_places_US_ckqstv2_preloaded.csv").toString(),
                     ds, ckQST, getExpName(name, cleanMethod), numPreObjects, 0, numQueries, numObjects, numKeywords, k, maxRange,
                     PlacesKNNExperiment.KNNType.CkQST
             );
