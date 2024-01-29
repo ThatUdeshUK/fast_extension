@@ -7,21 +7,19 @@ import java.util.*;
 
 public class PlacesKNNExperiment extends PlacesExperiment {
     protected final int k;
-    protected KNNType knnType;
-
     public PlacesKNNExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
-                               int numQueries, int numObjects, int numKeywords, int k, int maxRange, KNNType knnType) {
+                               int numQueries, int numObjects, int numKeywords, int k, int maxRange, IndexType indexType) {
         super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, 0.0, maxRange);
         this.k = k;
-        this.knnType = knnType;
+        this.indexType = indexType;
     }
 
     public PlacesKNNExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
                                int numPreObjects, int numPreQueries, int numQueries, int numObjects, int numKeywords,
-                               int k, int maxRange, KNNType knnType) {
-        super(outputPath, inputPath, index, name, numPreObjects, numPreQueries, numQueries, numObjects, numKeywords, 0.0, maxRange);
+                               int k, int maxRange, IndexType indexType) {
+        super(outputPath, inputPath, index, name, numPreObjects, numPreQueries, numQueries, numObjects, numKeywords, 0.0, maxRange, indexType);
         this.k = k;
-        this.knnType = knnType;
+        this.indexType = indexType;
     }
 
     @Override
@@ -29,7 +27,7 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         this.queries = new ArrayList<>();
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toKNNQuery(i, numKeywords, k, numPreObjects + numPreObjects + numQueries + numObjects + 1, knnType));
+            queries.add(place.toKNNQuery(i, numKeywords, k, numPreObjects + numPreObjects + numQueries + numObjects + 1, indexType));
         }
     }
 
@@ -40,10 +38,5 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         metadata.add("num_objects", "" + numObjects);
         metadata.add("k", "" + k);
         return metadata;
-    }
-
-    public enum KNNType {
-        FAST,
-        CkQST
     }
 }

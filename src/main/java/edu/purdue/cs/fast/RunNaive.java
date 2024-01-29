@@ -64,21 +64,21 @@ public class RunNaive {
                     experiment = new PlacesKNNExperiment(
                             Paths.get(args[0], "results/output_places_US_knn.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 case KNN_EXPIRE:
                     experiment = new PlacesKNNExpireExperiment(
                             Paths.get(args[0], "results/output_places_US_knn_exp.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 case KNN_OBJ_EXPIRE:
                     experiment = new PlacesKNNObjExpireExperiment(
                             Paths.get(args[0], "results/output_places_US_knn_naive_obj_exp.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 default:

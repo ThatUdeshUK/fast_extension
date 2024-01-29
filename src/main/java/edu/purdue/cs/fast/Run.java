@@ -7,9 +7,6 @@ import edu.purdue.cs.fast.models.Rectangle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
@@ -17,7 +14,7 @@ public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "fast_inc";
+        String name = "all_knn";
         if (args.length > 2)
             name = args[2];
 
@@ -52,7 +49,7 @@ public class Run {
                     fineGridGran,
                     maxLevel
             );
-            FAST.config.INCREMENTAL_DESCENT = true;
+            FAST.config.INCREMENTAL_DESCENT = false;
             fast.setPushToLowest(pushToLowest);
             fast.setCleaning(cleanMethod);
 
@@ -73,23 +70,23 @@ public class Run {
                     break;
                 case KNN:
                     experiment = new PlacesKNNExperiment(
-                            Paths.get(args[0], "output_places_US_knn_inc_vs_direct.csv").toString(),
+                            Paths.get(args[0], "output_places_US_knn.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numPreObjects, 0, numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 case KNN_EXPIRE:
                     experiment = new PlacesKNNExpireExperiment(
                             Paths.get(args[0], "output_places_US_knn_exp2.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 case KNN_OBJ_EXPIRE:
                     experiment = new PlacesKNNObjExpireExperiment(
                             Paths.get(args[0], "output_places_US_knn_obj_exp.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.KNNType.FAST
+                            PlacesKNNExperiment.IndexType.FAST
                     );
                     break;
                 default:

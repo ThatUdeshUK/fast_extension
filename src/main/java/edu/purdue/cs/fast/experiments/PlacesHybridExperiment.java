@@ -1,9 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
-import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
-import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
-import edu.purdue.cs.fast.helper.SpatioTextualConstants;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.util.ArrayList;
@@ -27,12 +24,12 @@ public class PlacesHybridExperiment extends PlacesExperiment {
         int knnQueryCount = (int) (numQueries * knnRatio);
         for (int i = 0; i < knnQueryCount; i++) {
             Place place = places.get(i);
-            queries.add(place.toKNNQuery(i, numKeywords, k, numPreObjects + numPreQueries + numQueries + numObjects + 1, PlacesKNNExperiment.KNNType.FAST));
+            queries.add(place.toKNNQuery(i, numKeywords, k, numPreObjects + numPreQueries + numQueries + numObjects + 1, IndexType.FAST));
         }
         int r = (int) (this.maxRange * srRate);
         for (int i = knnQueryCount; i < numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, this.maxRange, numKeywords, numPreObjects + numPreQueries + numQueries + numObjects + 1));
+            queries.add(place.toMinimalRangeQuery(i, r, this.maxRange, numKeywords, numPreObjects + numPreQueries + numQueries + numObjects + 1, IndexType.FAST));
         }
     }
 

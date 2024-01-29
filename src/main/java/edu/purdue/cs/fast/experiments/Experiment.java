@@ -230,5 +230,12 @@ public abstract class Experiment<T> {
             return values;
         }
     }
+
+    public enum IndexType {
+        FAST,
+        CkQST,
+        LFAST,
+        AdoptCkQST
+    }
 }
 

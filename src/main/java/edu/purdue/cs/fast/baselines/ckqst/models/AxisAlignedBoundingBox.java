@@ -1,7 +1,11 @@
 package edu.purdue.cs.fast.baselines.ckqst.models;
 
 
+import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.models.Rectangle;
 
 public class AxisAlignedBoundingBox extends Point implements Comparable<Object> {
 
@@ -20,8 +24,8 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
 
         minX = upperLeft.x;
         minY = upperLeft.y;
-        maxX = upperLeft.x+width;
-        maxY = upperLeft.y+height;
+        maxX = upperLeft.x + width;
+        maxY = upperLeft.y + height;
     }
 
     public void set(Point upperLeft, double width, double height) {
@@ -31,22 +35,23 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
 
         minX = upperLeft.x;
         minY = upperLeft.y;
-        maxX = upperLeft.x+width;
-        maxY = upperLeft.y+height;
+        maxX = upperLeft.x + width;
+        maxY = upperLeft.y + height;
     }
 
     public double getHeight() {
         return height;
     }
+
     public double getWidth() {
         return width;
     }
 
     public boolean containsPoint(Point p) {
-        if (p.x>=maxX) return false;
-        if (p.x<minX) return false;
-        if (p.y>=maxY) return false;
-        if (p.y<minY) return false;
+        if (p.x >= maxX) return false;
+        if (p.x < minX) return false;
+        if (p.y >= maxY) return false;
+        if (p.y < minY) return false;
         return true;
     }
 
@@ -67,14 +72,17 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
     /**
      * Is the inputted CkQST completely inside this AxisAlignedBoundingBox.
      *
-     * @param q CkQST query to test.
+     * @param query CkQST query to test.
      * @return True if the query is completely inside this AxisAlignedBoundingBox.
      */
-    public boolean containsQuery(CkQuery q) {
-        if (q.location.x - q.sr >= minX && q.location.x + q.sr <= maxX &&
-                q.location.y - q.sr >= minY && q.location.y + q.sr <= maxY) {
-            // INSIDE
-            return true;
+    public boolean containsQuery(Query query) {
+        if (query instanceof CkQuery) {
+            CkQuery q = (CkQuery) query;
+            return q.location.x - q.sr >= minX && q.location.x + q.sr <= maxX &&
+                    q.location.y - q.sr >= minY && q.location.y + q.sr <= maxY;
+        } else if (query instanceof LMinimalRangeQuery) {
+            Rectangle rectangle1 = query.spatialBox();
+            return SpatialHelper.coversSpatially(minX, minY, maxX, maxY, rectangle1);
         }
         return false;
     }
@@ -82,11 +90,11 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
     /**
      * Is the inputted CkQST completely inside specified quad of this AxisAlignedBoundingBox.
      *
-     * @param q CkQST query to test.
+     * @param query    CkQST query to test.
      * @param quad Quad of the AABB (0-NW, 1-NE, 2-SW, 3-SE)
      * @return True if the query is completely inside this AxisAlignedBoundingBox.
      */
-    public boolean quadContainsQuery(CkQuery q, int quad) {
+    public boolean quadContainsQuery(Query query, int quad) {
         double h = height / 2d;
         double w = width / 2d;
 
@@ -108,10 +116,13 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
             ey = maxY;
         }
 
-        if (q.location.x - q.sr >= sx && q.location.x + q.sr <= ex &&
-                q.location.y - q.sr >= sy && q.location.y + q.sr <= ey) {
-            // INSIDE
-            return true;
+        if (query instanceof CkQuery) {
+            CkQuery q = (CkQuery) query;
+            return q.location.x - q.sr >= sx && q.location.x + q.sr <= ex &&
+                    q.location.y - q.sr >= sy && q.location.y + q.sr <= ey;
+        } else if (query instanceof LMinimalRangeQuery) {
+            Rectangle rectangle1 = query.spatialBox();
+            return SpatialHelper.coversSpatially(sx, sy, ex, ey, rectangle1);
         }
         return false;
     }
@@ -142,8 +153,8 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
     @Override
     public int hashCode() {
         int hash = super.hashCode();
-        hash = hash * 13 + (int)height;
-        hash = hash * 19 + (int)width;
+        hash = hash * 13 + (int) height;
+        hash = hash * 19 + (int) width;
         return hash;
     }
 
@@ -171,13 +182,13 @@ public class AxisAlignedBoundingBox extends Point implements Comparable<Object> 
 
         AxisAlignedBoundingBox a = (AxisAlignedBoundingBox) o;
         int p = super.compareTo(a);
-        if (p!=0) return p;
+        if (p != 0) return p;
 
-        if (height>a.height) return 1;
-        if (height<a.height) return -1;
+        if (height > a.height) return 1;
+        if (height < a.height) return -1;
 
-        if (width>a.width) return 1;
-        if (width<a.width) return -1;
+        if (width > a.width) return 1;
+        if (width < a.width) return -1;
 
         return 0;
     }

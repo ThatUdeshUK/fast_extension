@@ -26,6 +26,7 @@ replay_pid*
 /target
 /results
 /results_remote
+/related
 
 # IDE
 .idea
@@ -35,4 +36,3 @@ replay_pid*
 ../.DS_Store
 */.DS_Store
 data/*.geojson
-

@@ -1,8 +1,6 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import edu.purdue.cs.fast.FAST;
-import edu.purdue.cs.fast.Run;
-import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
@@ -36,7 +34,7 @@ class CkQSTxFASTCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.CkQST
+                PlacesKNNExperiment.IndexType.CkQST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -98,7 +96,7 @@ class CkQSTxFASTCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         fastExperiment.setSeed(7);
         fastExperiment.setSaveStats(false);

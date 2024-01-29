@@ -2,12 +2,10 @@ package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
 import edu.purdue.cs.fast.baselines.quadtree.BaseQuadTree;
 import edu.purdue.cs.fast.helper.SpatialHelper;
-import edu.purdue.cs.fast.models.DataObject;
-import edu.purdue.cs.fast.models.KNNQuery;
-import edu.purdue.cs.fast.models.Point;
-import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
 import java.util.*;
@@ -59,16 +57,22 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
 
     @Override
     public Collection<DataObject> search(Query q) {
-//        if (q.id == 414) {
-//            System.out.println("Debug!");
-//        }
+        int k = -1;
+        Point location = null;
+        if (q instanceof CkQuery) {
+            k = ((CkQuery) q).k;
+            location = ((CkQuery) q).location;
+        } else if (q instanceof LMinimalRangeQuery) {
+            k = ((LMinimalRangeQuery) q).k;
+            location = ((LMinimalRangeQuery) q).location;
+        }
         BoundedPriorityQueue<DataObject> results = new BoundedPriorityQueue<>(
-                ((CkQuery) q).k,
-                new KNNQuery.EuclideanComparator(((CkQuery) q).location)
+                k,
+                new KNNQuery.EuclideanComparator(location)
         );
         double lambda = Double.MAX_VALUE;
         HashMap<Integer, Integer> hits = new HashMap<>();
-        DeltaComparator deltaComparator = new DeltaComparator((CkQuery) q);
+        DeltaComparator deltaComparator = new DeltaComparator(location);
         PriorityQueue<ILQuadNode> H = new PriorityQueue<>(deltaComparator);    // Line 1
         for (String keyword : q.keywords) {                     // Line 2
             if (roots.containsKey(keyword)) {
@@ -78,13 +82,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         }
 
         for (ILQuadNode e; (e = H.poll()) != null; ) {          // Line 4
-//            if (q.id == 6474) {
-//                System.out.println("H pop: " + e.morton + ", delta:" + deltaComparator.getMinDistSqr(e));
-//            }
             if (!e.objects.isEmpty()) {                         // Line 6: e is a black node
-//                if (e.keyword.equals("k1") && e.morton.equals("10")) {
-//                    System.out.println("Debug!");
-//                }
                 boolean signCheck = true;
 
                 for (String kj : q.keywords) {                  // Line 8
@@ -110,12 +108,9 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
                         hits.put(o.id, oHit);
                         if (oHit == q.keywords.size()) {
                             results.add(o);
-                            double delta = SpatialHelper.getDistanceInBetween(((CkQuery) q).location, o.location);
-//                            if (q.id == 6474 && o.id < 10000)
-//                                System.out.println("Insert: " + o.id + ", lambda:" + lambda + ", delta:" + delta);
                             if (results.isFull()) {
                                 assert results.peek() != null;
-                                lambda = SpatialHelper.getDistanceInBetween(((CkQuery) q).location, results.peek().location);
+                                lambda = SpatialHelper.getDistanceInBetween(location, results.peek().location);
                             }
                         }
                     }
@@ -337,11 +332,11 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
     }
 
     static class DeltaComparator implements Comparator<ILQuadNode> {
-        private final CkQuery query;
+        private final Point location;
         private final HashMap<ILQuadNode, Double> distMap;
 
-        DeltaComparator(CkQuery query) {
-            this.query = query;
+        DeltaComparator(Point location) {
+            this.location = location;
             this.distMap = new HashMap<>();
         }
 
@@ -368,8 +363,8 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         }
 
         private double calcMinDist(ILQuadNode o1) {
-            double x = query.location.x;
-            double y = query.location.y;
+            double x = location.x;
+            double y = location.y;
             double x_min = o1.getAabb().x;
             double y_min = o1.getAabb().y;
             double x_max = x_min + o1.getAabb().width - 0.001;
@@ -390,76 +385,8 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
             }
         }
 
-        private double calcMinVertDist(ILQuadNode o1) {
-//            if (query.id == 179) {
-//                System.out.println("DEBUG");
-//            }
-            double o1DeltaX = query.location.x - o1.getAabb().x;
-            double o1DeltaY = query.location.y - o1.getAabb().y;
-
-            ArrayList<Double> o1Points = new ArrayList<>();
-            o1Points.add(hypotSqr(o1DeltaX, o1DeltaY));
-            o1Points.add(hypotSqr(o1.getAabb().width - o1DeltaX - 0.001, o1DeltaY));
-            o1Points.add(hypotSqr(o1DeltaX, o1.getAabb().width - o1DeltaY - 0.001));
-            o1Points.add(hypotSqr(o1.getAabb().width - o1DeltaX - 0.001, o1.getAabb().width - o1DeltaY - 0.001));
-
-            return Collections.min(o1Points);
-        }
-
         private double hypotSqr(double xDelta, double yDelta) {
             return Math.pow(xDelta, 2) + Math.pow(yDelta, 2);
-        }
-    }
-
-    static class MortonKey implements Comparable<MortonKey> {
-        private final int key;
-        private final String keyS;
-
-        public MortonKey(int x, int y, int level, int globalLevel, int range) {
-            StringBuilder code = new StringBuilder(getMorton(x, y, 1, level, range));
-            for (int i = level; i < globalLevel; i++) {
-                code.append("00");
-            }
-            this.keyS = code.toString();
-            this.key = Integer.parseInt(this.keyS, 2);
-        }
-
-        private static String getMorton(int x, int y, int i, int level, int range) {
-            if (i > level)
-                return "";
-
-            int step = range / 2;
-            int key = (x / step) | ((y / step) << 1);
-            String out = Integer.toBinaryString(key);
-            if (out.length() == 1) {
-                out = "0" + out;
-            }
-            if (key == 0)
-                out += getMorton(x, y, i + 1, level, range - step);
-            else if (key == 1)
-                out += getMorton(x - step, y, i + 1, level, range - step);
-            else if (key == 2)
-                out += getMorton(x, y - step, i + 1, level, range - step);
-            else
-                out += getMorton(x - step, y - step, i + 1, level, range - step);
-            return out;
-        }
-
-        private static int partition(int n) {
-            n = (n ^ (n << 8)) & 0x00ff00ff; // (1)
-            n = (n ^ (n << 4)) & 0x0f0f0f0f; // (2)
-            n = (n ^ (n << 2)) & 0x33333333; // (3)
-            return (n ^ (n << 1)) & 0x55555555; //
-        }
-
-        @Override
-        public String toString() {
-            return keyS;
-        }
-
-        @Override
-        public int compareTo(MortonKey o) {
-            return Integer.compare(this.key, o.key);
         }
     }
 }

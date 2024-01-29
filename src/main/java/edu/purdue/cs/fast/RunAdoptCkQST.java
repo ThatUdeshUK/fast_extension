@@ -1,19 +1,22 @@
 package edu.purdue.cs.fast;
 
+import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
 import edu.purdue.cs.fast.config.CleanMethod;
-import edu.purdue.cs.fast.experiments.*;
+import edu.purdue.cs.fast.experiments.Experiment;
+import edu.purdue.cs.fast.experiments.PlacesExperiment;
+import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-public class RunCkQST {
+public class RunAdoptCkQST {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "ckqst";
+        String name = "adopt";
         if (args.length > 2)
             name = args[2];
 
@@ -35,13 +38,13 @@ public class RunCkQST {
 //        numQueriesList.add(20000000);
 
         for (int numQueries : numQueriesList) {
-            CkQST ckQST = new CkQST(maxRange, maxRange, maxHeight);
+            AdoptCkQST ckQST = new AdoptCkQST(maxRange, maxRange, maxHeight);
 
             String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
             PlacesExperiment experiment = new PlacesKNNExperiment(
-                    Paths.get(args[0], "output_places_US_ckqstv2_preloaded.csv").toString(),
+                    Paths.get(args[0], "output_places_US_adoptckqst_preloaded.csv").toString(),
                     ds, ckQST, getExpName(name, cleanMethod), numPreObjects, 0, numQueries, numObjects, numKeywords, k, maxRange,
-                    PlacesKNNExperiment.IndexType.CkQST
+                    PlacesKNNExperiment.IndexType.AdoptCkQST
             );
             experiment.setSaveStats(true);
             experiment.init();

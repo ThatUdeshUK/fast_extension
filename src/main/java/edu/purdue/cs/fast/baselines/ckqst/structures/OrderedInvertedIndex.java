@@ -2,6 +2,8 @@ package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
 
@@ -20,7 +22,7 @@ public class OrderedInvertedIndex {
         probWV = new HashMap<>();
     }
 
-    public void insertQueryPL(CkQuery query) {
+    public void insertQueryPL(Query query) {
         countQueries++;
         String key = getPLKey(query.keywords);
 
@@ -28,7 +30,7 @@ public class OrderedInvertedIndex {
             int i = 0;
             List<Block> blockList = new LinkedList<>();
 
-            if (query.keywords.size() > 2) { // Line 1
+            if (query.keywords.size() > 2) {                                // Line 1
                 i = 1;
 
                 Block b = new Block();
@@ -39,18 +41,14 @@ public class OrderedInvertedIndex {
                 probWV.put(w3, (double) keywords.get(w3) / countQueries);
             }
 
-            // Line 2: construct new block b
-            Block b = new Block(query);
+            Block b = new Block(query);                                     // Line 2: construct new block b
             blockList.add(b);
             this.postingLists.put(key, blockList);
             return;
         }
 
-//        if (query.id == 6) {
-//            System.out.println("DEBUG!");
-//        }
         List<Block> bList = this.postingLists.get(key);
-        int br = getMinBlock(query, bList); // Line 3
+        int br = getMinBlock(query, bList);                                 // Line 3
 
         if (query.keywords.size() <= 2) {
             if (br == -1) {
@@ -66,12 +64,12 @@ public class OrderedInvertedIndex {
         keywords.put(w3, keywords.getOrDefault(w3, 0) + 1);
         probWV.put(w3, (double) keywords.get(w3) / countQueries);
 
-        if (br != -1 && bList.get(br).minw.equals(w3)) { // Line 4: q.w[3] == br.minw
+        if (br != -1 && bList.get(br).minw.equals(w3)) {                    // Line 4: q.w[3] == br.minw
             bList.get(br).add(query);
             return;
         }
 
-        if (br > 1 && bList.get(br - 1).maxw.compareTo(w3) >= 0) { // Line 5,6
+        if (br > 1 && bList.get(br - 1).maxw.compareTo(w3) >= 0) {          // Line 5,6
             bList.get(br - 1).add(query);
             return;
         }
@@ -108,7 +106,7 @@ public class OrderedInvertedIndex {
 
     private int getChoice(String w3, int i, List<Block> bList) {
         int choice = -1;
-        if (i == -1) { // Line 7: br == null
+        if (i == -1) {                                                          // Line 7: br == null
             double cCase2 = calcCostCase2(w3, bList.get(bList.size() - 1), bList.size());
             double cCase4 = calcCostCase4(w3, bList, bList.size());
 
@@ -116,7 +114,7 @@ public class OrderedInvertedIndex {
                 choice = 2;
             else
                 choice = 4;
-        } else if (i == 1) { // Line 8: r == 1
+        } else if (i == 1) {                                                    // Line 8: r == 1
             double cCase3 = calcCostCase3(w3, bList.get(i), bList.size());
             double cCase4 = calcCostCase4(w3, bList, bList.size());
 
@@ -124,7 +122,7 @@ public class OrderedInvertedIndex {
                 choice = 3;
             else
                 choice = 4;
-        } else if (i > 1) { // Line 9: r > 1
+        } else if (i > 1) {                                                     // Line 9: r > 1
             double cCase2 = calcCostCase2(w3, bList.get(i), bList.size());
             double cCase3 = calcCostCase3(w3, bList.get(i), bList.size());
             double cCase4 = calcCostCase4(w3, bList, bList.size());
@@ -140,7 +138,7 @@ public class OrderedInvertedIndex {
         return choice;
     }
 
-    public double verifyProb(CkQuery query) {
+    public double verifyProb(Query query) {
         String key = getPLKey(query.keywords);
 
         if (!this.postingLists.containsKey(key)) {
@@ -168,7 +166,7 @@ public class OrderedInvertedIndex {
         }
     }
 
-    public double estVerifyCost(CkQuery query) {
+    public double estVerifyCost(Query query) {
         String key = getPLKey(query.keywords);
 
         if (!this.postingLists.containsKey(key)) {
@@ -192,7 +190,7 @@ public class OrderedInvertedIndex {
         }
     }
 
-    public double updateCost(CkQuery query) {
+    public double updateCost(Query query) {
         String key = getPLKey(query.keywords);
 
         if (!this.postingLists.containsKey(key)) {
@@ -209,7 +207,7 @@ public class OrderedInvertedIndex {
         }
     }
 
-    private int getMinBlock(CkQuery query, List<Block> blockList) {
+    private int getMinBlock(Query query, List<Block> blockList) {
         if (query.keywords.size() <= 2 && !blockList.isEmpty()) {
             return 0;
         }
@@ -219,7 +217,7 @@ public class OrderedInvertedIndex {
 
         int i = 1;
         for (Block b : blockList.subList(1, blockList.size())) {
-            if (b.minw.compareTo(query.keywords.get(2)) >= 0) { // Line 3: b.minw >= q.w[3]
+            if (b.minw.compareTo(query.keywords.get(2)) >= 0) {                   // Line 3: b.minw >= q.w[3]
                 return i;
             }
             i++;
@@ -240,12 +238,12 @@ public class OrderedInvertedIndex {
 
     private double calcCostCase2(String w3, Block br, int numB) {
         double C_PL_V = (br.probBVbr_c(probWV, w3) - br.probBVbr(probWV)) * (Math.log(numB) + br.size()) + br.probBVbr_c(probWV, w3);
-        return C_PL_V + CkQST.thetaU * 1; // CPLu = O(1)
+        return C_PL_V + CkQST.thetaU * 1;                                       // CPLu = O(1)
     }
 
     private double calcCostCase3(String w3, Block br, int numB) {
         double C_PL_V = (br.probBVbr_c(probWV, w3) - br.probBVbr(probWV)) * (Math.log(numB) + br.size()) + br.probBVbr_c(probWV, w3);
-        return C_PL_V + CkQST.thetaU * 1; //CPLu = O(1)
+        return C_PL_V + CkQST.thetaU * 1;                                      //CPLu = O(1)
     }
 
     private double calcCostCase4(String w3, List<Block> brs, int numB) {
@@ -259,7 +257,7 @@ public class OrderedInvertedIndex {
         double C_B_V_b = probWV.get(w3) * Math.log(numB + 1);
 
         double C_PL_V = sum_C_B_V_br + C_B_V_b;
-        return C_PL_V + CkQST.thetaU * (1 + Math.log(numB + 1)); // CPLu = O(1 + log |B|)
+        return C_PL_V + CkQST.thetaU * (1 + Math.log(numB + 1));               // CPLu = O(1 + log |B|)
     }
 
     public void searchObject(DataObject obj, Collection<Query> results) {
@@ -281,15 +279,11 @@ public class OrderedInvertedIndex {
             List<Block> oneKeyBlockList = postingLists.get(oneKey);
 
             if (!oneKeyBlockList.isEmpty()) {
-                for (CkQuery query : oneKeyBlockList.get(0).getQueries()) {
-                    if (query.id == 6474 && oneKey.equals("home_home")) {
-//                        System.out.println("DEBUG it");
-                        System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
-                    }
-                    if (query.containsPoint(obj.location)) {
+                for (Query query : oneKeyBlockList.get(0).getQueries()) {
+                    if ((query instanceof CkQuery && ((CkQuery) query).containsPoint(obj.location)) ||
+                            (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange()))) {
                         if (!results.contains(query)) {
                             results.add(query);
-//                            query.updateSR(obj);
                         }
                     }
                 }
@@ -301,15 +295,11 @@ public class OrderedInvertedIndex {
         if (postingLists.containsKey(key)) {
             List<Block> blockList = postingLists.get(key);
             if (obj.keywords.size() == 2 && !blockList.isEmpty()) {
-                for (CkQuery query : blockList.get(0).getQueries()) {
-//                    if (query.id == 6474 && key.equals("organization_welfare")) {
-////                        System.out.println("DEBUG it");
-//                        System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
-//                    }
-                    if (query.containsPoint(obj.location)) {
+                for (Query query : blockList.get(0).getQueries()) {
+                    if ((query instanceof CkQuery && ((CkQuery) query).containsPoint(obj.location)) ||
+                            (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange()))) {
                         if (!results.contains(query)) {
                             results.add(query);
-//                            query.updateSR(obj);
                         }
                     }
                 }
@@ -321,29 +311,19 @@ public class OrderedInvertedIndex {
 
             for (Block b : blockList) {
                 for (int j = idxJ; j < obj.keywords.size(); j++) {
-//                    if (obj.id == 14 && key.equals("imaging_magnetic")) {
-//                        System.out.println("DEBUG it");
-//                        if (b.minw != null) {
-//                            int diff = b.minw.compareTo(obj.keywords.get(j));
-//                            System.out.println(diff);
-//                        }
-//                    }
                     if (b.minw == null || b.minw.compareTo(obj.keywords.get(j)) <= 0) {
-                        for (CkQuery query : b.getQueries()) {
-                            if (query.id == 6474 && key.equals("organization_welfare")) {
-//                        System.out.println("DEBUG it");
-                                System.out.println("obj:" + obj.id + ", loc:" + query.location + ", ar:" + query.sr);
-                            }
+                        for (Query query : b.getQueries()) {
                             boolean match = query.keywords.size() <= obj.keywords.size();
 
                             if (match && query.keywords.size() > 2 && !new HashSet<>(obj.keywords).containsAll(query.keywords)) {
                                 match = false;
                             }
 
-                            if (match && query.containsPoint(obj.location)) {
+                            if (match &&
+                                    ((query instanceof CkQuery && ((CkQuery) query).containsPoint(obj.location)) ||
+                                            (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange())))) {
                                 if (!results.contains(query)) {
                                     results.add(query);
-//                                    query.updateSR(obj);
                                 }
                             }
                         }
@@ -364,7 +344,7 @@ public class OrderedInvertedIndex {
             int i = 0;
             for (Block b : entry.getValue()) {
                 s.append(i).append("-[").append(b.minw).append(", ").append(b.maxw).append("]:{");
-                for (CkQuery q : b.getQueries()) {
+                for (Query q : b.getQueries()) {
                     s.append(q.id).append(", ");
                 }
                 s.append("}, ");

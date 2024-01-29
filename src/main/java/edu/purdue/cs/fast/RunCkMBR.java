@@ -1,29 +1,30 @@
 package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
-import edu.purdue.cs.fast.config.CleanMethod;
-import edu.purdue.cs.fast.experiments.*;
+import edu.purdue.cs.fast.baselines.fast.LFAST;
+import edu.purdue.cs.fast.experiments.Experiment;
+import edu.purdue.cs.fast.experiments.PlacesExperiment;
+import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Rectangle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-public class RunCkQST {
+public class RunCkMBR {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "ckqst";
+        String name = "legacy_ckqst";
         if (args.length > 2)
             name = args[2];
 
-        int k = 5;
+        double srRate = 0.01;
         int numKeywords = 5;
-        int numPreObjects = 100000;
         int numObjects = 100000;
         int maxRange = 512;
         int maxHeight = 9;
-        CleanMethod cleanMethod = CleanMethod.NO;
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
         numQueriesList.add(100000);
@@ -35,31 +36,17 @@ public class RunCkQST {
 //        numQueriesList.add(20000000);
 
         for (int numQueries : numQueriesList) {
-            CkQST ckQST = new CkQST(maxRange, maxRange, maxHeight);
+            CkQST fast = new CkQST(maxRange, maxRange, maxHeight);
 
             String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
-            PlacesExperiment experiment = new PlacesKNNExperiment(
-                    Paths.get(args[0], "output_places_US_ckqstv2_preloaded.csv").toString(),
-                    ds, ckQST, getExpName(name, cleanMethod), numPreObjects, 0, numQueries, numObjects, numKeywords, k, maxRange,
-                    PlacesKNNExperiment.IndexType.CkQST
+            PlacesExperiment experiment = new PlacesExperiment(
+                    Paths.get(args[0], "output_places_US_legacy_ckqst.csv").toString(),
+                    ds, fast, name, 0, 0, numQueries, numObjects, numKeywords, srRate, maxRange,
+                    Experiment.IndexType.LFAST
             );
             experiment.setSaveStats(true);
             experiment.init();
             experiment.run();
         }
-    }
-
-    private static String getExpName(String name, CleanMethod m) {
-        return name + "_" + m.name();
-    }
-
-    private enum Workload {
-        MBR,
-        MBR_EXPIRE,
-        HYBRID,
-        KNN,
-        KNN_EXPIRE,
-
-        KNN_OBJ_EXPIRE,
     }
 }

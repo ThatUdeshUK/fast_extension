@@ -24,6 +24,8 @@ public class PlacesExperiment extends Experiment<Place> {
     protected double srRate;
     protected int maxRange;
 
+    protected IndexType indexType = IndexType.FAST;
+
     public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
                             int numQueries, int numObjects, int numKeywords, double srRate, int maxRange) {
         this.name = name;
@@ -40,10 +42,11 @@ public class PlacesExperiment extends Experiment<Place> {
 
     public PlacesExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
                             int numPreObjects, int numPreQueries, int numQueries, int numObjects, int numKeywords,
-                            double srRate, int maxRange) {
+                            double srRate, int maxRange, IndexType indexType) {
         this(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, srRate, maxRange);
         this.numPreObjects = numPreObjects;
         this.numPreQueries = numPreQueries;
+        this.indexType = indexType;
     }
 
     @Override
@@ -118,14 +121,14 @@ public class PlacesExperiment extends Experiment<Place> {
             this.preQueries = new ArrayList<>();
             for (int i = 0; i < numPreQueries; i++) {
                 Place place = places.get(i);
-                preQueries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numPreQueries + numPreObjects + numQueries + numObjects + 1));
+                preQueries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numPreQueries + numPreObjects + numQueries + numObjects + 1, indexType));
             }
         }
 
         this.queries = new ArrayList<>();
         for (int i = numPreQueries; i < numPreQueries + numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numPreQueries + numPreObjects + numQueries + numObjects + 1));
+            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numPreQueries + numPreObjects + numQueries + numObjects + 1, indexType));
         }
     }
 
@@ -136,14 +139,14 @@ public class PlacesExperiment extends Experiment<Place> {
             this.preObjects = new ArrayList<>();
             for (int i = totalQueries; i < totalQueries + numPreObjects; i++) {
                 Place place = places.get(i);
-                preObjects.add(place.toDataObject(i - totalQueries, totalQueries + numPreObjects + numObjects + 1));
+                preObjects.add(place.toDataObject(i - totalQueries, totalQueries + numPreObjects + numObjects + 1, indexType));
             }
         }
 
         this.objects = new ArrayList<>();
         for (int i = totalQueries + numPreObjects; i < totalQueries + numPreObjects + numObjects; i++) {
             Place place = places.get(i);
-            objects.add(place.toDataObject(i - totalQueries, totalQueries + numPreObjects + numObjects + 1));
+            objects.add(place.toDataObject(i - totalQueries, totalQueries + numPreObjects + numObjects + 1, indexType));
         }
     }
 

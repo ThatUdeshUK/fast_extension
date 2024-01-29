@@ -1,10 +1,7 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import edu.purdue.cs.fast.FAST;
-import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
-import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
@@ -33,7 +30,7 @@ class CkQSTCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.CkQST
+                PlacesKNNExperiment.IndexType.CkQST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -88,7 +85,7 @@ class CkQSTCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         goldExperiment.setSeed(7);
         goldExperiment.setSaveStats(false);

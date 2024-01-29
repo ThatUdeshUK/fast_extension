@@ -37,7 +37,7 @@ class FASTKNNCleanTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -96,7 +96,7 @@ class FASTKNNCleanTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         goldExperiment.setSeed(7);
         goldExperiment.setSaveStats(false);

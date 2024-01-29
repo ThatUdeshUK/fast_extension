@@ -3,7 +3,6 @@ package edu.purdue.cs.fast;
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
@@ -28,7 +27,7 @@ class FASTKNNIncCorrectnessTest {
                 512,
                 9
         );
-        FAST.config.INCREMENTAL_DESCENT = false;
+        FAST.config.INCREMENTAL_DESCENT = true;
         fast.setCleaning(CleanMethod.NO);
 
         experiment = new PlacesKNNExperiment(
@@ -41,7 +40,7 @@ class FASTKNNIncCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -99,7 +98,7 @@ class FASTKNNIncCorrectnessTest {
                 5,
                 5,
                 512,
-                PlacesKNNExperiment.KNNType.FAST
+                PlacesKNNExperiment.IndexType.FAST
         );
         fastExperiment.setSeed(7);
         fastExperiment.setSaveStats(false);

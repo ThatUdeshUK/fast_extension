@@ -1,13 +1,14 @@
 package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.models.Query;
 
 import java.util.*;
 
 public class Block {
     String minw;
     String maxw;
-    private final LinkedList<CkQuery> queries;
+    private final LinkedList<Query> queries;
     private final LinkedList<String> keywords;
 
     public Block() {
@@ -15,7 +16,7 @@ public class Block {
         this.keywords = new LinkedList<>();
     }
 
-    public Block(CkQuery query) {
+    public Block(Query query) {
         if (query.keywords.size() > 2) {
             this.minw = query.keywords.get(2);
             this.maxw = query.keywords.get(query.keywords.size() - 1);
@@ -30,11 +31,11 @@ public class Block {
         this.queries.add(query);
     }
 
-    public void add(CkQuery query) {
+    public void add(Query query) {
         queries.add(query);
     }
 
-    public void add(int i, CkQuery query) {
+    public void add(int i, Query query) {
         queries.add(i, query);
     }
 
@@ -71,7 +72,7 @@ public class Block {
     public LinkedList<String> getKeywords() {
         return keywords;
     }
-    public LinkedList<CkQuery> getQueries() {
+    public LinkedList<Query> getQueries() {
         return queries;
     }
 

@@ -146,12 +146,17 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         reinsertContinuous(currentLevelQueries, context.maxLevel);
     }
 
-    private void reinsertContinuous(ArrayList<ReinsertEntry> currentLevelQueries, int level) {
+    private void reinsertContinuous(List<ReinsertEntry> currentLevelQueries, int level) {
         while (level >= 0 && !currentLevelQueries.isEmpty()) {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (context.gridGranularity / Math.pow(2, level));
             double levelStep = ((context.globalXRange) / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
+                if (entry.query.id == 31) {
+                    System.out.println("DEBUG");
+                    System.out.println("Inserting descending: " + entry.query + ", to level:" + level);
+                }
+                ((KNNQuery) entry.query).currentLevel = level;
                 singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
             }
             currentLevelQueries = insertNextLevelQueries;
@@ -265,12 +270,12 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     private List<Query> internalSearchQueries(DataObject dataObject, boolean isExpiry) {
-//        if (dataObject.id == 118) {
-//            System.out.println("DEBUG!");
-//            System.out.println("Streaming obj:" + dataObject);
-//        }
+        if (dataObject.id == 231) {
+            System.out.println("DEBUG!");
+            System.out.println("Streaming obj:" + dataObject);
+        }
         List<Query> result = new LinkedList<>();
-        List<KNNQuery> descendingKNNQueries = null;
+        List<ReinsertEntry> descendingKNNQueries = null;
         if (!isExpiry)
             descendingKNNQueries = new LinkedList<>();
 
@@ -293,7 +298,11 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             granualrity <<= 1;
         }
         if (descendingKNNQueries != null && !descendingKNNQueries.isEmpty()) {
-            reinsertKNNQueries(descendingKNNQueries);
+//            reinsertKNNQueries(descendingKNNQueries);
+            if (dataObject.id == 231) {
+                System.out.println("DEBUG");
+            }
+            reinsertContinuous(descendingKNNQueries, FAST.context.maxLevel - 1);
         }
 
         return result;

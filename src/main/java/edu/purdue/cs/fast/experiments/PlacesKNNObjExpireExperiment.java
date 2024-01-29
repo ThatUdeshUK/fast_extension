@@ -8,8 +8,8 @@ import java.util.List;
 
 public class PlacesKNNObjExpireExperiment extends PlacesKNNExpireExperiment {
     public PlacesKNNObjExpireExperiment(String outputPath, String inputPath, SpatialKeywordIndex index, String name,
-                                        int numQueries, int numObjects, int numKeywords, int k, int maxRange, KNNType knnType) {
-        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, k, maxRange, knnType);
+                                        int numQueries, int numObjects, int numKeywords, int k, int maxRange, IndexType indexType) {
+        super(outputPath, inputPath, index, name, numQueries, numObjects, numKeywords, k, maxRange, indexType);
     }
 
     @Override
@@ -18,7 +18,7 @@ public class PlacesKNNObjExpireExperiment extends PlacesKNNExpireExperiment {
         for (int i = numQueries + 1; i < numQueries + numObjects; i++) {
             Place place = places.get(i);
             int et = this.randomizer.nextInt(numObjects / 10);
-            objects.add(place.toDataObject(i, i+et)); // Sets the random expiry
+            objects.add(place.toDataObject(i, i+et, IndexType.FAST)); // Sets the random expiry
         }
     }
 }

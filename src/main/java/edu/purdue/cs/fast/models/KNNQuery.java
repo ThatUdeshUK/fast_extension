@@ -54,9 +54,12 @@ public class KNNQuery extends Query {
             monitoredObjects = new BoundedPriorityQueue<>(kStar, new EuclideanComparator(location));
         }
 
-        if (!monitoredObjects.contains(obj))
+        if (FAST.config.INCREMENTAL_DESCENT) {
+            if (!monitoredObjects.contains(obj))
+                monitoredObjects.add(obj);
+            else return monitoredObjects.isFull();
+        } else
             monitoredObjects.add(obj);
-        else return monitoredObjects.isFull();
 
         boolean kStarFilled = monitoredObjects.isFull();
         if (kStarFilled) {

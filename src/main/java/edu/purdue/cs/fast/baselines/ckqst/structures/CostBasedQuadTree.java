@@ -56,9 +56,7 @@ public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
          */
         @Override
         public boolean insert(Query query) {
-            CkQuery q = (CkQuery) query;
-//            if (q.id == 3002)
-//                System.out.println("DEBUG! Ins!");
+            Query q = query;
             // Ignore objects which do not belong in this quad tree
             if (!aabb.containsQuery(q) && height > 1)
                 return false; // object cannot be added
@@ -67,6 +65,9 @@ public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
                 textualIndex.insertQueryPL(q);
                 return true;
             } else if (isMinimal(q)) {
+                if (q.id == 4188) {
+                    System.out.println("Minimal at " + height);
+                }
                 double nodeVCost = verifyCost(q);
                 double nodeUCost = updateCost(q);
 
@@ -107,14 +108,14 @@ public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
             throw new RuntimeException("Not implemented!");
         }
 
-        private boolean isMinimal(CkQuery q) {
+        private boolean isMinimal(Query q) {
             if (aabb.quadContainsQuery(q, 0)) return false;
             if (aabb.quadContainsQuery(q, 1)) return false;
             if (aabb.quadContainsQuery(q, 2)) return false;
             return !aabb.quadContainsQuery(q, 3);
         }
 
-        private double verifyCost(CkQuery q) {
+        private double verifyCost(Query q) {
             double num_o_N = 1; // the number of objects falling to this node in a unit time
 
             double p_V_q = textualIndex.verifyProb(q);
@@ -127,7 +128,7 @@ public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
             return num_o_N * p_V_q * e_V_q;
         }
 
-        private double updateCost(CkQuery q) {
+        private double updateCost(Query q) {
             return textualIndex.updateCost(q);
         }
 
@@ -155,7 +156,7 @@ public class CostBasedQuadTree extends BaseQuadTree<DataObject, Query> {
             ((CostBasedQuadNode) southEast).height = height + 1;
         }
 
-        private boolean insertIntoChildren(CkQuery q) {
+        private boolean insertIntoChildren(Query q) {
             // A point can only live in one child.
             if (northWest.insert(q)) return true;
             if (northEast.insert(q)) return true;

@@ -29,7 +29,6 @@ public class DataObject {
     public Long et;
 
     public DataObject(Integer id, Point location, List<String> keywords, long st, long et) {
-        super();
         this.id = id;
         this.location = location;
         this.keywords = keywords;

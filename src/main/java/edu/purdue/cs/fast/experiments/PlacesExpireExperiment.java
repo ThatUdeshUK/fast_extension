@@ -19,7 +19,7 @@ public class PlacesExpireExperiment extends PlacesExperiment {
         for (int i = 0; i < numQueries; i++) {
             Place place = places.get(i);
             int et = this.randomizer.nextInt(numObjects);
-            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numQueries +  et)); // Sets the random expiry
+            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numQueries +  et, indexType)); // Sets the random expiry
         }
     }
 }

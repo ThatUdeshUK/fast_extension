@@ -1,9 +1,9 @@
 package edu.purdue.cs.fast;
 
-import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
-import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
-import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
-import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.baselines.fast.LFAST;
+import edu.purdue.cs.fast.baselines.naivembr.NaiveMBR;
+import edu.purdue.cs.fast.experiments.Experiment;
+import edu.purdue.cs.fast.experiments.PlacesExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.junit.jupiter.api.Assertions;
@@ -14,11 +14,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-class FASTKNNCorrectnessTest {
-    private final PlacesKNNExpireExperiment experiment;
+class FASTvsNaiveCorrectnessTest {
+    private final PlacesExperiment experiment;
+    private final int numObjects = 10000;
+    private final int numQueries = 10000;
 
-    public FASTKNNCorrectnessTest() {
-        FAST fast = new FAST(
+    public FASTvsNaiveCorrectnessTest() {
+        LFAST fast = new LFAST(
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)
@@ -26,19 +28,20 @@ class FASTKNNCorrectnessTest {
                 512,
                 9
         );
-        fast.setCleaning(CleanMethod.EXPIRE_KNN);
 
-        experiment = new PlacesKNNExpireExperiment(
+        experiment = new PlacesExperiment(
                 null,
-                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
+                Paths.get(System.getProperty("user.dir") + "/../data/places_dump_US.geojson").toString(),
                 fast,
                 "places_knn_seacnn",
-                1000,
-                100,
+                0,
+                0,
+                numQueries,
+                numObjects,
                 5,
-                5,
+                0.05,
                 512,
-                PlacesKNNExperiment.IndexType.FAST
+                Experiment.IndexType.LFAST
         );
         experiment.setSeed(7);
         experiment.setSaveStats(false);
@@ -77,26 +80,21 @@ class FASTKNNCorrectnessTest {
 
     private List<List<Integer>> readGroundTruth() {
         System.out.println("Running naive FAST KNN as the ground truth");
-        NaiveFAST goldFast = new NaiveFAST(
-                new Rectangle(
-                        new Point(0.0, 0.0),
-                        new Point(512, 512)
-                ),
-                512,
-                9
-        );
+        NaiveMBR gold = new NaiveMBR();
 
-        PlacesKNNExpireExperiment goldExperiment = new PlacesKNNExpireExperiment(
+        PlacesExperiment goldExperiment = new PlacesExperiment(
                 null,
-                Paths.get(System.getProperty("user.dir") + "/data/places_dump_US_2000.json").toString(),
-                goldFast,
+                Paths.get(System.getProperty("user.dir") + "/../data/places_dump_US.geojson").toString(),
+                gold,
                 "places_knn_seacnn",
-                1000,
-                100,
+                0,
+                0,
+                numQueries,
+                numObjects,
                 5,
-                5,
+                0.05,
                 512,
-                PlacesKNNExperiment.IndexType.FAST
+                Experiment.IndexType.LFAST
         );
         goldExperiment.setSeed(7);
         goldExperiment.setSaveStats(false);
@@ -112,22 +110,5 @@ class FASTKNNCorrectnessTest {
         System.out.println("Naive FAST KNN Done!");
 
         return results;
-//        String path = System.getProperty("user.dir") + "/data/places_knn_ground_truth_seed_7.csv";
-//        ArrayList<List<Integer>> out = new ArrayList<>();
-//
-//        try {
-//            FileReader fileReader = new FileReader(path);
-//            BufferedReader br = new BufferedReader(fileReader);
-//
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                String[] trimed = line.substring(1, line.length() - 1).split(", ");
-//                out.add(Arrays.stream(trimed).filter((q) -> !q.isBlank()).map(Integer::parseInt).toList());
-//            }
-//        } catch (IOException ignore) {
-//
-//        }
-//
-//        return out;
     }
 }
