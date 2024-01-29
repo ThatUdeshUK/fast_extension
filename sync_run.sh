@@ -49,8 +49,8 @@ while getopts "n:hpbr" option; do
    esac
 done
 
-export PROJECT_DIR="/homes/ukumaras/Projects/fast/results_remote/"
-export RESULT_DIR="/homes/ukumaras/Projects/"
+export RESULT_DIR="/homes/ukumaras/Projects/fast/results_remote/"
+export PROJECT_DIR="/homes/ukumaras/Projects/"
 
 # Sync (push) files
 if [ $PUSH == 1 ]; then
@@ -73,7 +73,7 @@ if [ $BUILD == 1 ]; then
   mvn package -Dmaven.test.skip
 fi
 
-java -cp target/fastrelease-0.0.1-SNAPSHOT-jar-with-dependencies.jar edu.purdue.cs.fast.$CLASS $PROJECT_DIR $RESULT_DIR
+java -cp target/fastrelease-0.0.1-SNAPSHOT-jar-with-dependencies.jar edu.purdue.cs.fast.$CLASS $RESULT_DIR $PROJECT_DIR
 EOF
 
 if [ $PULL == 1 ]; then
