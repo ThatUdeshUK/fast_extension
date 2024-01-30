@@ -4,6 +4,7 @@ import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;

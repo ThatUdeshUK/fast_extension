@@ -48,16 +48,18 @@ public class QueryTrieNode extends TextualNode {
                         searchQueries(obj, results, q, isExpiry);
                     }
 
-                    if (queriesSize > FAST.config.DEGRADATION_RATIO &&
-                            q.currentLevel == FAST.context.maxLevel &&
+                    if (queriesSize > FAST.config.KNN_DEGRADATION_RATIO &&
+                            parent.level == FAST.context.maxLevel &&
 //                            q.currentLevel >= FAST.context.minInsertedLevel + 1 &&
-                            q.ar < Double.MAX_VALUE &&
+//                            q.ar < Double.MAX_VALUE &&
+                            q.ar < FAST.config.KNN_DEGRADATION_AR &&
                             descendedCount < queriesSize / 2) {
-                        if (q.id == 31) { // || q.id == 453
-                            System.out.println("Pushing down: " + q.id + ", from: " + q.currentLevel + ", x: " + q.location.x
-                                    + ", y: " + q.location.y + ", ar: " + q.ar + ", list_size: " + queriesSize + ", coz: " + obj.id);
-                        }
+//                        if (q.id == 31) { // || q.id == 453
+//                            System.out.println("Pushing down: " + q.id + ", from: " + q.currentLevel + ", x: " + q.location.x
+//                                    + ", y: " + q.location.y + ", ar: " + q.ar + ", list_size: " + queriesSize + ", coz: " + obj.id);
+//                        }
                         q = knnQueries.remove(i);
+//                        Run.logger.debug("Descend from level on search " + parent.level + ", query: " + q.id);
                         descendingKNNQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, q.spatialBox()), q));
                         descendedCount++;
                     }
@@ -101,11 +103,7 @@ public class QueryTrieNode extends TextualNode {
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (!isExpiry) {
-                                boolean kFilled = query.pushUntilKHat(obj);
-//                                if (descendingKNNQueries != null && parent.level == FAST.context.maxLevel && kFilled) {
-//                                    descendingKNNQueries.add(query);
-//                                    subtree.remove(keyword);
-//                                }
+                                query.pushUntilKHat(obj);
                             }
                         }
                     }
@@ -116,7 +114,6 @@ public class QueryTrieNode extends TextualNode {
                                 && TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     }
-//                    LinkedList<KNNQuery> toRemove = new LinkedList<>();
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.context.objectSearchTrieNodeCounter++;
                         if ((query.et > FAST.context.timestamp || isExpiry) && (FAST.config.INCREMENTAL_DESCENT || query.currentLevel == parent.level) &&
@@ -124,15 +121,10 @@ public class QueryTrieNode extends TextualNode {
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (!isExpiry) {
-                                boolean kFilled = query.pushUntilKHat(obj);
-//                                if (descendingKNNQueries != null && parent.level == FAST.context.maxLevel && kFilled) {
-//                                    descendingKNNQueries.add(query);
-//                                    toRemove.add(query);
-//                                }
+                                query.pushUntilKHat(obj);
                             }
                         }
                     }
-//                    toRemove.forEach(q -> ((QueryListNode) node).queries.kNNQueries().remove(q));
                 } else if (node instanceof QueryTrieNode) {
                     ((QueryTrieNode) node).find(parent, obj, keywords, i + 1, results, descendingKNNQueries, isExpiry);
                 }

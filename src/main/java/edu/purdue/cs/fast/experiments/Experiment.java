@@ -15,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public abstract class Experiment<T> {
     protected String name;
@@ -107,6 +108,36 @@ public abstract class Experiment<T> {
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
+
+    public void search(Function<DataObject, Boolean> fn) {
+        results = new ArrayList<>();
+
+        Stopwatch totalTimeWatch = Stopwatch.createStarted();
+        for (DataObject o : objects) {
+            Stopwatch searchTimeWatch = null;
+            if (saveTimeline)
+                searchTimeWatch = Stopwatch.createStarted();
+            Collection<Query> res = index.insertObject(o);
+            if (saveTimeline) {
+                assert searchTimeWatch != null;
+                searchTimeWatch.stop();
+                searchTimeline.add(totalTimeWatch.elapsed(TimeUnit.NANOSECONDS));
+            }
+            fn.apply(o);
+            results.add(res);
+        }
+        totalTimeWatch.stop();
+        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
+            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+            searchMem = indexMemorySize;
+        }
+//        searchMem = GraphLayout.parseInstance(index).totalSize();
+        this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
+    }
+
 
     public void save() throws InvalidOutputFile {
         if (!this.saveStats)

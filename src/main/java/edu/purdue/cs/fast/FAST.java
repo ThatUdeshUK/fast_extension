@@ -152,10 +152,10 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             int levelGranularity = (int) (context.gridGranularity / Math.pow(2, level));
             double levelStep = ((context.globalXRange) / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
-                if (entry.query.id == 31) {
-                    System.out.println("DEBUG");
-                    System.out.println("Inserting descending: " + entry.query + ", to level:" + level);
-                }
+//                if (entry.query.id == 31) {
+//                    System.out.println("DEBUG");
+//                    System.out.println("Inserting descending: " + entry.query + ", to level:" + level);
+//                }
                 ((KNNQuery) entry.query).currentLevel = level;
                 singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
             }
@@ -224,10 +224,10 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         }
     }
 
-    private void reinsertKNNQueries(List<KNNQuery> descendingKNNQueries) {
-
-        for (KNNQuery query : descendingKNNQueries) {
-            if (query.id == 65 && query.currentLevel == 8) {
+    private void reinsertKNNQueries(List<ReinsertEntry> descendingKNNQueries) {
+        for (ReinsertEntry entry : descendingKNNQueries) {
+            KNNQuery query = ((KNNQuery) entry.query);
+            if (entry.query.id == 65 && query.currentLevel == 8) {
                 System.out.println("debug!");
             }
             int level = 0;
@@ -242,8 +242,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
             double levelStep = ((FAST.context.bounds.max.x - FAST.context.bounds.min.x) / levelGranularity);
-            ReinsertEntry entry = new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, query.spatialBox()), query);
-            if (entry.query.id == 65) {
+            if (query.id == 65) {
                 System.out.println("Reinserting: " + query + ", area: " + entry.range);
             }
             singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
@@ -298,42 +297,17 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             granualrity <<= 1;
         }
         if (descendingKNNQueries != null && !descendingKNNQueries.isEmpty()) {
-//            reinsertKNNQueries(descendingKNNQueries);
-            if (dataObject.id == 231) {
-                System.out.println("DEBUG");
+            if (FAST.config.INCREMENTAL_DESCENT) {
+                reinsertContinuous(descendingKNNQueries, FAST.context.maxLevel - 1);
+            } else {
+                reinsertKNNQueries(descendingKNNQueries);
             }
-            reinsertContinuous(descendingKNNQueries, FAST.context.maxLevel - 1);
+//            if (dataObject.id == 231) {
+//                System.out.println("DEBUG");
+//            }
         }
 
         return result;
-    }
-
-    public void expireQueries(DataObject dataObject) {
-//        Run.logger.debug("Obj expire: " + dataObject.id);
-//        if (dataObject.id == 114) {
-//            System.out.println("DEBUG!");
-//        }
-        List<Query> results = internalSearchQueries(dataObject, true);
-//        if (!results.isEmpty() && dataObject.id == 114) {
-//            Run.logger.debug(context.timestamp + ", " + dataObject);
-//            System.out.println(results);
-//        }
-        List<KNNQuery> ascending = new ArrayList<>();
-        results.forEach(query -> {
-            if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != context.maxLevel) {
-                boolean before = ((KNNQuery) query).kFilled();
-                ((KNNQuery) query).getMonitoredObjects().remove(dataObject);
-                assert before != ((KNNQuery) query).kFilled();
-                ((KNNQuery) query).ar = Double.MAX_VALUE;
-                ascending.add((KNNQuery) query);
-            }
-        });
-////        Run.logger.debug("Ascending queries: " + ascending);
-        reinsertKNNQueries(ascending);
-
-        for (KNNQuery query : ascending) {
-            assert query.currentLevel == context.maxLevel;
-        }
     }
 
     public void cleanNextSetOfEntries() {
@@ -353,6 +327,34 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         if (cell.textualIndex == null)
             cleaningIterator.remove();
     }
+
+//    public void expireQueries(DataObject dataObject) {
+////        Run.logger.debug("Obj expire: " + dataObject.id);
+////        if (dataObject.id == 114) {
+////            System.out.println("DEBUG!");
+////        }
+//        List<Query> results = internalSearchQueries(dataObject, true);
+////        if (!results.isEmpty() && dataObject.id == 114) {
+////            Run.logger.debug(context.timestamp + ", " + dataObject);
+////            System.out.println(results);
+////        }
+//        List<KNNQuery> ascending = new ArrayList<>();
+//        results.forEach(query -> {
+//            if (query instanceof KNNQuery && ((KNNQuery) query).currentLevel != context.maxLevel) {
+//                boolean before = ((KNNQuery) query).kFilled();
+//                ((KNNQuery) query).getMonitoredObjects().remove(dataObject);
+//                assert before != ((KNNQuery) query).kFilled();
+//                ((KNNQuery) query).ar = Double.MAX_VALUE;
+//                ascending.add((KNNQuery) query);
+//            }
+//        });
+//////        Run.logger.debug("Ascending queries: " + ascending);
+//        reinsertKNNQueries(ascending);
+//
+//        for (KNNQuery query : ascending) {
+//            assert query.currentLevel == context.maxLevel;
+//        }
+//    }
 
     public String getMinKeyword(int level, Query query) {
         String minkeyword = null;
@@ -463,6 +465,21 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
                 }
             }
         });
+    }
+
+    public static class TimeSize {
+        public int timestamp;
+        public double ar;
+
+        public TimeSize(int timestamp, double ar) {
+            this.timestamp = timestamp;
+            this.ar = ar;
+        }
+
+        @Override
+        public String toString() {
+            return "[" + timestamp + ", " + ar + ']';
+        }
     }
 }
 

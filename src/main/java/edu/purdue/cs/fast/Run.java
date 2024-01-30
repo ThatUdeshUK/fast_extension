@@ -1,14 +1,22 @@
 package edu.purdue.cs.fast;
 
+import com.google.common.base.Stopwatch;
 import edu.purdue.cs.fast.experiments.*;
 import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.models.Rectangle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
@@ -24,7 +32,7 @@ public class Run {
         double knnRatio = 0.05;
         int numKeywords = 5;
         int numPreObjects = 0;
-        int numObjects = 100000;
+        int numObjects = 1000000;
         int fineGridGran = 512;
         int maxLevel = 9;
         int maxRange = 512;
@@ -32,11 +40,12 @@ public class Run {
         CleanMethod cleanMethod = CleanMethod.NO;
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        numQueriesList.add(100000);
-        numQueriesList.add(500000);
+//        numQueriesList.add(100000);
+//        numQueriesList.add(500000);
         numQueriesList.add(1000000);
-        numQueriesList.add(2500000);
-        numQueriesList.add(5000000);
+//        numQueriesList.add(2000000);
+//        numQueriesList.add(2500000);
+//        numQueriesList.add(5000000);
 //        numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
 
@@ -49,7 +58,7 @@ public class Run {
                     fineGridGran,
                     maxLevel
             );
-            FAST.config.INCREMENTAL_DESCENT = false;
+            FAST.config.INCREMENTAL_DESCENT = true;
             fast.setPushToLowest(pushToLowest);
             fast.setCleaning(cleanMethod);
 
@@ -95,8 +104,29 @@ public class Run {
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, srRate, maxRange
                     );
             }
-            experiment.setSaveStats(true);
+            experiment.setSaveStats(false);
             experiment.run();
+
+//            experiment.init();
+//
+//            System.gc();
+//            System.gc();
+//            System.gc();
+//
+//            Run.logger.info("Creating index!");
+//            experiment.create();
+//            saveQuerySnapshot(fast, 0);
+//
+//            Run.logger.info("Searching!");
+//            int snapFrequency = 25000;
+//            experiment.search((object) -> {
+//                if (object.id % snapFrequency == 0 && object.id / snapFrequency > 0) {
+//                    System.out.println("Saving snapshot!");
+//                    saveQuerySnapshot(fast, object.id / snapFrequency);
+//                }
+//                return true;
+//            });
+//            saveQuerySnapshot(fast, 4);
 
 //            try {
 //                FileWriter fw = new FileWriter("results/" + getExpName(name, cleanMethod) + "_" + workload.name() + "_" + numQueries + ".txt");
@@ -116,6 +146,27 @@ public class Run {
 //            } catch (IOException e) {
 //                throw new RuntimeException(e);
 //            }
+        }
+    }
+
+    private static void saveQuerySnapshot(FAST fast, int timestamp) {
+        try {
+            FileWriter fw = new FileWriter("results/" + "query_snapshot_" + timestamp + ".csv");
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            bw.write("id,ar,currentLevel,x,y\n");
+            fast.allKNNQueries().forEach(query -> {
+                try {
+                    bw.write("" + query.id + ',' + query.ar + ',' + query.currentLevel + ',' + query.location.x + ',' + query.location.y + "\n");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            bw.close();
+            fw.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

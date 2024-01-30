@@ -51,7 +51,7 @@ public class RunLFAST {
                     Experiment.IndexType.LFAST
             );
             experiment.setSaveStats(true);
-            experiment.init();
+//            experiment.init();
             experiment.run();
         }
     }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.experiments.Experiment;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextHelpers;
@@ -212,6 +213,10 @@ public class SpatialCell {
                             if (((QueryTrieNode) node).queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO) {
                                 findMBRQueriesToReinsert(((QueryTrieNode) node).queries.mbrQueries(), insertNextLevelQueries);
                             }
+
+                            if (FAST.config.INCREMENTAL_DESCENT && level != FAST.context.maxLevel && level != 0 &&
+                                    ((QueryTrieNode) node).queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO)
+                                findKNNQueriesToReinsert(level, ((QueryTrieNode) node).queries.kNNQueries(), insertNextLevelQueries);
                         }
                         inserted = true;
                     }
@@ -230,8 +235,11 @@ public class SpatialCell {
                     trieNode.queries.add(query);
                     if (trieNode.queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO)
                         findMBRQueriesToReinsert(trieNode.queries.mbrQueries(), insertNextLevelQueries);
-                    if (level != FAST.context.maxLevel && level != 0 && trieNode.queries.kNNQueries().size() > FAST.config.DEGRADATION_RATIO)
-                        findKNNQueriesToReinsert(trieNode.queries.kNNQueries(), insertNextLevelQueries);
+
+                    if (FAST.config.INCREMENTAL_DESCENT && level != FAST.context.maxLevel && level != 0 &&
+                            trieNode.queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO) {
+                        findKNNQueriesToReinsert(level, trieNode.queries.kNNQueries(), insertNextLevelQueries);
+                    }
                 }
             }
         }
@@ -356,11 +364,7 @@ public class SpatialCell {
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (!isExpiry) {
-                                boolean kFilled = query.pushUntilKHat(obj);
-//                                if (descendingKNNQueries != null && level == FAST.context.maxLevel && kFilled) {
-//                                    descendingKNNQueries.add(query);
-//                                    textualIndex.remove(keyword);
-//                                }
+                                query.pushUntilKHat(obj);
                             }
                         }
                     }
@@ -371,7 +375,6 @@ public class SpatialCell {
                                 TextHelpers.containsTextually(keywords, query.keywords))
                             results.add(query);
                     }
-//                    LinkedList<KNNQuery> toRemove = new LinkedList<>();
                     for (KNNQuery query : ((QueryListNode) node).queries.kNNQueries()) {
                         FAST.context.objectSearchInvListNodeCounter++;
                         if ((query.et > FAST.context.timestamp || isExpiry) && (FAST.config.INCREMENTAL_DESCENT || query.currentLevel == level) &&
@@ -379,15 +382,10 @@ public class SpatialCell {
                                 TextHelpers.containsTextually(keywords, query.keywords)) {
                             results.add(query);
                             if (!isExpiry) {
-                                boolean kFilled = query.pushUntilKHat(obj);
-//                                if (descendingKNNQueries != null && level == FAST.context.maxLevel && kFilled) {
-//                                    descendingKNNQueries.add(query);
-//                                    toRemove.add(query);
-//                                }
+                                query.pushUntilKHat(obj);
                             }
                         }
                     }
-//                    toRemove.forEach(q -> ((QueryListNode) node).queries.kNNQueries().remove(q));
                 } else if (node instanceof QueryTrieNode) {
                     remainingKeywords.add(keyword);
                 }
@@ -413,7 +411,11 @@ public class SpatialCell {
         }
     }
 
-    public void findKNNQueriesToReinsert(List<KNNQuery> queries, ArrayList<ReinsertEntry> insertNextLevelQueries) {
+    public void findKNNQueriesToReinsert(
+            int fromLevel,
+            List<KNNQuery> queries,
+            ArrayList<ReinsertEntry> insertNextLevelQueries
+    ) {
         SpatialOverlapComparator spatialOverlapComparator = new SpatialOverlapComparator(bounds);
         queries.sort(spatialOverlapComparator);
         int queriesSize = queries.size();
@@ -422,6 +424,10 @@ public class SpatialCell {
                 continue;
 
             KNNQuery query = queries.remove(i);
+//            if (query.id ==  248) {
+//                System.out.println("DEBUG!");
+//            }
+//            Run.logger.debug("Descend from level on insert. level: " + level + ", query: " + query.id);
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query));
         }
     }
