@@ -12,6 +12,8 @@ import edu.purdue.cs.fast.helper.TextHelpers;
 public class QueryTrieNode extends TextualNode {
     public HashMap<String, TextualNode> subtree;
     public HybridList queries;
+
+    public ArrayList<KNNQuery> unboundedQueries;
     public ArrayList<Query> finalQueries;
 
     public QueryTrieNode() {
@@ -26,6 +28,23 @@ public class QueryTrieNode extends TextualNode {
                 FAST.context.objectSearchTrieFinalNodeCounter++;
                 searchQueries(obj, results, q, isExpiry);
             }
+
+        if (unboundedQueries != null) {
+            for (Iterator<KNNQuery> it = unboundedQueries.iterator(); it.hasNext();) {
+                KNNQuery q = it.next();
+                FAST.context.objectSearchTrieFinalNodeCounter++;
+                boolean nowBounded = q.ar < Double.MAX_VALUE;
+                if (nowBounded) {
+                    if (queries == null)
+                        queries = new HybridList();
+
+                    queries.add(q);
+                    it.remove();
+                } else {
+                    searchQueries(obj, results, q, isExpiry);
+                }
+            }
+        }
 
         if (queries != null) {
             for (MinimalRangeQuery q : queries.mbrQueries()) {

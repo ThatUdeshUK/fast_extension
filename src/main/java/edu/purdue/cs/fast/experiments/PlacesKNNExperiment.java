@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.experiments;
 
+import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.parser.Place;
 
@@ -37,6 +38,8 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         metadata.add("num_queries", "" + numQueries);
         metadata.add("num_objects", "" + numObjects);
         metadata.add("k", "" + k);
+        metadata.add("knn_deg_ratio", "" + FAST.config.KNN_DEGRADATION_RATIO);
+        metadata.add("knn_ar_thresh", "" + FAST.config.KNN_DEGRADATION_AR);
         return metadata;
     }
 }

@@ -30,42 +30,43 @@ public class RunParams {
         int maxRange = 512;
         CleanMethod cleanMethod = CleanMethod.NO;
 
-        double arThresh = 25.0;
-
         ArrayList<Integer> degParams = new ArrayList<>();
-        degParams.add(0);
-        degParams.add(10);
-        degParams.add(25);
-        degParams.add(50);
-        degParams.add(75);
         degParams.add(100);
-        degParams.add(250);
+
+        ArrayList<Double> arParams = new ArrayList<>();
+        arParams.add(1.0);
+        arParams.add(2.0);
+        arParams.add(3.0);
+        arParams.add(4.0);
+        arParams.add(0.0);
 
         for (int degRatio : degParams) {
-            FAST fast = new FAST(
-                    new Rectangle(
-                            new Point(0.0, 0.0),
-                            new Point(maxRange, maxRange)
-                    ),
-                    fineGridGran,
-                    maxLevel
-            );
-            FAST.config.INCREMENTAL_DESCENT = true;
-            FAST.config.KNN_DEGRADATION_RATIO = degRatio;
-            FAST.config.KNN_DEGRADATION_AR = arThresh;
-            fast.setPushToLowest(false);
-            fast.setCleaning(cleanMethod);
+            for (double arThresh : arParams) {
+                FAST fast = new FAST(
+                        new Rectangle(
+                                new Point(0.0, 0.0),
+                                new Point(maxRange, maxRange)
+                        ),
+                        fineGridGran,
+                        maxLevel
+                );
+                FAST.config.INCREMENTAL_DESCENT = true;
+                FAST.config.KNN_DEGRADATION_RATIO = degRatio;
+                FAST.config.KNN_DEGRADATION_AR = arThresh;
+                fast.setPushToLowest(false);
+                fast.setCleaning(cleanMethod);
 
-            PlacesExperiment experiment;
-            String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
-            experiment = new PlacesKNNExperiment(
-                            Paths.get(args[0], "fast_knn_params_deg.csv").toString(),
-                            ds, fast, getExpName(name), 0, 0, numQueries, numObjects, numKeywords, k, maxRange,
-                            PlacesKNNExperiment.IndexType.FAST
-                    );
-            experiment.setSaveStats(false);
-            experiment.run();
+                PlacesExperiment experiment;
+                String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
+                experiment = new PlacesKNNExperiment(
+                        Paths.get(args[0], "fast_knn_params.csv").toString(),
+                        ds, fast, getExpName(name), 0, 0, numQueries, numObjects, numKeywords, k, maxRange,
+                        PlacesKNNExperiment.IndexType.FAST
+                );
+                experiment.setSaveStats(true);
+                experiment.run();
 
+            }
         }
     }
 

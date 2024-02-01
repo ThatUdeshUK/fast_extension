@@ -205,16 +205,22 @@ public class SpatialCell {
                             if (((QueryTrieNode) node).finalQueries == null)
                                 ((QueryTrieNode) node).finalQueries = new ArrayList<>();
                             ((QueryTrieNode) node).finalQueries.add(query);
+                        } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
+                                level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
+                            if (((QueryTrieNode) node).unboundedQueries == null)
+                                ((QueryTrieNode) node).unboundedQueries = new ArrayList<>();
+                            ((QueryTrieNode) node).unboundedQueries.add((KNNQuery) query);
                         } else {
                             if (((QueryTrieNode) node).queries == null)
                                 ((QueryTrieNode) node).queries = new HybridList();
 
                             ((QueryTrieNode) node).queries.add(query);
+
                             if (((QueryTrieNode) node).queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO) {
                                 findMBRQueriesToReinsert(((QueryTrieNode) node).queries.mbrQueries(), insertNextLevelQueries);
                             }
 
-                            if (FAST.config.INCREMENTAL_DESCENT && level != FAST.context.maxLevel && level != 0 &&
+                            if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                                     ((QueryTrieNode) node).queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO)
                                 findKNNQueriesToReinsert(level, ((QueryTrieNode) node).queries.kNNQueries(), insertNextLevelQueries);
                         }
@@ -228,15 +234,21 @@ public class SpatialCell {
                         trieNode.finalQueries = new ArrayList<>();
                     trieNode.finalQueries.add(query);
 
+                } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
+                        level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
+                    if (trieNode.unboundedQueries == null)
+                        trieNode.unboundedQueries = new ArrayList<>();
+                    trieNode.unboundedQueries.add((KNNQuery) query);
                 } else {
                     if (trieNode.queries == null)
                         trieNode.queries = new HybridList();
 
                     trieNode.queries.add(query);
+
                     if (trieNode.queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO)
                         findMBRQueriesToReinsert(trieNode.queries.mbrQueries(), insertNextLevelQueries);
 
-                    if (FAST.config.INCREMENTAL_DESCENT && level != FAST.context.maxLevel && level != 0 &&
+                    if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                             trieNode.queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO) {
                         findKNNQueriesToReinsert(level, trieNode.queries.kNNQueries(), insertNextLevelQueries);
                     }

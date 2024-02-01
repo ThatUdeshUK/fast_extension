@@ -104,10 +104,16 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     public Collection<DataObject> insertQuery(Query query) {
         context.timestamp++;
         if (query instanceof MinimalRangeQuery) {
-            addContinuousMinimalRangeQuery((MinimalRangeQuery) query);
+            addContinuousBoundedQuery(query);
         } else if (query instanceof KNNQuery) {
-            ((KNNQuery) query).currentLevel = context.maxLevel;
-            addContinuousKNNQuery((KNNQuery) query);
+            if (((KNNQuery) query).ar <= FAST.context.globalXRange) {
+                // Query with bounded range.
+                addContinuousBoundedQuery(query);
+            } else {
+                // Inf. range KNN query.
+                ((KNNQuery) query).currentLevel = context.maxLevel;
+                addContinuousUnboundQuery((KNNQuery) query);
+            }
         }
 
 //		if (FAST.cleanMethod != CleanMethod.NO && context.timestamp % CLEANING_INTERVAL == 0)
@@ -115,7 +121,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         return null;
     }
 
-    public void addContinuousKNNQuery(KNNQuery query) {
+    public void addContinuousUnboundQuery(KNNQuery query) {
         if (context.minInsertedLevel == -1) {
             context.maxInsertedLevel = context.maxLevel;
             context.minInsertedLevel = context.maxLevel;
@@ -140,9 +146,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         reinsertContinuous(nextLevelQueries, context.maxLevel - 1);
     }
 
-    public void addContinuousMinimalRangeQuery(MinimalRangeQuery query) {
+    public void addContinuousBoundedQuery(Query query) {
         ArrayList<ReinsertEntry> currentLevelQueries = new ArrayList<>();
-        currentLevelQueries.add(new ReinsertEntry(query.spatialRange, query));
+        currentLevelQueries.add(new ReinsertEntry(query.spatialBox(), query));
         reinsertContinuous(currentLevelQueries, context.maxLevel);
     }
 
@@ -459,6 +465,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
                     result.addAll(((QueryListNode) node).queries.kNNQueries());
                 }
             } else if (node instanceof QueryTrieNode) {
+                if (((QueryTrieNode) node).unboundedQueries != null) {
+                    result.addAll(((QueryTrieNode) node).unboundedQueries);
+                }
                 if (((QueryTrieNode) node).queries != null) {
                     result.addAll(((QueryTrieNode) node).queries.kNNQueries());
                     addKNNQueriesFromTextualNodes(((QueryTrieNode) node).subtree, result);

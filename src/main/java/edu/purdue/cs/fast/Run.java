@@ -22,7 +22,7 @@ public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "all_knn";
+        String name = "fast_inc_new";
         if (args.length > 2)
             name = args[2];
 
@@ -32,7 +32,7 @@ public class Run {
         double knnRatio = 0.05;
         int numKeywords = 5;
         int numPreObjects = 0;
-        int numObjects = 1000000;
+        int numObjects = 100000;
         int fineGridGran = 512;
         int maxLevel = 9;
         int maxRange = 512;
@@ -40,12 +40,12 @@ public class Run {
         CleanMethod cleanMethod = CleanMethod.NO;
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-//        numQueriesList.add(100000);
-//        numQueriesList.add(500000);
+        numQueriesList.add(100000);
+        numQueriesList.add(500000);
         numQueriesList.add(1000000);
 //        numQueriesList.add(2000000);
-//        numQueriesList.add(2500000);
-//        numQueriesList.add(5000000);
+        numQueriesList.add(2500000);
+        numQueriesList.add(5000000);
 //        numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
 
@@ -59,6 +59,8 @@ public class Run {
                     maxLevel
             );
             FAST.config.INCREMENTAL_DESCENT = true;
+            FAST.config.KNN_DEGRADATION_RATIO = 100;
+            FAST.config.KNN_DEGRADATION_AR = 5.0;
             fast.setPushToLowest(pushToLowest);
             fast.setCleaning(cleanMethod);
 
@@ -79,7 +81,7 @@ public class Run {
                     break;
                 case KNN:
                     experiment = new PlacesKNNExperiment(
-                            Paths.get(args[0], "output_places_US_knn.csv").toString(),
+                            Paths.get(args[0], "output_places_US_knn_inc_vs_direct.csv").toString(),
                             ds, fast, getExpName(name, cleanMethod), numPreObjects, 0, numQueries, numObjects, numKeywords, k, maxRange,
                             PlacesKNNExperiment.IndexType.FAST
                     );
@@ -104,7 +106,7 @@ public class Run {
                             ds, fast, getExpName(name, cleanMethod), numQueries, numObjects, numKeywords, srRate, maxRange
                     );
             }
-            experiment.setSaveStats(false);
+            experiment.setSaveStats(true);
             experiment.run();
 
 //            experiment.init();

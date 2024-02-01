@@ -165,7 +165,7 @@ public class Test {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         for (MinimalRangeQuery q : queries) {
-            localIndex.addContinuousMinimalRangeQuery(q);
+            localIndex.addContinuousBoundedQuery(q);
             sumQueryKeywords += q.keywords.size();
 
         }
