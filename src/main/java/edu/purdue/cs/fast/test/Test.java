@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Stopwatch;
 
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.KeywordFrequency;
 import edu.purdue.cs.fast.parser.LatLong;
@@ -136,6 +137,7 @@ public class Test {
         FAST.config.DEGRADATION_RATIO = degerationThreshold;
 
         FAST localHybridPyramidIndexExperiment = new FAST(
+                new Config(),
                 new Rectangle(new Point(0.0, 0.0),
                         new Point(xMaxRange, yMaxRange)),
                 finegGridGran, maxLevel);
@@ -165,9 +167,8 @@ public class Test {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         for (MinimalRangeQuery q : queries) {
-            localIndex.addContinuousBoundedQuery(q);
+//            localIndex.addContinuousBoundedQuery(q);
             sumQueryKeywords += q.keywords.size();
-
         }
 
         stopwatch.stop();

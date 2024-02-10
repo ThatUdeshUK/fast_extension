@@ -62,6 +62,9 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         if (q instanceof CkQuery) {
             k = ((CkQuery) q).k;
             location = ((CkQuery) q).location;
+        } else if (q instanceof KNNQuery) {
+            k = ((KNNQuery) q).k;
+            location = ((KNNQuery) q).location;
         } else if (q instanceof LMinimalRangeQuery) {
             k = ((LMinimalRangeQuery) q).k;
             location = ((LMinimalRangeQuery) q).location;

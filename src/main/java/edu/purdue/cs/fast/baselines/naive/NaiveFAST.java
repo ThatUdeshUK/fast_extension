@@ -109,6 +109,11 @@ public class NaiveFAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     @Override
+    public void preloadObject(DataObject object) {
+        insertObject(object);
+    }
+
+    @Override
     public Collection<DataObject> insertQuery(Query query) {
         timestamp++;
         if (query instanceof MinimalRangeQuery) {

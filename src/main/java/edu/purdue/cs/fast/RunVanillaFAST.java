@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-public class RunLFAST {
+public class RunVanillaFAST {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {

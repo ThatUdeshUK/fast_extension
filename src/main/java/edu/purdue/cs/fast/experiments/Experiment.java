@@ -214,6 +214,10 @@ public abstract class Experiment<T> {
         return outputPath.replace(".csv", outSuffix);
     }
 
+    public String getName() {
+        return name;
+    }
+
     public void setSeed(int seed) {
         this.seed = seed;
     }
@@ -228,6 +232,11 @@ public abstract class Experiment<T> {
 
     public void setSaveOutput() {
         this.saveOutput = true;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public SpatialKeywordIndex getIndex() {
+        return index;
     }
 
     /**
@@ -264,6 +273,7 @@ public abstract class Experiment<T> {
 
     public enum IndexType {
         FAST,
+        FAST_NAIVE,
         CkQST,
         LFAST,
         AdoptCkQST

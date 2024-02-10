@@ -16,7 +16,7 @@ import java.util.PriorityQueue;
 /**
  * Adopts CkQST framework with FAST as the query index.
  */
-public class AdoptCkQST implements SpatialKeywordIndex<Query, LDataObject> {
+public class AdoptCkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static int xRange = 10;
     public static int yRange = 10;
     public static int maxHeight = 9;
@@ -37,12 +37,12 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, LDataObject> {
     }
 
     @Override
-    public void preloadObject(LDataObject object) {
+    public void preloadObject(DataObject object) {
         objectIndex.insert(object);
     }
 
     @Override
-    public Collection<LDataObject> insertQuery(Query query) {
+    public Collection<DataObject> insertQuery(Query query) {
         timestamp++;
         if (query.getClass() == LMinimalRangeQuery.class) {
             PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
@@ -61,11 +61,11 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, LDataObject> {
     }
 
     @Override
-    public Collection<Query> insertObject(LDataObject dataObject) {
+    public Collection<Query> insertObject(DataObject dataObject) {
         timestamp++;
 
         objectIndex.insert(dataObject);
-        Collection<Query> queryResults = queryIndex.insertObject(dataObject);
+        Collection<Query> queryResults = queryIndex.insertObject((LDataObject) dataObject);
         for (Query query : queryResults) {
             if (query instanceof LMinimalRangeQuery) {
                 PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);

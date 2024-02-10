@@ -6,6 +6,7 @@ public class Config {
     public int DEGRADATION_RATIO = 2;
     public int KNN_DEGRADATION_RATIO = 50;
     public double KNN_DEGRADATION_AR = 25.0;
+    public boolean INPLACE_OBJECT_INDEX = false;
     public int CLEANING_INTERVAL = 1000;
     public int MAX_ENTRIES_PER_CLEANING_INTERVAL = 10;
     public CleanMethod CLEAN_METHOD = CleanMethod.NO;

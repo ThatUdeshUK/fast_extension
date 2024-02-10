@@ -76,7 +76,7 @@ public class LFAST implements SpatialKeywordIndex<Query, LDataObject> {
 	public static int objectSearchTrieFinalNodeCounter=0;
 	public Iterator<Entry<Integer, LIndexCell>> cleaningIterator;//iterates over cells to clean expired entries
 
-	public LFAST(Rectangle selfBounds, Integer xGridGranularity, Integer maxLevel) {
+	public LFAST(Rectangle selfBounds, Integer xGridGranularity, Integer maxLevel)  {
 		
 		this.selfBounds = selfBounds;
 		Double globalXrange = LSpatioTextualConstants.xMaxRange;
