@@ -83,7 +83,7 @@ public class Place {
     }
 
     public DataObject toDataObject(int oid, int expireTimestamp, Experiment.IndexType indexType) {
-        if (indexType == Experiment.IndexType.FAST)
+        if (indexType == Experiment.IndexType.FAST || indexType == Experiment.IndexType.CkQST)
             return new DataObject(
                     oid,
                     new Point(geometry.coordinates.get(0), geometry.coordinates.get(1)),

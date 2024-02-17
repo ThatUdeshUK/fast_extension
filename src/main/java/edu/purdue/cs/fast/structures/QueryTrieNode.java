@@ -52,6 +52,9 @@ public class QueryTrieNode extends TextualNode {
                 searchQueries(obj, results, q, isExpiry);
             }
 
+//            if (obj.id == 3657 + 10000) {
+//                System.out.println("Debug!");
+//            }
             if (FAST.config.INCREMENTAL_DESCENT) {
                 SpatialCell.SpatialOverlapComparator soc = new SpatialCell.SpatialOverlapComparator(parent.bounds);
                 List<KNNQuery> knnQueries = queries.kNNQueries();
@@ -60,8 +63,6 @@ public class QueryTrieNode extends TextualNode {
                 int descendedCount = 0;
                 for (int i = queriesSize - 1; i >= 0; i--) {
                     KNNQuery q = knnQueries.get(i);
-//                    if (q.currentLevel != parent.level)
-//                        continue;
 
                     if (q.et > FAST.context.timestamp || isExpiry) {
                         searchQueries(obj, results, q, isExpiry);
@@ -69,8 +70,6 @@ public class QueryTrieNode extends TextualNode {
 
                     if (queriesSize > FAST.config.KNN_DEGRADATION_RATIO &&
                             parent.level == FAST.context.maxLevel &&
-//                            q.currentLevel >= FAST.context.minInsertedLevel + 1 &&
-//                            q.ar < Double.MAX_VALUE &&
                             q.ar < FAST.config.KNN_DEGRADATION_AR &&
                             descendedCount < queriesSize / 2) {
 //                        if (q.id == 31) { // || q.id == 453
@@ -156,9 +155,9 @@ public class QueryTrieNode extends TextualNode {
         }
         if (q instanceof KNNQuery) {
             KNNQuery query = (KNNQuery) q;
-            if (query.id == 135 && obj.id == 135) {
-                System.out.println("DEBUG!");
-            }
+//            if (query.id == 135 && obj.id == 135) {
+//                System.out.println("DEBUG!");
+//            }
             if (SpatialHelper.overlapsSpatially(obj.location, query.location, query.ar)) {
                 results.add(query);
                 if (!isExpiry)

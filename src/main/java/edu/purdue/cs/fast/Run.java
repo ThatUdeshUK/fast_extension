@@ -28,32 +28,33 @@ public class Run {
         String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        numQueriesList.add(100);
-//        numQueriesList.add(100000);
-//        numQueriesList.add(500000);
-//        numQueriesList.add(1000000);
-//        numQueriesList.add(2000000);
-//        numQueriesList.add(2500000);
+        numQueriesList.add(100000);
+        numQueriesList.add(100000);
+        numQueriesList.add(500000);
+        numQueriesList.add(1000000);
+        numQueriesList.add(2000000);
+        numQueriesList.add(2500000);
 //        numQueriesList.add(5000000);
 //        numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
 
         for (int numQueries : numQueriesList) {
             PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
-                    .indexType(Experiment.IndexType.FAST)
+                    .indexType(Experiment.IndexType.CkQST)
                     .workload(Workload.KNN)
-                    .addArg("numObjects", 100)
-                    .addArg("numPreObjects", 100)
+                    .addArg("numObjects", 1000000)
+                    .addArg("numPreObjects", 1000000)
                     .addArg("numQueries", numQueries)
                     .configKNNFAST(true, 100, 5.0)
-//                    .hasExternFASTObjectIndex(5)
-                    .hasInternFASTObjectIndex()
+                    .hasExternFASTObjectIndex(5)
+//                    .hasInternFASTObjectIndex()
                     .paths(ds, args[0])
 //                    .suffix("_InObjIdx")
-                    .skipStatSave()
+//                    .skipStatSave()
                     .build();
 
             run(experiment);
+            System.out.println("Done!");
 //            runWithSnapshots(experiment);
         }
     }

@@ -21,19 +21,22 @@ package edu.purdue.cs.fast.models;
 
 import java.util.List;
 
-public class DataObject {
-    public int id;
+public class DataObject extends Query {
+//    public int id;
     public Point location;
-    public List<String> keywords;
-    public Long st;
-    public Long et;
+    private final Rectangle pointBox;
+//    public List<String> keywords;
+//    public Long st;
+//    public Long et;
 
     public DataObject(Integer id, Point location, List<String> keywords, long st, long et) {
-        this.id = id;
+        super(id, keywords, null, st, et);
+//        this.id = id;
         this.location = location;
-        this.keywords = keywords;
-        this.st = st;
-        this.et = et;
+        this.pointBox = new Rectangle(location, location);
+//        this.keywords = keywords;
+//        this.st = st;
+//        this.et = et;
     }
 
     @Override
@@ -56,4 +59,8 @@ public class DataObject {
         return (this.id == ((DataObject) other).id);
     }
 
+    @Override
+    public Rectangle spatialBox() {
+        return pointBox;
+    }
 }

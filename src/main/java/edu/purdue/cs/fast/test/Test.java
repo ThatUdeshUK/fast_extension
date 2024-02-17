@@ -198,7 +198,7 @@ public class Test {
                 + FAST.context.numberOfHashEntries;
         metadata += "\nnumberOfTrieNodes                        = "
                 + FAST.context.numberOfTrieNodes;
-        metadata += "\nAverage ranked inv list length           = " + localIndex.getAverageRankedInvListSize();
+//        metadata += "\nAverage ranked inv list length           = " + localIndex.getAverageRankedInvListSize();
         metadata += "\nAverage query keywords size              = " + sumQueryKeywords / queries.size();
 
         stopwatch = Stopwatch.createStarted();

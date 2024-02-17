@@ -52,9 +52,10 @@ public class NaiveKNNQuery extends Query {
             if (monitoredObjects.size() > k) {
                 monitoredObjects.poll();
             }
-//            if (id == 65) {
-//                System.out.println("naive - obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + SpatialHelper.getDistanceInBetween(location, monitoredObjects.peek().location) + ", keys:" + keywords);
-//            }
+            if (id == 7188 && obj.id == 101577) {
+                System.out.println("naive - obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + SpatialHelper.getDistanceInBetween(location, monitoredObjects.peek().location) + ", keys:" + keywords);
+                System.out.println(SpatialHelper.getDistanceInBetween(location, obj.location));
+            }
         }
     }
 
@@ -85,8 +86,8 @@ public class NaiveKNNQuery extends Query {
 
         @Override
         public int compare(DataObject o1, DataObject o2) {
-            double val1 = Math.pow(point.x - o1.location.x, 2) + Math.pow(point.y - o1.location.y, 2);
-            double val2 = Math.pow(point.x - o2.location.x, 2) + Math.pow(point.y - o2.location.y, 2);
+            double val1 = Math.sqrt(Math.pow(point.x - o1.location.x, 2) + Math.pow(point.y - o1.location.y, 2));
+            double val2 = Math.sqrt(Math.pow(point.x - o2.location.x, 2) + Math.pow(point.y - o2.location.y, 2));
 
             return Double.compare(val2, val1);
         }

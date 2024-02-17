@@ -1,6 +1,7 @@
 package edu.purdue.cs.fast.models;
 
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextualPredicate;
 import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
@@ -70,7 +71,12 @@ public class KNNQuery extends Query {
             double maxX = o.x - location.x;
             double maxY = o.y - location.y;
             this.ar = Math.sqrt(maxX * maxX + maxY * maxY);
+//            if (id == 7188) {
+//                System.out.println("fast - obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + SpatialHelper.getDistanceInBetween(location, monitoredObjects.peek().location) + ", keys:" + keywords);
+//                System.out.println(SpatialHelper.getDistanceInBetween(location, obj.location));
+//            }
         }
+
 //        if (id == 65) {
 //            System.out.println("obj:" + obj.id + ", objk:" + obj.keywords + ", loc:" + location + ", ar:" + ar + ", keys:" + keywords + ", cl:" + currentLevel);
 //        }

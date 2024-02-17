@@ -1,6 +1,7 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
@@ -76,6 +77,7 @@ class CkQSTxFASTCorrectnessTest {
     private List<List<Integer>> readGroundTruth() {
         System.out.println("Running FAST KNN as the ground truth");
         FAST fast = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)

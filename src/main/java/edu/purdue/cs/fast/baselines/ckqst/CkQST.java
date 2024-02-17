@@ -71,17 +71,17 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
 
         objectIndex.insert(dataObject);
         Collection<Query> queryResults = queryIndex.search(dataObject);
-        for (Query query : queryResults) {
-            if (query instanceof CkQuery) {
-                PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
-
-                if (objResults.size() >= ((CkQuery) query).k) {
-                    DataObject o = objResults.peek();
-                    assert o != null;
-                    ((CkQuery) query).sr = SpatialHelper.getDistanceInBetween(((CkQuery) query).location, o.location);
-                }
-            }
-        }
+//        for (Query query : queryResults) {
+//            if (query instanceof CkQuery) {
+//                PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
+//
+//                if (objResults.size() >= ((CkQuery) query).k) {
+//                    DataObject o = objResults.peek();
+//                    assert o != null;
+//                    ((CkQuery) query).sr = SpatialHelper.getDistanceInBetween(((CkQuery) query).location, o.location);
+//                }
+//            }
+//        }
         return queryResults;
     }
 

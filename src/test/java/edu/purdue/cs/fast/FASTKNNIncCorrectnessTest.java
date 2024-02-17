@@ -2,6 +2,7 @@ package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
@@ -20,6 +21,7 @@ class FASTKNNIncCorrectnessTest {
 
     public FASTKNNIncCorrectnessTest() {
         FAST fast = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)

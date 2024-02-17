@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast;
 
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.models.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ class FASTKNNTest {
     @Test
     public void testInserts() {
         FAST testFAST = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(10.1, 10.1)
@@ -64,6 +66,7 @@ class FASTKNNTest {
     @Test
     public void testSearch() {
         FAST testFAST = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(10.1, 10.1)

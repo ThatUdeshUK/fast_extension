@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast;
 
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
 import edu.purdue.cs.fast.config.CleanMethod;
@@ -18,6 +19,7 @@ class FASTKNNCleanTest {
 
     public FASTKNNCleanTest() {
         FAST fast = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)
@@ -78,6 +80,7 @@ class FASTKNNCleanTest {
     private List<List<Integer>> readGroundTruth() {
         System.out.println("Running FAST KNN without cleaning as the ground truth");
         FAST goldFast = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)

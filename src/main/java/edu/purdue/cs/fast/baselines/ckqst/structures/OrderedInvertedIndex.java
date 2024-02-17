@@ -284,6 +284,8 @@ public class OrderedInvertedIndex {
                             (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange()))) {
                         if (!results.contains(query)) {
                             results.add(query);
+                            if (query instanceof CkQuery)
+                                ((CkQuery) query).updateSR(obj);
                         }
                     }
                 }
@@ -300,6 +302,8 @@ public class OrderedInvertedIndex {
                             (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange()))) {
                         if (!results.contains(query)) {
                             results.add(query);
+                            if (query instanceof CkQuery)
+                                ((CkQuery) query).updateSR(obj);
                         }
                     }
                 }
@@ -324,6 +328,8 @@ public class OrderedInvertedIndex {
                                             (query instanceof LMinimalRangeQuery && SpatialHelper.overlapsSpatially(obj.location, ((LMinimalRangeQuery) query).getSpatialRange())))) {
                                 if (!results.contains(query)) {
                                     results.add(query);
+                                    if (query instanceof CkQuery)
+                                        ((CkQuery) query).updateSR(obj);
                                 }
                             }
                         }

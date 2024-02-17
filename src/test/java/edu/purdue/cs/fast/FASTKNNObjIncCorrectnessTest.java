@@ -2,6 +2,7 @@ package edu.purdue.cs.fast;
 
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
 import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Rectangle;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,15 +22,15 @@ class FASTKNNObjIncCorrectnessTest {
 
     public FASTKNNObjIncCorrectnessTest() {
         FAST fast = new FAST(
+                new Config(),
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(512, 512)
                 ),
                 512,
-                9,
-                5,
                 9
         );
+//        fast.setExternalObjectIndex(5, 9);
         FAST.config.INCREMENTAL_DESCENT = true;
         FAST.config.KNN_DEGRADATION_RATIO = 100;
         FAST.config.KNN_DEGRADATION_AR = 25.0;
@@ -75,13 +77,20 @@ class FASTKNNObjIncCorrectnessTest {
 
             List<Integer> resultSorted = result.stream().sorted().collect(Collectors.toList());
             List<Integer> groundTruthSorted = groundTruth.stream().sorted().collect(Collectors.toList());
-            if (result.size() == groundTruth.size()) {
-                Assertions.assertArrayEquals(resultSorted.toArray(), groundTruthSorted.toArray());
-                System.out.println("Test passed: " + i);
-            } else if (Math.abs(result.size() - groundTruths.size()) < 5) {
-                System.out.println("Test partially passed: " + i + ", result diff: " + Math.abs(result.size() - groundTruths.size()));
+            if (result.size() != groundTruth.size()) {
+                System.out.println("Results: \t\t" + resultSorted);
+                System.out.println("Ground Truth: \t" + groundTruthSorted);
+                HashSet<Integer> inter = new HashSet<>(groundTruthSorted);
+                resultSorted.forEach(inter::remove);
+                System.out.println("Missing: \t" + inter);
+
+                HashSet<Integer> inter2 = new HashSet<>(resultSorted);
+                groundTruthSorted.forEach(inter2::remove);
+                System.out.println("Extras: \t" + inter2);
             }
 
+            Assertions.assertArrayEquals(resultSorted.toArray(), groundTruthSorted.toArray());
+            System.out.println("Test passed: " + i);
         }
     }
 
@@ -118,8 +127,9 @@ class FASTKNNObjIncCorrectnessTest {
         System.gc();
         System.gc();
 
-        fastExperiment.create();
+
         fastExperiment.preloadObjects();
+        fastExperiment.create();
         fastExperiment.search();
 
         List<List<Integer>> results = fastExperiment.getResults().stream()

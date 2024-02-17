@@ -223,6 +223,10 @@ public class SpatialCell {
                             if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                                     ((QueryTrieNode) node).queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO)
                                 findKNNQueriesToReinsert(level, ((QueryTrieNode) node).queries.kNNQueries(), insertNextLevelQueries);
+
+                            if (((QueryTrieNode) node).queries.objects().size() > FAST.config.DEGRADATION_RATIO) {
+                                findObjectsToReinsert(((QueryTrieNode) node).queries.objects(), insertNextLevelQueries);
+                            }
                         }
                         inserted = true;
                     }
@@ -251,6 +255,10 @@ public class SpatialCell {
                     if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                             trieNode.queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO) {
                         findKNNQueriesToReinsert(level, trieNode.queries.kNNQueries(), insertNextLevelQueries);
+                    }
+
+                    if (trieNode.queries.objects().size() > FAST.config.DEGRADATION_RATIO) {
+                        findObjectsToReinsert(trieNode.queries.objects(), insertNextLevelQueries);
                     }
                 }
             }
@@ -356,6 +364,9 @@ public class SpatialCell {
     public List<String> searchQueries(DataObject obj, List<String> keywords, List<Query> results,
                                       List<ReinsertEntry> descendingKNNQueries, boolean isExpiry) {
         ArrayList<String> remainingKeywords = new ArrayList<>();
+//        if (obj.id == 3657 + 10000) {
+//            System.out.println("Debug!");
+//        }
         for (int i = 0; i < keywords.size(); i++) {
             String keyword = keywords.get(i);
             TextualNode node = textualIndex.get(keyword);
@@ -436,11 +447,16 @@ public class SpatialCell {
                 continue;
 
             KNNQuery query = queries.remove(i);
-//            if (query.id ==  248) {
-//                System.out.println("DEBUG!");
-//            }
-//            Run.logger.debug("Descend from level on insert. level: " + level + ", query: " + query.id);
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query));
+        }
+    }
+
+    public void findObjectsToReinsert(List<DataObject> queries, ArrayList<ReinsertEntry> insertNextLevelQueries) {
+        // TODO: Find a heuristic to optimal object push down
+        int queriesSize = queries.size();
+        for (int i = queriesSize - 1; i > queriesSize / 2; i--) {
+            DataObject query = queries.remove(i);
+            insertNextLevelQueries.add(new ReinsertEntry(query.spatialBox(), query));
         }
     }
 

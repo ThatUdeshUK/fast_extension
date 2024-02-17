@@ -10,7 +10,7 @@
       Streams"
     - `fast` - Original FAST index for continuous MBR queries
     - `naive` - Naive index for continuous KNN queries
-    - `naive` - Naive index to continuous MBR queries
+    - `naivembr` - Naive index to continuous MBR queries
     - `quadtree` - Implementation of a base quadtree
 - `src/test/java/<package>` contains the tests for FAST extension and baselines.
 - `analysis` contains notebooks with different analysis done.
@@ -24,7 +24,7 @@ cd <project_root>
 # Build the project
 mvn package -Dmaven.test.skip
 
-# Specify the experiment to run (Run|RunCkQST|RunNaive|etc..)
+# Specify the experiment to run (Run)
 CLASS="Run" 
 DATA_DIR="<data_directory>" # directory should contain a `data` subdirectory with places dataset. Check `Run.java` for details
 RESULT_DIR="./results/" # create if not exists

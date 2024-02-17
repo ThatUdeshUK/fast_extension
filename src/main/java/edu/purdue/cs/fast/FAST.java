@@ -44,7 +44,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     public IQuadTree objIndex;
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
-//    public PriorityQueue<DataObject> expiringObjects;
+    //    public PriorityQueue<DataObject> expiringObjects;
     private SpatialCell cellBeingCleaned;
 
     public FAST(Config config, Rectangle bounds, int xGridGranularity, int maxLevel) {
@@ -65,12 +65,6 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         Run.logger.info("Index initialized!");
     }
 
-    public void setExternalObjectIndex(int objIdxLeafCapacity, int objIdxTreeHeight) {
-        config.INPLACE_OBJECT_INDEX = false;
-        this.objIndex = new IQuadTree(context.bounds.min.x, context.bounds.min.y,
-                context.bounds.max.x, context.bounds.max.y, objIdxLeafCapacity, objIdxTreeHeight);
-    }
-
     public static Integer calcCoordinate(int level, int x, int y, int gridGranularity) {
         return (level << 22) + y * gridGranularity + x;
     }
@@ -83,25 +77,31 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         return calcCoordinate(level, xCell, yCell, granularity);
     }
 
-    public double getAverageRankedInvListSize() {
-        double sum = 0.0, count = 0.0;
-        ConcurrentHashMap<Integer, SpatialCell> levelIndex = index;
-        for (SpatialCell cell : levelIndex.values()) {
-            if (cell.textualIndex != null) {
-                for (TextualNode node : cell.textualIndex.values()) {
-                    if (node instanceof QueryListNode && !((QueryListNode) node).queries.isEmpty()) {
-                        count++;
-                        sum += ((QueryListNode) node).queries.size();
-                    }
-                    if (node instanceof QueryTrieNode && ((QueryTrieNode) node).queries != null && !((QueryTrieNode) node).queries.isEmpty()) {
-                        count++;
-                        sum += ((QueryTrieNode) node).queries.size();
-                    }
-                }
-            }
-        }
-        return sum / count;
+    public void setExternalObjectIndex(int objIdxLeafCapacity, int objIdxTreeHeight) {
+        config.INPLACE_OBJECT_INDEX = false;
+        this.objIndex = new IQuadTree(context.bounds.min.x, context.bounds.min.y,
+                context.bounds.max.x, context.bounds.max.y, objIdxLeafCapacity, objIdxTreeHeight);
     }
+
+//    public double getAverageRankedInvListSize() {
+//        double sum = 0.0, count = 0.0;
+//        ConcurrentHashMap<Integer, SpatialCell> levelIndex = index;
+//        for (SpatialCell cell : levelIndex.values()) {
+//            if (cell.textualIndex != null) {
+//                for (TextualNode node : cell.textualIndex.values()) {
+//                    if (node instanceof QueryListNode && !((QueryListNode) node).queries.isEmpty()) {
+//                        count++;
+//                        sum += ((QueryListNode) node).queries.size();
+//                    }
+//                    if (node instanceof QueryTrieNode && ((QueryTrieNode) node).queries != null && !((QueryTrieNode) node).queries.isEmpty()) {
+//                        count++;
+//                        sum += ((QueryTrieNode) node).queries.size();
+//                    }
+//                }
+//            }
+//        }
+//        return sum / count;
+//    }
 
     @Override
     public void preloadObject(DataObject object) {
@@ -110,6 +110,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         } else if (objIndex != null) {
             objIndex.insert(object);
         }
+//        else {
+//            insertObject(object);
+//        }
     }
 
     @Override
@@ -148,7 +151,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         context.timestamp++;
 //        expiringObjects.add(dataObject);
         if (config.INPLACE_OBJECT_INDEX) {
-            throw new RuntimeException("THIS IS COMPLETELY FINE!!! SADGE");
+//            throw new RuntimeException("THIS IS COMPLETELY FINE!!! SADGE");
+            addContinuousBoundedQuery(dataObject);
         } else if (objIndex != null) {
             objIndex.insert(dataObject);
         }
@@ -204,7 +208,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             int levelGranularity = (int) (context.gridGranularity / Math.pow(2, level));
             double levelStep = ((context.globalXRange) / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
-                ((KNNQuery) entry.query).currentLevel = level;
+                if (entry.query instanceof KNNQuery)
+                    ((KNNQuery) entry.query).currentLevel = level;
                 singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
             }
             currentLevelQueries = insertNextLevelQueries;
@@ -267,17 +272,13 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     private void reinsertKNNQueries(List<ReinsertEntry> descendingKNNQueries) {
         for (ReinsertEntry entry : descendingKNNQueries) {
             KNNQuery query = ((KNNQuery) entry.query);
-            if (entry.query.id == 65 && query.currentLevel == 8) {
-                System.out.println("debug!");
-            }
+//            if (entry.query.id == 65 && query.currentLevel == 8) {
+//                System.out.println("debug!");
+//            }
             int level = 0;
-            if (FAST.config.INCREMENTAL_DESCENT) {
-                query.currentLevel--;
-                level = query.currentLevel;
-            } else {
-                if (!FAST.config.PUSH_TO_LOWEST) level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
-                query.currentLevel = level;
-            }
+            if (!FAST.config.PUSH_TO_LOWEST)
+                level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
+            query.currentLevel = level;
             ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
             int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
             double levelStep = ((FAST.context.bounds.max.x - FAST.context.bounds.min.x) / levelGranularity);
@@ -293,6 +294,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         List<Query> result = new LinkedList<>();
         List<ReinsertEntry> descendingKNNQueries = null;
         if (!isExpiry) descendingKNNQueries = new LinkedList<>();
+
+//        if (dataObject.id == 3657 + 10000)
+//            System.out.println("Debug!");
 
         if (context.minInsertedLevel == -1) return result;
         double step = (context.maxInsertedLevel == 0) ? context.localXstep : (context.localXstep * (2 << (context.maxInsertedLevel - 1)));
@@ -318,6 +322,10 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
             }
         }
 
+//        if (dataObject.id == 3657 + 10000) {
+//            System.out.println("Debug!");
+//            result.forEach(q -> System.out.println("Res: " + q));
+//        }
         return result;
     }
 
