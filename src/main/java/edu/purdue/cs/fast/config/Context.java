@@ -30,7 +30,7 @@ public class Context {
     public int numberOfHashEntries = 0;
     public int numberOfTrieNodes = 0;
     public int totalTrieAccess = 0;
-    public Map<String, Integer> cellInsertions = new HashMap<>();
+//    public Map<String, Integer> cellInsertions = new HashMap<>();
 
     public Context(Rectangle bounds, int gridGranularity, int maxLevel) {
         this.bounds = bounds;

@@ -246,7 +246,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
             for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
                 String statKey = level + ","+ levelStep + "," + i + "," + j;
-                FAST.context.cellInsertions.put(statKey, FAST.context.cellInsertions.getOrDefault(statKey, 0) + 1);
+//                FAST.context.cellInsertions.put(statKey, FAST.context.cellInsertions.getOrDefault(statKey, 0) + 1);
                 if (entry.query instanceof KNNQuery && (levelXMinCell != levelXMaxCell && levelYMinCell != levelYMaxCell)) {
                     double x = (((KNNQuery) entry.query).location.x / levelStep);
                     double y = (((KNNQuery) entry.query).location.y / levelStep);

@@ -27,14 +27,14 @@ public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "places_o200000_q2500000_spatialuni";
+        String name = "places_o200000_q2500000_scaled";
         String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
 //        numQueriesList.add(100000);
-//        numQueriesList.add(100000);
-//        numQueriesList.add(500000);
-//        numQueriesList.add(1000000);
+        numQueriesList.add(100000);
+        numQueriesList.add(500000);
+        numQueriesList.add(1000000);
 //        numQueriesList.add(2000000);
         numQueriesList.add(2500000);
 //        numQueriesList.add(5000000);
@@ -53,14 +53,14 @@ public class Run {
                     .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
                     .paths(ds, args[0])
-//                    .saveTimeline()
-                    .suffix("_L3")
-                    .skipStatSave()
+                    .saveTimeline()
+                    .suffix("_L9")
+//                    .skipStatSave()
                     .build();
 
             run(experiment);
-            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
-            System.out.println(FAST.context.cellInsertions);
+//            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
+//            System.out.println(FAST.context.cellInsertions);
 //            runWithoutInf(experiment);
 ////            runWithSnapshots(experiment);
 //            exportPlaces(experiment, args[1] + "fast/data/");
