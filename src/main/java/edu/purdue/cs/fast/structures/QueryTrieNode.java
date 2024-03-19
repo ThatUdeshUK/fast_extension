@@ -13,7 +13,7 @@ public class QueryTrieNode extends TextualNode {
     public HashMap<String, TextualNode> subtree;
     public HybridList queries;
 
-    public ArrayList<KNNQuery> unboundedQueries;
+    public LinkedList<KNNQuery> unboundedQueries;
     public ArrayList<Query> finalQueries;
 
     public QueryTrieNode() {

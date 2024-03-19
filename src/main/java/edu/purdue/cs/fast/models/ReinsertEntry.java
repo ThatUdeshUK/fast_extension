@@ -9,4 +9,12 @@ public class ReinsertEntry {
         this.range = range;
         this.query = query;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ReinsertEntry entry = (ReinsertEntry) obj;
+        return query.equals(entry.query);
+    }
 }

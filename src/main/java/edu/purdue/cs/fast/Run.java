@@ -4,6 +4,7 @@ import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
 import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
 import edu.purdue.cs.fast.config.Config;
+import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.experiments.*;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.models.DataObject;
@@ -11,6 +12,7 @@ import edu.purdue.cs.fast.models.Point;
 import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.models.Rectangle;
 import edu.purdue.cs.fast.parser.Place;
+import edu.purdue.cs.fast.parser.PlaceOld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,14 +27,15 @@ public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String ds = Paths.get(args[1], "data/places_dump_US.geojson").toString();
+        String name = "places_o200000_q2500000_spatialuni";
+        String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        numQueriesList.add(100000);
-        numQueriesList.add(100000);
-        numQueriesList.add(500000);
-        numQueriesList.add(1000000);
-        numQueriesList.add(2000000);
+//        numQueriesList.add(100000);
+//        numQueriesList.add(100000);
+//        numQueriesList.add(500000);
+//        numQueriesList.add(1000000);
+//        numQueriesList.add(2000000);
         numQueriesList.add(2500000);
 //        numQueriesList.add(5000000);
 //        numQueriesList.add(10000000);
@@ -40,27 +43,61 @@ public class Run {
 
         for (int numQueries : numQueriesList) {
             PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
-                    .indexType(Experiment.IndexType.CkQST)
+                    .indexType(Experiment.IndexType.FAST)
                     .workload(Workload.KNN)
-                    .addArg("numObjects", 1000000)
-                    .addArg("numPreObjects", 1000000)
+                    .addArg("numObjects", 100000)
+                    .addArg("numPreObjects", 100000)
                     .addArg("numQueries", numQueries)
+                    .addArg("maxLevel", 9)
                     .configKNNFAST(true, 100, 5.0)
                     .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
                     .paths(ds, args[0])
-//                    .suffix("_InObjIdx")
-//                    .skipStatSave()
+//                    .saveTimeline()
+                    .suffix("_L3")
+                    .skipStatSave()
                     .build();
 
             run(experiment);
+            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
+            System.out.println(FAST.context.cellInsertions);
+//            runWithoutInf(experiment);
+////            runWithSnapshots(experiment);
+//            exportPlaces(experiment, args[1] + "fast/data/");
             System.out.println("Done!");
-//            runWithSnapshots(experiment);
         }
     }
 
     private static void run(PlacesExperiment experiment) {
         experiment.run();
+    }
+
+    private static void runWithoutInf(PlacesExperiment experiment) {
+        FAST fast = (FAST) experiment.getIndex();
+        experiment.init();
+        experiment.removeInf(FAST.context.bounds, 5, FAST.context.maxLevel);
+
+        System.gc();
+        System.gc();
+        System.gc();
+
+        Run.logger.info("Preloading objects and queries!");
+        experiment.preloadObjects();
+        experiment.preloadQueries();
+
+        Run.logger.info("Creating index!");
+        experiment.create();
+        Run.logger.info("Creation Done! Time");
+
+        Run.logger.info("Searching!");
+        experiment.search();
+        Run.logger.info("Search Done! Time");
+
+        try {
+            experiment.save();
+        } catch (InvalidOutputFile e) {
+            Run.logger.error(e.getMessage());
+        }
     }
 
     private static void runWithSnapshots(PlacesExperiment experiment) {
@@ -93,6 +130,14 @@ public class Run {
             return true;
         });
         saveQuerySnapshot(experiment.getName(), fast, 4);
+    }
+
+    private static void exportPlaces(PlacesExperiment experiment, String outputPath) {
+        try {
+            experiment.exportPlaces(outputPath);
+        } catch (InvalidOutputFile e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void saveQuerySnapshot(String expName, FAST fast, int timestamp) {
@@ -144,6 +189,7 @@ public class Run {
         private String suffix = "";
         private boolean hasExternFASTObjIndex = false;
         private boolean hasInternFASTObjectIndex = false;
+        private boolean saveTimeline = false;
         private boolean saveStats = true;
         private SpatialKeywordIndex<Query, DataObject> index;
         private Experiment<Place> experiment;
@@ -181,7 +227,7 @@ public class Run {
         }
 
         public ExperimentBuilder hasExternFASTObjectIndex(int leafCapacity) {
-            if (!kwargs.containsKey("numPreObject")) {
+            if (!kwargs.containsKey("numPreObjects")) {
                 logger.warn("Have a object index but no pre-objects!");
             }
 
@@ -191,11 +237,16 @@ public class Run {
         }
 
         public ExperimentBuilder hasInternFASTObjectIndex() {
-            if (!kwargs.containsKey("numPreObject")) {
+            if (!kwargs.containsKey("numPreObjects")) {
                 logger.warn("Have a object index but no pre-objects!");
             }
 
             this.hasInternFASTObjectIndex = true;
+            return this;
+        }
+
+        public ExperimentBuilder saveTimeline() {
+            this.saveTimeline = true;
             return this;
         }
 
@@ -219,6 +270,7 @@ public class Run {
             initIndex();
             initExperiment();
             experiment.setSaveStats(this.saveStats);
+            experiment.setSaveTimeline(this.saveTimeline);
             return experiment;
         }
 
@@ -236,10 +288,10 @@ public class Run {
             }
 
             int maxRange = (int) kwargs.getOrDefault("maxRange", 512);
-            int maxLevel = (int) kwargs.getOrDefault("fineGridGran", 9);
+            int maxLevel = (int) kwargs.getOrDefault("maxLevel", 9);
             switch (indexType) {
                 case FAST: {
-                    int fineGridGran = (int) kwargs.getOrDefault("fineGridGran", 512);
+                    int fineGridGran = (int) kwargs.getOrDefault("fineGridGran", (int) Math.pow(2, maxLevel));
                     if (fastConfig == null) {
                         fastConfig = new Config();
                         logger.warn("Using the default FAST config.");
@@ -256,7 +308,7 @@ public class Run {
                     );
                     if (hasExternFASTObjIndex) {
                         int leafCapacity = (int) kwargs.get("leafCapacity");
-                        ((FAST) index).setExternalObjectIndex(leafCapacity, maxLevel);
+                        ((FAST) index).setExternalObjectIndex(leafCapacity, 9);
                     }
                     ((FAST) index).setCleaning(cleanMethod);
                     break;

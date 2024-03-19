@@ -208,7 +208,7 @@ public class SpatialCell {
                         } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
                                 level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
                             if (((QueryTrieNode) node).unboundedQueries == null)
-                                ((QueryTrieNode) node).unboundedQueries = new ArrayList<>();
+                                ((QueryTrieNode) node).unboundedQueries = new LinkedList<>();
                             ((QueryTrieNode) node).unboundedQueries.add((KNNQuery) query);
                         } else {
                             if (((QueryTrieNode) node).queries == null)
@@ -223,10 +223,6 @@ public class SpatialCell {
                             if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                                     ((QueryTrieNode) node).queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO)
                                 findKNNQueriesToReinsert(level, ((QueryTrieNode) node).queries.kNNQueries(), insertNextLevelQueries);
-
-                            if (((QueryTrieNode) node).queries.objects().size() > FAST.config.DEGRADATION_RATIO) {
-                                findObjectsToReinsert(((QueryTrieNode) node).queries.objects(), insertNextLevelQueries);
-                            }
                         }
                         inserted = true;
                     }
@@ -241,7 +237,7 @@ public class SpatialCell {
                 } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
                         level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
                     if (trieNode.unboundedQueries == null)
-                        trieNode.unboundedQueries = new ArrayList<>();
+                        trieNode.unboundedQueries = new LinkedList<>();
                     trieNode.unboundedQueries.add((KNNQuery) query);
                 } else {
                     if (trieNode.queries == null)
@@ -255,10 +251,6 @@ public class SpatialCell {
                     if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
                             trieNode.queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO) {
                         findKNNQueriesToReinsert(level, trieNode.queries.kNNQueries(), insertNextLevelQueries);
-                    }
-
-                    if (trieNode.queries.objects().size() > FAST.config.DEGRADATION_RATIO) {
-                        findObjectsToReinsert(trieNode.queries.objects(), insertNextLevelQueries);
                     }
                 }
             }
@@ -448,15 +440,6 @@ public class SpatialCell {
 
             KNNQuery query = queries.remove(i);
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query));
-        }
-    }
-
-    public void findObjectsToReinsert(List<DataObject> queries, ArrayList<ReinsertEntry> insertNextLevelQueries) {
-        // TODO: Find a heuristic to optimal object push down
-        int queriesSize = queries.size();
-        for (int i = queriesSize - 1; i > queriesSize / 2; i--) {
-            DataObject query = queries.remove(i);
-            insertNextLevelQueries.add(new ReinsertEntry(query.spatialBox(), query));
         }
     }
 

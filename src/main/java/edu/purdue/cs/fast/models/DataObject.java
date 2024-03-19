@@ -23,6 +23,8 @@ import java.util.List;
 
 public class DataObject extends Query {
 //    public int id;
+    public static String CSV_HEADER = "id,x,y,keywords,st,et";
+
     public Point location;
     private final Rectangle pointBox;
 //    public List<String> keywords;
@@ -48,6 +50,12 @@ public class DataObject extends Query {
                 ", st=" + st +
                 ", et=" + et +
                 '}';
+    }
+
+    public String toCSV() {
+        String keyword_str = String.join("|", keywords);
+        return id + "," + location.x + "," + location.y + "," + keyword_str +
+                "," + st + "," + et;
     }
 
     @Override

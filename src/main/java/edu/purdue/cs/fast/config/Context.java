@@ -3,6 +3,9 @@ package edu.purdue.cs.fast.config;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.models.Rectangle;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Context {
     public final Rectangle bounds;
     public final int gridGranularity;
@@ -27,6 +30,7 @@ public class Context {
     public int numberOfHashEntries = 0;
     public int numberOfTrieNodes = 0;
     public int totalTrieAccess = 0;
+    public Map<String, Integer> cellInsertions = new HashMap<>();
 
     public Context(Rectangle bounds, int gridGranularity, int maxLevel) {
         this.bounds = bounds;

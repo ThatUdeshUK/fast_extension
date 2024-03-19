@@ -23,10 +23,13 @@
  */
 package edu.purdue.cs.fast;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Stopwatch;
 import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.config.Config;
@@ -121,6 +124,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         if (query instanceof MinimalRangeQuery) {
             addContinuousBoundedQuery(query);
         } else if (query instanceof KNNQuery) {
+            Stopwatch objSearchWatch = Stopwatch.createStarted();
             if (objIndex != null) {
                 PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objIndex.search(query);
 
@@ -130,7 +134,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
                     ((KNNQuery) query).ar = SpatialHelper.getDistanceInBetween(((KNNQuery) query).location, o.location);
                 }
             }
+            objSearchWatch.stop();
 
+            Stopwatch insWatch = Stopwatch.createStarted();
             if (((KNNQuery) query).ar <= FAST.context.globalXRange) {
                 // Query with bounded range.
                 addContinuousBoundedQuery(query);
@@ -139,6 +145,9 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
                 ((KNNQuery) query).currentLevel = context.maxLevel;
                 addContinuousUnboundQuery((KNNQuery) query);
             }
+            insWatch.stop();
+            queryInsStats.add(new TimeStat(query.id, objSearchWatch.elapsed(TimeUnit.NANOSECONDS),
+                    insWatch.elapsed(TimeUnit.NANOSECONDS), ((KNNQuery) query).ar));
         }
 
 //		if (FAST.cleanMethod != CleanMethod.NO && context.timestamp % CLEANING_INTERVAL == 0)
@@ -218,10 +227,14 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
     }
 
     private void singleQueryInsert(int level, ReinsertEntry entry, double levelStep, int levelGranularity, ArrayList<ReinsertEntry> insertNextLevelQueries) {
-        int levelXMinCell = (int) (entry.range.min.x / levelStep);
-        int levelYMinCell = (int) (entry.range.min.y / levelStep);
-        int levelXMaxCell = (int) ((entry.range.max.x - .001) / levelStep);
-        int levelYMaxCell = (int) ((entry.range.max.y - .001) / levelStep);
+        int levelXMinCell = (int) Math.max(0, (entry.range.min.x / levelStep));
+        int levelYMinCell = (int) Math.max(0, (entry.range.min.y / levelStep));
+        int levelXMaxCell = (int) Math.min(context.bounds.max.x / (levelStep + .001), ((entry.range.max.x - .001) / levelStep));
+        int levelYMaxCell = (int) Math.min(context.bounds.max.y / (levelStep + .001), ((entry.range.max.y - .001) / levelStep));
+        if (level == 9 && (levelXMaxCell == 1 || levelXMinCell == 1 || levelYMaxCell == 1 || levelYMinCell == 1)) {
+            System.out.println(entry.range);
+            System.exit(1);
+        }
 
         if (context.minInsertedLevel == -1) context.minInsertedLevel = context.maxInsertedLevel = level;
         if (level < context.minInsertedLevel) context.minInsertedLevel = level;
@@ -232,6 +245,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         QueryListNode sharedQueries = null;
         for (int i = levelXMinCell; i <= levelXMaxCell; i++) {
             for (int j = levelYMinCell; j <= levelYMaxCell; j++) {
+                String statKey = level + ","+ levelStep + "," + i + "," + j;
+                FAST.context.cellInsertions.put(statKey, FAST.context.cellInsertions.getOrDefault(statKey, 0) + 1);
                 if (entry.query instanceof KNNQuery && (levelXMinCell != levelXMaxCell && levelYMinCell != levelYMaxCell)) {
                     double x = (((KNNQuery) entry.query).location.x / levelStep);
                     double y = (((KNNQuery) entry.query).location.y / levelStep);
@@ -481,4 +496,3 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject> {
         });
     }
 }
-

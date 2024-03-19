@@ -4,6 +4,9 @@
     <content url="file://$MODULE_DIR$" dumb="true">
       <excludeFolder url="file://$MODULE_DIR$/results" />
       <excludeFolder url="file://$MODULE_DIR$/results_remote" />
+      <excludeFolder url="file://$MODULE_DIR$/results_03_01" />
+      <excludeFolder url="file://$MODULE_DIR$/data2" />
+      <excludeFolder url="file://$MODULE_DIR$/results_03_15" />
     </content>
   </component>
   <component name="FacetManager">

@@ -26,6 +26,10 @@ replay_pid*
 /target
 /results
 /results_remote
+/results_03_01
+/results_03_15
+/data2
+/data
 /related
 
 # IDE

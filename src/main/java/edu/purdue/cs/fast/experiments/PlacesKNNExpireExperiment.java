@@ -2,6 +2,7 @@ package edu.purdue.cs.fast.experiments;
 
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.parser.Place;
+import edu.purdue.cs.fast.parser.PlaceOld;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -7,6 +7,7 @@ import edu.purdue.cs.fast.baselines.quadtree.BaseQuadTree;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
+import edu.purdue.cs.fast.structures.KeywordFrequency;
 
 import java.util.*;
 
@@ -14,6 +15,8 @@ import java.util.*;
 public class IQuadTree extends BaseQuadTree<Query, DataObject> {
     private final AxisAlignedBoundingBox aabb;
     private final HashMap<String, ILQuadNode> roots;
+//    public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
+
 
     public IQuadTree(double x, double y, double width, double height, int capacity, int maxTreeHeight) {
         Point xyPoint = new Point(x, y);
@@ -21,6 +24,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         ILQuadNode.maxCapacity = capacity;
         ILQuadNode.maxHeight = maxTreeHeight;
         this.roots = new HashMap<>();
+//        this.keywordFrequencyMap = new HashMap<>();
     }
 
     @Override
@@ -31,6 +35,14 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
     @Override
     public boolean insert(DataObject object) {
         for (String keyword : object.keywords) {
+//            KeywordFrequency stats = keywordFrequencyMap.get(keyword);
+//            if (stats == null) {
+//                stats = new KeywordFrequency(1, 1, 0);
+//                keywordFrequencyMap.put(keyword, stats);
+//            } else {
+//                stats.queryCount++;
+//            }
+
             if (roots.containsKey(keyword)) {
                 roots.get(keyword).insert(object);
             } else {
@@ -77,6 +89,14 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         HashMap<Integer, Integer> hits = new HashMap<>();
         DeltaComparator deltaComparator = new DeltaComparator(location);
         PriorityQueue<ILQuadNode> H = new PriorityQueue<>(deltaComparator);    // Line 1
+
+//        for (String keyword : q.keywords) {
+//            if (!keywordFrequencyMap.containsKey(keyword) ||
+//                    keywordFrequencyMap.get(keyword).queryCount < 5) {
+//                return results;
+//            }
+//        }
+
         for (String keyword : q.keywords) {                     // Line 2
             if (roots.containsKey(keyword)) {
                 H.add(roots.get(keyword));                      // Line 3
@@ -114,6 +134,90 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
                             if (results.isFull()) {
                                 assert results.peek() != null;
                                 lambda = SpatialHelper.getDistanceInBetween(location, results.peek().location);
+                            }
+                        }
+                    }
+                }
+            } else if (!e.isLeaf()) {                           // Line 17: Non leaf node
+                for (ILQuadNode child : e.getChildren()) {
+                    double eMinDist = deltaComparator.getMinDist(child);
+                    if (!(child.isLeaf() && child.objects.isEmpty()) && eMinDist < lambda) { // Line 19
+                        H.add(child);                           // Line 20
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
+    public Collection<DataObject> searchWithEarlyStop(Query q) {
+        int k = -1;
+        Point location = null;
+        if (q instanceof CkQuery) {
+            k = ((CkQuery) q).k;
+            location = ((CkQuery) q).location;
+        } else if (q instanceof KNNQuery) {
+            k = ((KNNQuery) q).k;
+            location = ((KNNQuery) q).location;
+        } else if (q instanceof LMinimalRangeQuery) {
+            k = ((LMinimalRangeQuery) q).k;
+            location = ((LMinimalRangeQuery) q).location;
+        }
+        BoundedPriorityQueue<DataObject> results = new BoundedPriorityQueue<>(
+                k,
+                new KNNQuery.EuclideanComparator(location)
+        );
+        double lambda = Double.MAX_VALUE;
+        HashMap<Integer, Integer> hits = new HashMap<>();
+        DeltaComparator deltaComparator = new DeltaComparator(location);
+        PriorityQueue<ILQuadNode> H = new PriorityQueue<>(deltaComparator);    // Line 1
+
+//        for (String keyword : q.keywords) {
+//            if (!keywordFrequencyMap.containsKey(keyword) ||
+//                    keywordFrequencyMap.get(keyword).queryCount < 5) {
+//                return results;
+//            }
+//        }
+
+        for (String keyword : q.keywords) {                     // Line 2
+            if (roots.containsKey(keyword)) {
+                H.add(roots.get(keyword));                      // Line 3
+            } else
+                return results; // ILQuadTree doesn't have all the keywords
+        }
+
+        for (ILQuadNode e; (e = H.poll()) != null; ) {          // Line 4
+            if (!e.objects.isEmpty()) {                         // Line 6: e is a black node
+                boolean signCheck = true;
+
+                for (String kj : q.keywords) {                  // Line 8
+                    if (!kj.equals(e.keyword)) {
+                        if (roots.containsKey(kj)) {
+                            // Line 9: CheckSignature
+                            double other = roots.get(kj).getStatusByMorton(e.morton, 1);
+                            if (other == 0) {
+                                signCheck = false;
+                                break;
+                            }
+                        } else {
+                            signCheck = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (signCheck) {                                // Line 10
+                    for (DataObject o : e.objects) {
+                        int oHit = hits.getOrDefault(o.id, 0);
+                        oHit++;
+                        hits.put(o.id, oHit);
+                        if (oHit == q.keywords.size()) {
+                            results.add(o);
+                            if (results.isFull()) {
+                                assert results.peek() != null;
+                                lambda = SpatialHelper.getDistanceInBetween(location, results.peek().location);
+//                                return results;
                             }
                         }
                     }

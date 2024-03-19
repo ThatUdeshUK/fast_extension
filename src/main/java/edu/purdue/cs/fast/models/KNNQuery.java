@@ -11,14 +11,14 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 public class KNNQuery extends Query {
+    public static String CSV_HEADER = "id,x,y,keywords,k,ar,current_level,st,et";
+    private final Rectangle spatialBox;
     public Point location;
     public double ar;
     public int k;
     public int kHat;
-
     public int currentLevel = -1;
     private BoundedPriorityQueue<DataObject> monitoredObjects;
-    private final Rectangle spatialBox;
 
     public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, long st, long et) {
         super(id, keywords, predicate, st, et);
@@ -98,6 +98,7 @@ public class KNNQuery extends Query {
 
     /**
      * Calculate the optimal level for a KNN query based on it's AR
+     * Used only in direct descend strategy
      *
      * @return Optimal level for the KNN query
      */
@@ -125,13 +126,19 @@ public class KNNQuery extends Query {
     public String toString() {
         return "KNNQuery{" +
                 "id=" + id +
-                ", keywords=" + keywords +
                 ", location=" + location +
+                ", keywords=" + keywords +
                 ", k=" + k +
                 ", ar=" + ar +
                 ", cl=" + currentLevel +
                 ", et=" + et +
                 '}';
+    }
+
+    public String toCSV() {
+        String keyword_str = String.join("|", keywords);
+        return id + "," + location.x + "," + location.y + "," + keyword_str +
+                "," + k + "," + ar + "," + currentLevel + "," + st + "," + et;
     }
 
     public static class EuclideanComparator implements Comparator<DataObject> {

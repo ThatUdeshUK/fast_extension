@@ -54,7 +54,7 @@ export PROJECT_DIR="/homes/ukumaras/Projects/"
 
 # Sync (push) files
 if [ $PUSH == 1 ]; then
-  if rsync -zarv --exclude 'target' --exclude 'results' --exclude '.git' --exclude '.idea' --exclude 'results_remote' ./ ukumaras@bigdata1.cs.purdue.edu:~/Projects/fast/;
+  if rsync -zarv --exclude 'target' --exclude 'results' --exclude '.git' --exclude '.idea' --exclude 'data' --exclude 'results_remote' ./ ukumaras@bigdata1.cs.purdue.edu:~/Projects/fast/;
   then
     echo "Push successful!"
   else

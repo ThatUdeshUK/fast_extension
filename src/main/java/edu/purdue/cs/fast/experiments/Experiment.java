@@ -1,12 +1,17 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
+import com.google.gson.internal.Streams;
+import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
+import edu.purdue.cs.fast.baselines.ckqst.CkQST;
+import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
-import edu.purdue.cs.fast.models.DataObject;
-import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.helper.SpatialHelper;
+import edu.purdue.cs.fast.models.*;
 //import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
@@ -16,15 +21,16 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 public abstract class Experiment<T> {
+    public List<DataObject> preObjects;
     protected String name;
     protected String outputPath;
     protected SpatialKeywordIndex index;
     protected List<Query> queries;
     protected List<Query> preQueries;
     protected List<DataObject> objects;
-    public List<DataObject> preObjects;
     protected long creationTime;
     protected long searchTime;
     protected long createMem;
@@ -34,7 +40,8 @@ public abstract class Experiment<T> {
     protected boolean saveOutput = false;
     protected int seed = 7;
     protected ArrayList<Collection<Query>> results;
-    protected ArrayList<Long> searchTimeline = new ArrayList<>();
+    protected List<Integer> searchTimeline = new LinkedList<>();
+    protected List<Integer> createTimeline = new LinkedList<>();
 
     abstract void init();
 
@@ -64,19 +71,56 @@ public abstract class Experiment<T> {
         }
     }
 
+    public void removeInf(Rectangle range, int leafCap, int treeHeight) {
+        IQuadTree quadTree = new IQuadTree(range.min.x, range.min.y, range.max.x, range.max.y, leafCap, treeHeight);
+        for (DataObject object : preObjects) {
+            quadTree.insert(object);
+        }
+
+        ArrayList<Query> newList = new ArrayList<>();
+        double ar = Double.MAX_VALUE;
+        for (Query query: queries) {
+            PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) quadTree.search(query);
+
+            if (objResults.size() >= ((KNNQuery) query).k) {
+                DataObject o = objResults.peek();
+                assert o != null;
+                ar = SpatialHelper.getDistanceInBetween(((KNNQuery) query).location, o.location);
+            }
+
+            if (ar < range.max.x - range.min.x) {
+                newList.add(query);
+            } else {
+                System.out.println("Inf Q: " + query.id + ", ar: " + ar);
+            }
+        }
+        System.out.println("Old: " + queries.size() + ", New: " + newList.size());
+        queries = newList;
+    }
+
     public void create() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (Query q : queries) {
+            Stopwatch createTimeWatch = null;
+            if (saveTimeline)
+                createTimeWatch = Stopwatch.createStarted();
             index.insertQuery(q);
+            if (saveTimeline) {
+                assert createTimeWatch != null;
+                createTimeWatch.stop();
+                createTimeline.add((int) createTimeWatch.elapsed(TimeUnit.NANOSECONDS));
+            }
         }
         stopwatch.stop();
-        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
-            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
-            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-            createMem = indexMemorySize;
-        }
+        String javaVersion = System.getProperty("java.version");
+        String javaVendor = System.getProperty("java.vendor");
+//        if (javaVersion.contains("1.8") && javaVendor.equals("AdoptOpenJDK")) {
+//            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+//            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+//            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index); //- queriesSize;
+//            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+//            createMem = indexMemorySize;
+//        }
 //        createMem = GraphLayout.parseInstance(index).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
@@ -93,18 +137,18 @@ public abstract class Experiment<T> {
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();
-                searchTimeline.add(totalTimeWatch.elapsed(TimeUnit.NANOSECONDS));
+                searchTimeline.add((int) searchTimeWatch.elapsed(TimeUnit.NANOSECONDS));
             }
             results.add(res);
         }
         totalTimeWatch.stop();
-        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
-            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
-            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-            searchMem = indexMemorySize;
-        }
+//        if (System.getProperty("java.version").contains("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
+//            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+//            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+//            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index); // - queriesSize;
+//            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+//            searchMem = indexMemorySize;
+//        }
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
@@ -121,7 +165,7 @@ public abstract class Experiment<T> {
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();
-                searchTimeline.add(totalTimeWatch.elapsed(TimeUnit.NANOSECONDS));
+                searchTimeline.add((int) searchTimeWatch.elapsed(TimeUnit.NANOSECONDS));
             }
             fn.apply(o);
             results.add(res);
@@ -180,9 +224,34 @@ public abstract class Experiment<T> {
                 fw.close();
 
                 if (saveTimeline) {
-                    FileWriter timelineFW = new FileWriter(getSuffixedPath("timeline", meta.getKeys(), meta.getValues()));
+                    String timelinePath = getSuffixedPath("search_timeline", meta.getKeys(), meta.getValues());
+                    FileWriter timelineFW = new FileWriter(timelinePath);
                     BufferedWriter timelineBW = new BufferedWriter(timelineFW);
                     for (long v : searchTimeline) {
+                        timelineBW.write(v + "\n");
+                    }
+                    timelineBW.close();
+                    timelineFW.close();
+
+                    if (index instanceof FAST || index instanceof CkQST) {
+                        String queryInsObjSearchPath = getSuffixedPath("search_sub_timeline", meta.getKeys(), meta.getValues());
+                        FileWriter queryInsObjSearchFW = new FileWriter(queryInsObjSearchPath);
+                        BufferedWriter queryInsObjSearchBW = new BufferedWriter(queryInsObjSearchFW);
+
+                        for (TimeStat queryInsStat : index.queryInsStats) {
+                            queryInsObjSearchBW.write(queryInsStat.index + "," + queryInsStat.objSearchTime + "," + queryInsStat.insertTime
+                                    + "," + queryInsStat.ar + "\n");
+
+                        }
+
+                        queryInsObjSearchBW.close();
+                        queryInsObjSearchFW.close();
+                    }
+
+                    timelinePath = getSuffixedPath("create_timeline", meta.getKeys(), meta.getValues());
+                    timelineFW = new FileWriter(timelinePath);
+                    timelineBW = new BufferedWriter(timelineFW);
+                    for (long v : createTimeline) {
                         timelineBW.write(v + "\n");
                     }
                     timelineBW.close();
@@ -226,8 +295,8 @@ public abstract class Experiment<T> {
         return results;
     }
 
-    public void setSaveTimeline() {
-        this.saveTimeline = true;
+    public void setSaveTimeline(boolean saveTimeline) {
+        this.saveTimeline = saveTimeline;
     }
 
     public void setSaveOutput() {
@@ -246,6 +315,14 @@ public abstract class Experiment<T> {
      */
     public void setSaveStats(boolean saveStats) {
         this.saveStats = saveStats;
+    }
+
+    public enum IndexType {
+        FAST,
+        FAST_NAIVE,
+        CkQST,
+        LFAST,
+        AdoptCkQST
     }
 
     public static class Metadata {
@@ -269,14 +346,6 @@ public abstract class Experiment<T> {
         public List<String> getValues() {
             return values;
         }
-    }
-
-    public enum IndexType {
-        FAST,
-        FAST_NAIVE,
-        CkQST,
-        LFAST,
-        AdoptCkQST
     }
 }
 

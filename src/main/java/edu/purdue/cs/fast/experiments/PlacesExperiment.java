@@ -1,6 +1,7 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.gson.Gson;
+import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
@@ -8,10 +9,7 @@ import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.parser.Place;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class PlacesExperiment extends Experiment<Place> {
     protected final String inputPath;
@@ -52,10 +50,6 @@ public class PlacesExperiment extends Experiment<Place> {
     @Override
     public void init() {
         ArrayList<Place> places = new ArrayList<>();
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE;
-        double maxY = Double.MIN_VALUE;
 
         File file = new File(inputPath);
         try {
@@ -79,25 +73,12 @@ public class PlacesExperiment extends Experiment<Place> {
 
                 Place place = gson.fromJson(line, Place.class);
                 if (place != null && place.keywords() != null && !place.keywords().isEmpty()) {
-                    double coordX = place.coordinate().x;
-                    double coordY = place.coordinate().y;
-
-                    if (coordX < minX) minX = coordX;
-                    if (coordX > maxX) maxX = coordX;
-                    if (coordY < minY) minY = coordY;
-                    if (coordY > maxY) maxY = coordY;
-
                     Collections.sort(place.keywords());
-
                     places.add(place);
                 }
             }
             long end = System.currentTimeMillis();
             Run.logger.info("Done! Time=" + (end - start));
-
-            for (Place place : places) {
-                place.scale(new Point(minX, minY), new Point(maxX, maxY), maxRange - 1);
-            }
 
             Run.logger.info("Shuffling!");
             start = System.currentTimeMillis();
@@ -157,6 +138,48 @@ public class PlacesExperiment extends Experiment<Place> {
         metadata.add("num_objects", "" + numObjects);
         metadata.add("sr_rate", "" + srRate);
         return metadata;
+    }
+
+
+    public void exportPlaces(String exportDir) throws InvalidOutputFile {
+        init();
+        preloadObjects();
+        File qFile = new File(exportDir + "Places_Queries_" + numQueries + ".csv");
+        File oFile = new File(exportDir + "Places_Objects_" + numObjects + ".csv");
+        if (!qFile.isDirectory() && !oFile.isDirectory()) {
+            try {
+                // Export queries
+                FileWriter fw = new FileWriter(qFile);
+                BufferedWriter bw = new BufferedWriter(fw);
+
+                bw.write(KNNQuery.CSV_HEADER + "\n");
+                for (Query query : queries) {
+                    if (query instanceof KNNQuery) {
+                        ((FAST) index).insertQuery(query);
+                        bw.write(((KNNQuery) query).toCSV() + "\n");
+                    } else {
+                        throw new RuntimeException("Can't export queries of this type.");
+                    }
+                }
+                bw.close();
+                fw.close();
+
+                // Export objects
+                fw = new FileWriter(oFile);
+                bw = new BufferedWriter(fw);
+
+                bw.write(DataObject.CSV_HEADER + "\n");
+                for (DataObject obj : objects) {
+                    bw.write(obj.toCSV() + "\n");
+                }
+                bw.close();
+                fw.close();
+            } catch (IOException e) {
+                throw new InvalidOutputFile(outputPath);
+            }
+        } else {
+            throw new InvalidOutputFile(outputPath);
+        }
     }
 
     @Override
