@@ -4,9 +4,12 @@ import com.google.gson.Gson;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
+import edu.purdue.cs.fast.config.Config;
+import edu.purdue.cs.fast.config.Context;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.parser.Place;
+import edu.purdue.cs.fast.structures.KeywordFrequency;
 
 import java.io.*;
 import java.util.*;
@@ -132,7 +135,7 @@ public class PlacesExperiment extends Experiment<Place> {
     }
 
     @Override
-    protected Metadata generateMetadata() {
+    protected Metadata<String> generateMetadata() {
         Metadata metadata = new Metadata();
         metadata.add("num_queries", "" + numQueries);
         metadata.add("num_objects", "" + numObjects);
@@ -196,12 +199,81 @@ public class PlacesExperiment extends Experiment<Place> {
         System.gc();
         System.gc();
 
-        Run.logger.info("Preloading objects and queries!");
-        preloadObjects();
-        preloadQueries();
+        boolean bootstrap = false;
+        boolean bootstraped = false;
+        if (bootstrap) {
+            Run.logger.info("Preloading objects and queries!");
+            preloadObjects();
+            preloadQueries();
 
-        Run.logger.info("Creating index!");
-        create();
+            Run.logger.info("Creating index!");
+            create();
+            try {
+                FileOutputStream fos = new FileOutputStream("./" + this.name + ".out");
+                PrintWriter pw = new PrintWriter(fos);
+                pw.write(toString((FAST) this.index));
+                pw.close();
+                fos.close();
+
+                fos = new FileOutputStream("./" + this.name + ".config.out");
+                pw = new PrintWriter(fos);
+                pw.write(toString(FAST.config));
+                pw.close();
+                fos.close();
+
+                fos = new FileOutputStream("./" + this.name + ".context.out");
+                pw = new PrintWriter(fos);
+                pw.write(toString(FAST.context));
+                Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) ((FAST) index).objIndex.search(query);
+                pw.close();
+                fos.close();
+
+                fos = new FileOutputStream("./" + this.name + ".keymap.out");
+                pw = new PrintWriter(fos);
+                pw.write(toString(FAST.keywordFrequencyMap));
+                pw.close();
+                fos.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (bootstraped) {
+            try {
+                FileReader fr = new FileReader("./" + this.name + ".out");
+                BufferedReader br = new BufferedReader(fr);
+                index = (FAST) fromString(br.readLine());
+                br.close();
+                fr.close();
+
+                fr = new FileReader("./" + this.name + ".config.out");
+                br = new BufferedReader(fr);
+                FAST.config = (Config) fromString(br.readLine());
+                    // FAST.config.CLEANING_INTERVAL = 1000;
+                br.close();
+                fr.close();
+
+                fr = new FileReader("./" + this.name + ".context.out");
+                br = new BufferedReader(fr);
+                FAST.context = (Context) fromString(br.readLine());
+                br.close();
+                fr.close();
+                
+                fr = new FileReader("./" + this.name + ".keymap.out");
+                br = new BufferedReader(fr);
+                FAST.keywordFrequencyMap = (HashMap<String, KeywordFrequency>) fromString(br.readLine());
+                br.close();
+                fr.close();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            Run.logger.info("Preloading objects and queries!");
+            preloadObjects();
+            preloadQueries();
+
+            Run.logger.info("Creating index!");
+            create();
+        }
+
         Run.logger.info("Creation Done! Time=" + this.creationTime);
 
         Run.logger.info("Searching!");
@@ -213,5 +285,24 @@ public class PlacesExperiment extends Experiment<Place> {
         } catch (InvalidOutputFile e) {
             Run.logger.error(e.getMessage());
         }
+    }
+
+    private static Object fromString( String s ) throws IOException ,
+                                                       ClassNotFoundException {
+        byte [] data = Base64.getDecoder().decode( s );
+        ObjectInputStream ois = new ObjectInputStream( 
+                                        new ByteArrayInputStream(  data ) );
+        Object o  = ois.readObject();
+        ois.close();
+        return o;
+   }
+
+    /** Write the object to a Base64 string. */
+    private static String toString( Serializable o ) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream( baos );
+        oos.writeObject( o );
+        oos.close();
+        return Base64.getEncoder().encodeToString(baos.toByteArray()); 
     }
 }

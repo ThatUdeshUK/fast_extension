@@ -1,6 +1,8 @@
 package edu.purdue.cs.fast.structures;
 
-public class KeywordFrequency {
+import java.io.Serializable;
+
+public class KeywordFrequency implements Serializable {
 	public int queryCount;
 	public int visitCount;
 	public int lastDecayTimeStamp;

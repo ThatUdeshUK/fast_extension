@@ -1,12 +1,18 @@
 package edu.purdue.cs.fast.config;
 
 import edu.purdue.cs.fast.FAST;
+import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.Rectangle;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.function.Function;
 
-public class Context {
+public class Context implements Serializable {
     public final Rectangle bounds;
     public final int gridGranularity;
     public final int maxLevel;
@@ -30,7 +36,9 @@ public class Context {
     public int numberOfHashEntries = 0;
     public int numberOfTrieNodes = 0;
     public int totalTrieAccess = 0;
-    public Map<String, Integer> cellInsertions = new HashMap<>();
+    public int totalDescendOpts = 0;
+//    public Map<String, Integer> cellInsertions = new HashMap<>();
+    public static Function<KNNQuery, PriorityQueue<DataObject>> objectSearcher;
 
     public Context(Rectangle bounds, int gridGranularity, int maxLevel) {
         this.bounds = bounds;

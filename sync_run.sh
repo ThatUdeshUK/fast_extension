@@ -1,4 +1,4 @@
-tch#!/usr/bin/env bash
+#!/usr/bin/env bash
 ############################################################
 # Help                                                     #
 ############################################################
@@ -49,12 +49,12 @@ while getopts "n:hpbr" option; do
    esac
 done
 
-export RESULT_DIR="/homes/ukumaras/Projects/fast/results_remote/"
+export RESULT_DIR="/homes/ukumaras/Downloads/results_remote_new/"
 export PROJECT_DIR="/homes/ukumaras/Projects/"
 
 # Sync (push) files
 if [ $PUSH == 1 ]; then
-  if rsync -zarv --exclude 'target' --exclude 'results' --exclude '.git' --exclude '.idea' --exclude 'data' --exclude 'results_remote' ./ ukumaras@bigdata1.cs.purdue.edu:~/Projects/fast/;
+  if rsync -zarv --exclude 'target' --exclude 'results' --exclude 'results_03_15' --exclude 'results_03_01'  --exclude 'results_05_10' --exclude 'results_06_01' --exclude 'analysis' --exclude '.git' --exclude '.idea' --exclude 'data' --exclude 'results_remote' ./ ukumaras@bigdata1.cs.purdue.edu:~/Projects/fast/;
   then
     echo "Push successful!"
   else

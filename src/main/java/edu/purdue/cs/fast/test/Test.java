@@ -65,9 +65,39 @@ public class Test {
 
 //		testFast("results/results.csv", tweetsQueriesPath,tweetsObjectsPath, 5000000, 100000, false, 5, 20, 100.0, 3, 512, 8, 0);
 
-        testFast("results/results.csv", null, null, 5000000, 100000, false, 5, 20, 100.0, 3, 512, 8, 0);
+        exportTweets();
+        // testFast("results/results.csv", null, null, 5000000, 100000, false, 5, 20, 100.0, 3, 512, 8, 0);
     }
 
+    static void exportTweets() {
+        FileWriter fw = null;
+        BufferedWriter bw = null;
+
+        String tweetsFile = "/homes/ukumaras/scratch/twitter-data/all.csv";
+        // String queriesFile = "/homes/ukumaras/scratch/twitter-data/queries.csv";
+        String outputFile = "/homes/ukumaras/scratch/twitter-data/tweets.csv";
+        TextualPredicate txtPredicate = TextualPredicate.CONTAINS;
+        ArrayList<DataObject> dataObjects = readDataObjects(tweetsFile, 30000000, 0);
+        System.out.println("Done reading data");
+
+        try {
+            fw = new FileWriter(outputFile, false);
+            bw = new BufferedWriter(fw);
+            for (DataObject o: dataObjects) {
+                if (o.keywords.size() > 1) {
+                    bw.write(o.toCSV() + "\n");
+                }
+            }   bw.close();
+            fw.close();
+        } catch (IOException ex) {
+        } finally {
+            try {
+                bw.close();
+                fw.close();
+            } catch (IOException ex) {
+            }
+        }
+    }
 
     static void testFast(String opFile, String qFile, String tweetFile, Integer numOfQueries, Integer numOfObjs,
                          Boolean getMemSize, Integer expansionThreshold, Integer degThreshold, Double spaRange,
@@ -75,10 +105,10 @@ public class Test {
         String outputFile = "results/ptpperformance.csv";
         if (opFile != null)
             outputFile = opFile;
-        String tweetsFile = "/media/D/googleDrive/walid research/datasets/twittersample/sampletweets.csv";
+        String tweetsFile = "/homes/ukumaras/scratch/twitter-data/data_objects.csv";
         if (tweetFile != null)
             tweetsFile = tweetFile;
-        String queriesFile = "/media/D/datasets/tweetsForQueries.csv";
+        String queriesFile = "/homes/ukumaras/scratch/twitter-data/queries.csv";
         if (qFile != null)
             queriesFile = qFile;
 

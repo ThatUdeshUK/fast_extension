@@ -18,8 +18,9 @@
  * limitations under the License.
  */
 package edu.purdue.cs.fast.models;
+import java.io.Serializable;
 
-public class Rectangle {
+public class Rectangle implements Serializable {
     public Point min;
     public Point max;
 

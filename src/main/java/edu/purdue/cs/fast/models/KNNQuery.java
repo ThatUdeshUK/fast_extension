@@ -9,15 +9,16 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.io.Serializable;
 
-public class KNNQuery extends Query {
+public class KNNQuery extends Query implements Serializable {
     public static String CSV_HEADER = "id,x,y,keywords,k,ar,current_level,st,et";
     private final Rectangle spatialBox;
     public Point location;
     public double ar;
     public int k;
     public int kHat;
-    public int currentLevel = -1;
+
     private BoundedPriorityQueue<DataObject> monitoredObjects;
 
     public KNNQuery(int id, List<String> keywords, Point location, int k, TextualPredicate predicate, long st, long et) {

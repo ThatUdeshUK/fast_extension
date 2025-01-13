@@ -5,6 +5,7 @@ import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.io.Serializable;
 
 /**
  * A quadtree is a tree data structure in which each internal node has exactly four children. Quadtrees 
@@ -51,7 +52,7 @@ public abstract class BaseQuadTree<Q, O> {
         return TreePrinter.getString(this);
     }
     
-    protected static abstract class BaseQuadNode<Q, O> implements Comparable<BaseQuadNode<Q, O>> {
+    protected static abstract class BaseQuadNode<Q, O> implements Comparable<BaseQuadNode<Q, O>>, Serializable {
 
         protected final AxisAlignedBoundingBox aabb;
 

@@ -7,8 +7,9 @@ import edu.purdue.cs.fast.models.Query;
 
 import javax.xml.crypto.Data;
 import java.util.*;
+import java.io.Serializable;
 
-public class HybridList implements Iterable<Query> {
+public class HybridList implements Iterable<Query>, Serializable {
     private final ArrayList<MinimalRangeQuery> mbrQueries;
     private final ArrayList<KNNQuery> kNNQueries;
     private final ArrayList<DataObject> objects;

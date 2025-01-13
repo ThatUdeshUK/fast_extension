@@ -18,8 +18,9 @@
  * limitations under the License.
  */
 package edu.purdue.cs.fast.models;
+import java.io.Serializable;
 
-public class Point implements Comparable<Object> {
+public class Point implements Comparable<Object>, Serializable {
     public double x;
     public double y;
 

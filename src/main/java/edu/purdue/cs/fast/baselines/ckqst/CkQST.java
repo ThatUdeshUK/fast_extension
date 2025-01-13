@@ -1,7 +1,6 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import com.google.common.base.Stopwatch;
-import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
 import edu.purdue.cs.fast.baselines.ckqst.structures.CostBasedQuadTree;
@@ -10,7 +9,7 @@ import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
-import edu.purdue.cs.fast.models.TimeStat;
+import edu.purdue.cs.fast.models.QueryStat;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -25,8 +24,8 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static int maxLeafCapacity = 5;
 
     public static double thetaU;
-    private final IQuadTree objectIndex;
-    private final CostBasedQuadTree queryIndex;
+    public final IQuadTree objectIndex;
+    public final CostBasedQuadTree queryIndex;
     private int timestamp = 0;
 
     public CkQST() {
@@ -66,8 +65,8 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
             Stopwatch insWatch = Stopwatch.createStarted();
             queryIndex.insert(query);
             insWatch.stop();
-            queryInsStats.add(new TimeStat(query.id, objSearchWatch.elapsed(TimeUnit.NANOSECONDS),
-                    insWatch.elapsed(TimeUnit.NANOSECONDS), ((CkQuery) query).sr));
+            queryStats.add(new QueryStat(query.id, objSearchWatch.elapsed(TimeUnit.NANOSECONDS),
+                    insWatch.elapsed(TimeUnit.NANOSECONDS), ((CkQuery) query).sr, 0, 0, QueryStat.Stage.INSERT));
         } else if (query.getClass() == LMinimalRangeQuery.class) {
             queryIndex.insert(query);
         } else

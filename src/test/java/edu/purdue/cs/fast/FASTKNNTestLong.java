@@ -55,8 +55,13 @@ class FASTKNNTestLong {
 
     @Test
     public void testInserts() {
+        Config fastConfig = new Config();
+        fastConfig.INCREMENTAL_DESCENT = true;
+        fastConfig.KNN_DEGRADATION_RATIO = 2;
+        fastConfig.KNN_DEGRADATION_AR = 5.0;
+
         FAST testFAST = new FAST(
-                new Config(),
+                fastConfig,
                 new Rectangle(
                         new Point(0.0, 0.0),
                         new Point(10.1, 10.1)
@@ -64,6 +69,7 @@ class FASTKNNTestLong {
                 2,
                 1
         );
+        testFAST.setExternalObjectIndex(5, 9);
 
         for (Query query : this.queries) {
             testFAST.insertQuery(query);

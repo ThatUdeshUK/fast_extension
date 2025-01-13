@@ -34,7 +34,7 @@ public class PlacesKNNExperiment extends PlacesExperiment {
     }
 
     @Override
-    protected Metadata generateMetadata() {
+    protected Metadata<String> generateMetadata() {
         Metadata metadata = new Metadata();
         metadata.add("num_queries", "" + numQueries);
         metadata.add("num_objects", "" + numObjects);

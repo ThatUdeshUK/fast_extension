@@ -9,8 +9,11 @@ import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.DataObject;
 import edu.purdue.cs.fast.models.Query;
 import edu.purdue.cs.fast.models.Rectangle;
+import edu.purdue.cs.fast.models.KNNQuery.EuclideanComparator;
+import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.PriorityQueue;
 
 /**
@@ -23,8 +26,9 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static int maxLeafCapacity = 5;
 
     public static double thetaU;
-    private final IQuadTree objectIndex;
-    private final LFAST queryIndex;
+    public final IQuadTree objectIndex;
+    public final LFAST queryIndex;
+    public final HashMap<Integer, BoundedPriorityQueue<DataObject>> resultList;
     private int timestamp = 0;
 
     public AdoptCkQST(int xRange, int yRange, int maxHeight) {
@@ -33,6 +37,7 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, DataObject> {
         AdoptCkQST.maxHeight = maxHeight;
         objectIndex = new IQuadTree(0, 0, xRange, yRange, maxLeafCapacity, maxHeight);
         queryIndex = new LFAST(new Rectangle(0, 0, xRange, yRange), 512, 9);
+        resultList = new HashMap<>();
         thetaU = 0.5;
     }
 
@@ -52,6 +57,16 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, DataObject> {
                 assert o != null;
                 double sr = SpatialHelper.getDistanceInBetween(((LMinimalRangeQuery) query).location, o.location);
                 ((LMinimalRangeQuery) query).update(sr);
+
+                
+            }
+
+            if (!resultList.containsKey(query.id)) {
+                BoundedPriorityQueue<DataObject> newList = new BoundedPriorityQueue<>(((LMinimalRangeQuery) query).k, new EuclideanComparator(((LMinimalRangeQuery) query).location));
+                for (DataObject obj : objResults) {
+                    newList.add(obj);
+                }
+                resultList.put(query.id, newList);
             }
 
             queryIndex.insertQuery((LMinimalRangeQuery) query);
@@ -68,12 +83,31 @@ public class AdoptCkQST implements SpatialKeywordIndex<Query, DataObject> {
         Collection<Query> queryResults = queryIndex.insertObject((LDataObject) dataObject);
         for (Query query : queryResults) {
             if (query instanceof LMinimalRangeQuery) {
-                PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
-                if (objResults.size() >= ((LMinimalRangeQuery) query).k) {
-                    DataObject o = objResults.peek();
-                    assert o != null;
+                BoundedPriorityQueue<DataObject> rList = resultList.get(query.id);
+                rList.add(dataObject);
+                boolean kStarFilled = rList.isFull();
+                if (kStarFilled) {
+                    assert rList.peek() != null;
+        
+                    DataObject o = rList.peek();
                     double sr = SpatialHelper.getDistanceInBetween(((LMinimalRangeQuery) query).location, o.location);
                     ((LMinimalRangeQuery) query).update(sr);
+                } else {
+                    PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
+                    
+                    for (DataObject obj : objResults) {
+                        rList.add(obj);
+                    }
+                    
+                    DataObject o = rList.peek();
+                    double sr = SpatialHelper.getDistanceInBetween(((LMinimalRangeQuery) query).location, o.location);
+                    ((LMinimalRangeQuery) query).update(sr);
+                    // if (objResults.size() >= ((LMinimalRangeQuery) query).k) {
+                    //     DataObject o = objResults.peek();
+                    //     assert o != null;
+                    //     double sr = SpatialHelper.getDistanceInBetween(((LMinimalRangeQuery) query).location, o.location);
+                    //     ((LMinimalRangeQuery) query).update(sr);
+                    // }
                 }
             }
         }

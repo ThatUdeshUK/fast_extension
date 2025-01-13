@@ -20,8 +20,9 @@
 package edu.purdue.cs.fast.models;
 
 import java.util.List;
+import java.io.Serializable;
 
-public class DataObject extends Query {
+public class DataObject extends Query implements Serializable {
 //    public int id;
     public static String CSV_HEADER = "id,x,y,keywords,st,et";
 

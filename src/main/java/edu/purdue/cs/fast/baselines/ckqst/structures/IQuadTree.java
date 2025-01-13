@@ -10,9 +10,9 @@ import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 import edu.purdue.cs.fast.structures.KeywordFrequency;
 
 import java.util.*;
+import java.io.Serializable;
 
-
-public class IQuadTree extends BaseQuadTree<Query, DataObject> {
+public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serializable {
     private final AxisAlignedBoundingBox aabb;
     private final HashMap<String, ILQuadNode> roots;
 //    public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
@@ -247,7 +247,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> {
         return out.toString();
     }
 
-    public static class ILQuadNode extends BaseQuadNode<Query, DataObject> {
+    public static class ILQuadNode extends BaseQuadNode<Query, DataObject> implements Serializable {
         protected static int maxCapacity = 0;
         protected static int maxHeight = 0;
         public final String keyword;

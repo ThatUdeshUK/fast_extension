@@ -1,17 +1,18 @@
 package edu.purdue.cs.fast.experiments;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.gson.internal.Streams;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.baselines.ckqst.CkQST;
+import edu.purdue.cs.fast.baselines.fast.LFAST;
+import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
 import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.*;
+import me.tongfei.progressbar.ProgressBar;
 //import org.openjdk.jol.info.GraphLayout;
 
 import java.io.BufferedWriter;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 public abstract class Experiment<T> {
     public List<DataObject> preObjects;
@@ -33,8 +33,8 @@ public abstract class Experiment<T> {
     protected List<DataObject> objects;
     protected long creationTime;
     protected long searchTime;
-    protected long createMem;
-    protected long searchMem;
+    protected Metadata<Long> createMem = new Metadata<Long>();
+    protected Metadata<Long> searchMem = new Metadata<Long>();
     protected boolean saveStats = true;
     protected boolean saveTimeline = false;
     protected boolean saveOutput = false;
@@ -49,7 +49,7 @@ public abstract class Experiment<T> {
 
     protected abstract void generateObjects(List<T> list);
 
-    protected abstract Metadata generateMetadata();
+    protected abstract Metadata<String> generateMetadata();
 
     abstract void run();
 
@@ -78,29 +78,81 @@ public abstract class Experiment<T> {
         }
 
         ArrayList<Query> newList = new ArrayList<>();
-        double ar = Double.MAX_VALUE;
+        int count = 0;
         for (Query query: queries) {
             PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) quadTree.search(query);
+
+            double ar = Double.MAX_VALUE;
 
             if (objResults.size() >= ((KNNQuery) query).k) {
                 DataObject o = objResults.peek();
                 assert o != null;
                 ar = SpatialHelper.getDistanceInBetween(((KNNQuery) query).location, o.location);
+//                System.out.println("Non. inf. Q: " + query.id + ", ar: " + ar);
             }
 
             if (ar < range.max.x - range.min.x) {
                 newList.add(query);
-            } else {
-                System.out.println("Inf Q: " + query.id + ", ar: " + ar);
+            }
+//            else {
+//                System.out.println("Inf Q: " + query.id + ", ar: " + ar);
+//            }
+        }
+        System.out.println("Old: " + queries.size() + ", New: " + newList.size() +
+                ", Count: " + (queries.size() - newList.size()));
+        queries = newList;
+    }
+
+    public void calcCreateMem() {
+        String javaVersion = System.getProperty("java.version");
+        String javaVendor = System.getProperty("java.vendor");
+        System.out.println("JDK: " + javaVendor + " - " + javaVersion);
+        if (javaVersion.contains("1.8") && javaVendor.contains("OpenJDK")) {
+            createMem.add("object_mem", new Long(ObjectSizeCalculator.getObjectSize(objects)));
+            createMem.add("query_mem", new Long(ObjectSizeCalculator.getObjectSize(queries)));
+            Run.logger.debug("Objects size =" + createMem.get("object_mem") / 1024 + " KB");
+            Run.logger.debug("Queries size =" + createMem.get("query_mem") / 1024 + " KB");
+            if (index instanceof FAST) {
+                FAST i = (FAST) index;
+
+                createMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));                            // used in the original
+                createMem.add("query_struct_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));                   // only the `pyramid` hashmap
+                createMem.add("query_keymap_mem", new Long(ObjectSizeCalculator.getObjectSize(FAST.keywordFrequencyMap)));  // only the keyword freq. map
+                createMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objIndex)));
+
+                Run.logger.debug("Obj index size =" + createMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + createMem.get("query_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (struct) size =" + createMem.get("query_struct_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (keymap) size =" + createMem.get("query_keymap_mem") / 1024 + " KB");
+            } else if (index instanceof LFAST) {
+                LFAST i = (LFAST) index;
+                createMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i)));
+                createMem.add("query_struct_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));
+                createMem.add("query_keymap_mem", new Long(ObjectSizeCalculator.getObjectSize(LFAST.overallQueryTextSummery)));
+                createMem.add("object_idx_mem", new Long(0));
+                Run.logger.debug("Obj index size =" + createMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + createMem.get("query_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (struct) size =" + createMem.get("query_struct_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (keymap) size =" + createMem.get("query_keymap_mem") / 1024 + " KB");
+            } else if (index instanceof CkQST) {
+                CkQST i = (CkQST) index;
+                createMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.queryIndex)));
+                createMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objectIndex)));
+                Run.logger.debug("Obj index size =" + createMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + createMem.get("query_idx_mem") / 1024 + " KB");
+            } else if (index instanceof AdoptCkQST) {
+                AdoptCkQST i = (AdoptCkQST) index;
+                createMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.queryIndex)));
+                createMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objectIndex)));
+                Run.logger.debug("Obj index size =" + createMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + createMem.get("query_idx_mem") / 1024 + " KB");
             }
         }
-        System.out.println("Old: " + queries.size() + ", New: " + newList.size());
-        queries = newList;
     }
 
     public void create() {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        for (Query q : queries) {
+        for (Query q : ProgressBar.wrap(queries, "Create Index")) {
             Stopwatch createTimeWatch = null;
             if (saveTimeline)
                 createTimeWatch = Stopwatch.createStarted();
@@ -112,16 +164,9 @@ public abstract class Experiment<T> {
             }
         }
         stopwatch.stop();
-        String javaVersion = System.getProperty("java.version");
-        String javaVendor = System.getProperty("java.vendor");
-//        if (javaVersion.contains("1.8") && javaVendor.equals("AdoptOpenJDK")) {
-//            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-//            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-//            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index); //- queriesSize;
-//            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-//            createMem = indexMemorySize;
-//        }
-//        createMem = GraphLayout.parseInstance(index).totalSize();
+
+        calcCreateMem();
+    //    createMem = GraphLayout.parseInstance(index).totalSize();
         this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
     }
 
@@ -129,7 +174,8 @@ public abstract class Experiment<T> {
         results = new ArrayList<>();
 
         Stopwatch totalTimeWatch = Stopwatch.createStarted();
-        for (DataObject o : objects) {
+        for (DataObject o : ProgressBar.wrap(objects, "Stream Objects")) {
+        // for (DataObject o : objects) {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
@@ -142,13 +188,58 @@ public abstract class Experiment<T> {
             results.add(res);
         }
         totalTimeWatch.stop();
-//        if (System.getProperty("java.version").contains("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
-//            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-//            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-//            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index); // - queriesSize;
-//            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-//            searchMem = indexMemorySize;
-//        }
+
+        String javaVersion = System.getProperty("java.version");
+        String javaVendor = System.getProperty("java.vendor");
+        if (javaVersion.contains("1.8") && javaVendor.contains("OpenJDK")) {
+           searchMem.add("object_mem", new Long(ObjectSizeCalculator.getObjectSize(objects)));
+           searchMem.add("query_mem", new Long(ObjectSizeCalculator.getObjectSize(queries)));
+           Run.logger.debug("Queries size =" + searchMem.get("object_mem") / 1024 + " KB");
+           Run.logger.debug("Objects size =" + searchMem.get("query_mem") / 1024 + " KB");
+           if (index instanceof FAST) {
+                FAST i = (FAST) index;
+                searchMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));
+                searchMem.add("query_struct_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));
+                searchMem.add("query_keymap_mem", new Long(ObjectSizeCalculator.getObjectSize(FAST.keywordFrequencyMap))); 
+                searchMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objIndex)));
+
+                Run.logger.debug("Obj index size =" + searchMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + searchMem.get("query_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (struct) size =" + searchMem.get("query_struct_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (keymap) size =" + searchMem.get("query_keymap_mem") / 1024 + " KB");
+            } else if (index instanceof LFAST) {
+                LFAST i = (LFAST) index;
+                searchMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i)));
+                searchMem.add("query_struct_mem", new Long(ObjectSizeCalculator.getObjectSize(i.index)));
+                searchMem.add("query_keymap_mem", new Long(ObjectSizeCalculator.getObjectSize(LFAST.overallQueryTextSummery)));                
+                searchMem.add("object_idx_mem", new Long(0));
+                Run.logger.debug("Obj index size =" + searchMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + searchMem.get("query_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (struct) size =" + searchMem.get("query_struct_mem") / 1024 + " KB");
+                Run.logger.debug("Query index (keymap) size =" + searchMem.get("query_keymap_mem") / 1024 + " KB");
+            } else if (index instanceof CkQST) {
+                CkQST i = (CkQST) index;
+                searchMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.queryIndex)));
+                searchMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objectIndex)));
+                Run.logger.debug("Obj index size =" + searchMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + searchMem.get("query_idx_mem") / 1024 + " KB");
+            } else if (index instanceof AdoptCkQST) {
+                AdoptCkQST i = (AdoptCkQST) index;
+                searchMem.add("query_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.queryIndex)));
+                searchMem.add("query_struct_mem", new Long(ObjectSizeCalculator.getObjectSize(i.queryIndex.index)));
+                searchMem.add("query_keymap_mem", new Long(ObjectSizeCalculator.getObjectSize(LFAST.overallQueryTextSummery))); 
+                searchMem.add("object_idx_mem", new Long(ObjectSizeCalculator.getObjectSize(i.objectIndex)));
+                Run.logger.debug("Obj index size =" + searchMem.get("object_idx_mem") / 1024 + " KB");
+                Run.logger.debug("Query index size =" + searchMem.get("query_idx_mem") / 1024 + " KB");
+            }
+       }
+    //    if (System.getProperty("java.version").contains("1.8") && System.getProperty("java.vendor").contains("OpenJDK")) {
+    //        long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+    //        Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+    //        long indexMemorySize = ObjectSizeCalculator.getObjectSize(index); // - queriesSize;
+    //        Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+    //        searchMem = indexMemorySize;
+    //    }
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
@@ -171,13 +262,13 @@ public abstract class Experiment<T> {
             results.add(res);
         }
         totalTimeWatch.stop();
-        if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").equals("AdoptOpenJDK")) {
-            long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
-            Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
-            long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
-            Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
-            searchMem = indexMemorySize;
-        }
+        // if (System.getProperty("java.version").equals("1.8") && System.getProperty("java.vendor").contains("OpenJDK")) {
+        //     long queriesSize = ObjectSizeCalculator.getObjectSize(queries);
+        //     Run.logger.debug("Queries size =" + queriesSize / 1024 + " KB");
+        //     long indexMemorySize = ObjectSizeCalculator.getObjectSize(index) - queriesSize;
+        //     Run.logger.debug("Local index size =" + indexMemorySize / 1024 + " KB");
+        //     searchMem = indexMemorySize;
+        // }
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
         this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
     }
@@ -192,18 +283,24 @@ public abstract class Experiment<T> {
             return;
         }
 
-        Metadata meta = generateMetadata();
+        Metadata<String> meta = generateMetadata();
 
         File outputFile = new File(outputPath);
         boolean fileExists = outputFile.exists();
         if (!outputFile.isDirectory()) {
             try {
                 if (!fileExists && outputFile.createNewFile()) {
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,create_mem,search_mem");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time");
                     for (String k : meta.getKeys()) {
                         header.append(",").append(k);
                     }
-
+                    for (String k : createMem.getKeys()) {
+                        header.append(",").append("create_").append(k);
+                    }
+                    for (String k : searchMem.getKeys()) {
+                        header.append(",").append("search_").append(k);
+                    }
+                    header.append(",").append("clean_time");
                     FileWriter fw = new FileWriter(outputFile);
                     BufferedWriter bw = new BufferedWriter(fw);
                     bw.write(header + "\n");
@@ -214,59 +311,87 @@ public abstract class Experiment<T> {
                 FileWriter fw = new FileWriter(outputFile, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + createMem +
-                        "," + searchMem);
+                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime);
                 for (String v : meta.getValues()) {
                     line.append(",").append(v);
                 }
+                for (Long k : createMem.getValues()) {
+                    line.append(",").append(k);
+                }
+                for (Long k : searchMem.getValues()) {
+                    line.append(",").append(k);
+                }
+                // System.out.println(((FAST) index).cleanTime);
+                // line.append(",").append(((FAST) index).cleanTime);
                 bw.write(line + "\n");
                 bw.close();
                 fw.close();
 
                 if (saveTimeline) {
-                    String timelinePath = getSuffixedPath("search_timeline", meta.getKeys(), meta.getValues());
-                    FileWriter timelineFW = new FileWriter(timelinePath);
-                    BufferedWriter timelineBW = new BufferedWriter(timelineFW);
-                    for (long v : searchTimeline) {
-                        timelineBW.write(v + "\n");
-                    }
-                    timelineBW.close();
-                    timelineFW.close();
+//                    String timelinePath = getSuffixedPath("search_timeline", meta.getKeys(), meta.getValues());
+//                    FileWriter timelineFW = new FileWriter(timelinePath);
+//                    BufferedWriter timelineBW = new BufferedWriter(timelineFW);
+//                    for (long v : searchTimeline) {
+//                        timelineBW.write(v + "\n");
+//                    }
+//                    timelineBW.close();
+//                    timelineFW.close();
 
                     if (index instanceof FAST || index instanceof CkQST) {
-                        String queryInsObjSearchPath = getSuffixedPath("search_sub_timeline", meta.getKeys(), meta.getValues());
+                        String queryInsObjSearchPath = getSuffixedPath("sub_timeline", meta.getKeys(), meta.getValues());
                         FileWriter queryInsObjSearchFW = new FileWriter(queryInsObjSearchPath);
                         BufferedWriter queryInsObjSearchBW = new BufferedWriter(queryInsObjSearchFW);
 
-                        for (TimeStat queryInsStat : index.queryInsStats) {
-                            queryInsObjSearchBW.write(queryInsStat.index + "," + queryInsStat.objSearchTime + "," + queryInsStat.insertTime
-                                    + "," + queryInsStat.ar + "\n");
-
+                        for (QueryStat queryInsStat : index.queryStats) {
+                            queryInsObjSearchBW.write(queryInsStat.toJson() + "\n");
                         }
 
                         queryInsObjSearchBW.close();
                         queryInsObjSearchFW.close();
                     }
 
-                    timelinePath = getSuffixedPath("create_timeline", meta.getKeys(), meta.getValues());
-                    timelineFW = new FileWriter(timelinePath);
-                    timelineBW = new BufferedWriter(timelineFW);
-                    for (long v : createTimeline) {
-                        timelineBW.write(v + "\n");
-                    }
-                    timelineBW.close();
-                    timelineFW.close();
+//                    timelinePath = getSuffixedPath("create_timeline", meta.getKeys(), meta.getValues());
+//                    timelineFW = new FileWriter(timelinePath);
+//                    timelineBW = new BufferedWriter(timelineFW);
+//                    for (long v : createTimeline) {
+//                        timelineBW.write(v + "\n");
+//                    }
+//                    timelineBW.close();
+//                    timelineFW.close();
                 }
 
-                if (saveOutput) {
-                    FileWriter outputFW = new FileWriter(getSuffixedPath("output", meta.getKeys(), meta.getValues()));
-                    BufferedWriter outputBW = new BufferedWriter(outputFW);
-                    for (Collection<Query> v : results) {
-                        outputBW.write(Arrays.toString(v.stream().map((query) -> query.id).sorted().toArray()) + "\n");
-                    }
-                    outputBW.close();
-                    outputFW.close();
-                }
+//                if (saveOutput) {
+//                    FileWriter outputFW = new FileWriter(getSuffixedPath("output", meta.getKeys(), meta.getValues()));
+//                    BufferedWriter outputBW = new BufferedWriter(outputFW);
+//                    for (Collection<Query> v : results) {
+//                        outputBW.write(Arrays.toString(v.stream().map((query) -> query.id).sorted().toArray()) + "\n");
+//                    }
+//                    outputBW.close();
+//                    outputFW.close();
+//                }
+                //  try {
+                //      FileWriter fw2 = new FileWriter(getSuffixedPath("queries", meta.getKeys(), meta.getValues()));
+                //      BufferedWriter bw2 = new BufferedWriter(fw2);
+
+                //      bw2.write("id,ar,currentLevel,x,y\n");
+                //      HashSet<KNNQuery> rSet = ((FAST) index).allKNNQueries(false);
+                //      for (KNNQuery query: rSet) {
+                //          try {
+                //             // System.out.println(query.toString());
+                //             bw2.write("" + query.id + ',' + query.ar + ',' + query.currentLevel +
+                //                      ',' + query.location.x + ',' + query.location.y + "\n");
+                //             bw2.flush();
+                //          } catch (IOException e) {
+                //             System.out.println("ERROR:" + query.toString());
+                //              throw new RuntimeException(e);
+                //          }
+                //      }
+
+                //     //  bw2.close();
+                //     //  fw2.close();
+                //  } catch (IOException e) {
+                //      throw new InvalidOutputFile(outputPath);
+                //  }
             } catch (IOException e) {
                 throw new InvalidOutputFile(outputPath);
             }
@@ -325,25 +450,30 @@ public abstract class Experiment<T> {
         AdoptCkQST
     }
 
-    public static class Metadata {
+    public static class Metadata<T> {
         List<String> keys;
-        List<String> values;
+        List<T> values;
 
         public Metadata() {
             this.keys = new ArrayList<>();
             this.values = new ArrayList<>();
         }
 
-        public void add(String key, String value) {
+        public void add(String key, T value) {
             this.keys.add(key);
             this.values.add(value);
+        }
+
+        public T get(String key) {
+            int idx = this.keys.indexOf(key);
+            return this.values.get(idx);
         }
 
         public List<String> getKeys() {
             return keys;
         }
 
-        public List<String> getValues() {
+        public List<T> getValues() {
             return values;
         }
     }

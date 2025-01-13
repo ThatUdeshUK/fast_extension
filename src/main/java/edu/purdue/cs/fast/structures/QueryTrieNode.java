@@ -2,6 +2,7 @@ package edu.purdue.cs.fast.structures;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.io.Serializable;
 
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.config.CleanMethod;
@@ -9,14 +10,27 @@ import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextHelpers;
 
-public class QueryTrieNode extends TextualNode {
+public class QueryTrieNode extends TextualNode implements Serializable {
     public HashMap<String, TextualNode> subtree;
     public HybridList queries;
 
     public LinkedList<KNNQuery> unboundedQueries;
     public ArrayList<Query> finalQueries;
+    public int degRatio;
+    public int knnDegRatio;
 
-    public QueryTrieNode() {
+    public QueryTrieNode(int level) {
+        if (!FAST.config.ADAPTIVE_DEG_RATIO) {
+            knnDegRatio = FAST.config.KNN_DEGRADATION_RATIO;
+        }
+
+        degRatio = FAST.config.DEGRADATION_RATIO;
+        knnDegRatio = FAST.config.KNN_DEGRADATION_RATIO;
+
+//        degRatio = FAST.config.DEGRADATION_RATIO + (FAST.context.maxLevel - level) * 2;
+//        knnDegRatio = FAST.config.KNN_DEGRADATION_RATIO + (FAST.context.maxLevel - level) * 2;
+//        knnDegRatio = Math.min((int) Math.pow(knnDegRatio, (FAST.context.maxLevel - level) + 1), FAST.config.KNN_DEGRADATION_RATIO);
+//        System.out.println("Level: " + level + ", KNNDegThresh: " + knnDegRatio);
     }
 
     public void find(SpatialCell parent, DataObject obj, ArrayList<String> keywords, int start, List<Query> results,
@@ -68,7 +82,7 @@ public class QueryTrieNode extends TextualNode {
                         searchQueries(obj, results, q, isExpiry);
                     }
 
-                    if (queriesSize > FAST.config.KNN_DEGRADATION_RATIO &&
+                    if (queriesSize > knnDegRatio &&
                             parent.level == FAST.context.maxLevel &&
                             q.ar < FAST.config.KNN_DEGRADATION_AR &&
                             descendedCount < queriesSize / 2) {
@@ -80,7 +94,11 @@ public class QueryTrieNode extends TextualNode {
 //                        Run.logger.debug("Descend from level on search " + parent.level + ", query: " + q.id);
                         descendingKNNQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, q.spatialBox()), q));
                         descendedCount++;
+                        FAST.context.totalDescendOpts++;
                     }
+                }
+                if (FAST.config.ADAPTIVE_DEG_RATIO && descendedCount > 0) {
+                    knnDegRatio = Math.min(FAST.config.KNN_DEGRADATION_RATIO, 2 * knnDegRatio);
                 }
             } else {
                 for (Iterator<KNNQuery> it = queries.kNNQueries().iterator(); it.hasNext(); ) {

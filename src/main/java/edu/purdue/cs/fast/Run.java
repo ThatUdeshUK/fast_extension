@@ -1,21 +1,5 @@
 package edu.purdue.cs.fast;
 
-import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
-import edu.purdue.cs.fast.baselines.ckqst.CkQST;
-import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
-import edu.purdue.cs.fast.config.Config;
-import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
-import edu.purdue.cs.fast.experiments.*;
-import edu.purdue.cs.fast.config.CleanMethod;
-import edu.purdue.cs.fast.models.DataObject;
-import edu.purdue.cs.fast.models.Point;
-import edu.purdue.cs.fast.models.Query;
-import edu.purdue.cs.fast.models.Rectangle;
-import edu.purdue.cs.fast.parser.Place;
-import edu.purdue.cs.fast.parser.PlaceOld;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,49 +7,98 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
+import edu.purdue.cs.fast.baselines.ckqst.CkQST;
+import edu.purdue.cs.fast.baselines.naive.NaiveFAST;
+import edu.purdue.cs.fast.config.CleanMethod;
+import edu.purdue.cs.fast.config.Config;
+import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
+import edu.purdue.cs.fast.experiments.Experiment;
+import edu.purdue.cs.fast.experiments.PlacesExperiment;
+import edu.purdue.cs.fast.experiments.PlacesExpireExperiment;
+import edu.purdue.cs.fast.experiments.PlacesHybridExperiment;
+import edu.purdue.cs.fast.experiments.PlacesKNNExperiment;
+import edu.purdue.cs.fast.experiments.PlacesKNNExpireExperiment;
+import edu.purdue.cs.fast.experiments.PlacesKNNObjExpireExperiment;
+import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.Point;
+import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.models.Rectangle;
+import edu.purdue.cs.fast.parser.Place;
+
 public class Run {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "places_o200000_q2500000_spatialuni";
-        String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
+        // String name = "places_o200000_q5000000_scaled";
+        String name = "tweets_o200000_q10000000_scaled_textuni_minkeys1";
+        // String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
+        String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-//        numQueriesList.add(100000);
-//        numQueriesList.add(100000);
-//        numQueriesList.add(500000);
-//        numQueriesList.add(1000000);
-//        numQueriesList.add(2000000);
-        numQueriesList.add(2500000);
-//        numQueriesList.add(5000000);
-//        numQueriesList.add(10000000);
-//        numQueriesList.add(20000000);
+        // numQueriesList.add(20000000);
+    //    numQueriesList.add(100000);
+        // numQueriesList.add(500000);
+        numQueriesList.add(1000000);
+        // numQueriesList.add(2000000);
+        // numQueriesList.add(2500000);
+        // numQueriesList.add(5000000);
+    //    numQueriesList.add(10000000);
+    //    numQueriesList.add(20000000);
+
+        ArrayList<Integer> defRatioList = new ArrayList<>();
+//        defRatioList.add(2);
+//        defRatioList.add(5);
+//        defRatioList.add(8);
+        // defRatioList.add(10);
+//        defRatioList.add(25);
+//        defRatioList.add(50);
+//        defRatioList.add(75);
+        // defRatioList.add(25); // change this
+
+        ArrayList<Double> arList = new ArrayList<>();
+        // arList.add(5.0);
+        // arList.add(10.0);
+        // arList.add(7.5);
+        // arList.add(5.0);
+        // arList.add(2.5);
+        // arList.add(0.0);
+
+        int degRatio = 20;
 
         for (int numQueries : numQueriesList) {
-            PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
-                    .indexType(Experiment.IndexType.FAST)
-                    .workload(Workload.KNN)
-                    .addArg("numObjects", 100000)
-                    .addArg("numPreObjects", 100000)
-                    .addArg("numQueries", numQueries)
-                    .addArg("maxLevel", 9)
-                    .configKNNFAST(true, 100, 5.0)
-                    .hasExternFASTObjectIndex(5)
+            // for (double arThresh : arList) {
+                PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
+                        .indexType(Experiment.IndexType.AdoptCkQST)
+                        .workload(Workload.KNN)
+                        .cleanMethod(CleanMethod.NO)
+                        .addArg("maxRange", 512)
+                        .addArg("numObjects", 100000)
+                        .addArg("numPreObjects", 100000)
+                        // .addArg("knnRatio", 0)
+                        .addArg("numQueries", numQueries)
+                        .addArg("maxLevel", 9)
+                        // .configKNNFAST(true, false, false, false, degRatio, 100, 5)
+                        // .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
-                    .paths(ds, args[0])
-//                    .saveTimeline()
-                    .suffix("_L3")
-                    .skipStatSave()
-                    .build();
+                        .paths(ds, args[0])
+                    // .saveTimeline()
+                        .suffix("_textuni_maxk3_mem")
+//                    .skipStatSave()
+                        .build();
 
-            run(experiment);
-            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
-            System.out.println(FAST.context.cellInsertions);
+                run(experiment);
+//            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
+//            System.out.println(FAST.context.cellInsertions);
 //            runWithoutInf(experiment);
 ////            runWithSnapshots(experiment);
 //            exportPlaces(experiment, args[1] + "fast/data/");
-            System.out.println("Done!");
-        }
+                System.out.println("Done!");
+            }
+        // }
     }
 
     private static void run(PlacesExperiment experiment) {
@@ -73,7 +106,7 @@ public class Run {
     }
 
     private static void runWithoutInf(PlacesExperiment experiment) {
-        FAST fast = (FAST) experiment.getIndex();
+//        FAST fast = (FAST) experiment.getIndex();
         experiment.init();
         experiment.removeInf(FAST.context.bounds, 5, FAST.context.maxLevel);
 
@@ -148,7 +181,7 @@ public class Run {
                 outPath += "_onlyTrie";
             }
 
-            FileWriter fw = new FileWriter( outPath +  "_Snapshot_" + timestamp + ".csv");
+            FileWriter fw = new FileWriter(outPath + "_Snapshot_" + timestamp + ".csv");
             BufferedWriter bw = new BufferedWriter(fw);
 
             bw.write("id,ar,currentLevel,x,y\n");
@@ -218,10 +251,16 @@ public class Run {
             return this;
         }
 
-        public ExperimentBuilder configKNNFAST(boolean incDescend, int degRatio, double arThresh) {
+        public ExperimentBuilder configKNNFAST(boolean incDescend, boolean lazyObjSearch,
+                                               boolean objFastSearch, boolean adaptiveDegRatio,
+                                               int degRatio, int knnDegRatio, double arThresh) {
             fastConfig = new Config();
             fastConfig.INCREMENTAL_DESCENT = incDescend;
-            fastConfig.KNN_DEGRADATION_RATIO = degRatio;
+            fastConfig.LAZY_OBJ_SEARCH = lazyObjSearch;
+            fastConfig.OBJ_FAST_SEARCH = objFastSearch;
+            fastConfig.ADAPTIVE_DEG_RATIO = adaptiveDegRatio;
+            fastConfig.DEGRADATION_RATIO = degRatio;
+            fastConfig.KNN_DEGRADATION_RATIO = knnDegRatio;
             fastConfig.KNN_DEGRADATION_AR = arThresh;
             return this;
         }
@@ -366,9 +405,12 @@ public class Run {
                     double srRate = (double) kwargs.getOrDefault("srRate", 0.01);
                     int knnRatio = (int) kwargs.getOrDefault("knnRatio", 5);
                     int k = (int) kwargs.getOrDefault("k", 5);
+                    int numPreObjects = (int) kwargs.getOrDefault("numPreObjects", 0);
+                    int numPreQueries = (int) kwargs.getOrDefault("numPreQueries", 0);
+
                     experiment = new PlacesHybridExperiment(outputPath,
-                            datasetPath, index, getExpName(), numQueries,
-                            numObjects, numKeywords, srRate, k, knnRatio, maxRange
+                            datasetPath, index, getExpName(), numPreObjects, numPreQueries, numQueries,
+                            numObjects, numKeywords, srRate, k, knnRatio, maxRange, Experiment.IndexType.FAST
                     );
                     break;
                 }

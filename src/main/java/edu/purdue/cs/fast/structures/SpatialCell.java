@@ -19,15 +19,10 @@
  */
 package edu.purdue.cs.fast.structures;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.io.Serializable;
 
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
@@ -37,7 +32,7 @@ import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.helper.TextHelpers;
 
-public class SpatialCell {
+public class SpatialCell implements Serializable {
     public ConcurrentHashMap<String, TextualNode> textualIndex;
     public Rectangle bounds;
     public int coordinate;
@@ -138,7 +133,7 @@ public class SpatialCell {
                     if (textualIndex.get(term) instanceof QueryListNode) {
                         queue.addAll(((QueryListNode) textualIndex.get(term)).queries.mbrQueries());
                         queue.addAll(((QueryListNode) textualIndex.get(term)).queries.kNNQueries());
-                        textualIndex.put(term, new QueryTrieNode());
+                        textualIndex.put(term, new QueryTrieNode(level));
                         FAST.context.numberOfTrieNodes++;
                     }
                 }
@@ -171,7 +166,7 @@ public class SpatialCell {
                     inserted = true;
                 } else if (node instanceof QueryListNode &&
                         ((QueryListNode) node).queries.size() > FAST.config.TRIE_SPLIT_THRESHOLD) {
-                    QueryTrieNode newCell = new QueryTrieNode();
+                    QueryTrieNode newCell = new QueryTrieNode(level);
                     FAST.context.numberOfTrieNodes++;
                     ((QueryListNode) node).queries.add(query);
                     newCell.subtree = new HashMap<>();
@@ -206,7 +201,8 @@ public class SpatialCell {
                                 ((QueryTrieNode) node).finalQueries = new ArrayList<>();
                             ((QueryTrieNode) node).finalQueries.add(query);
                         } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
-                                level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
+                                level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE &&
+                                !FAST.config.LAZY_OBJ_SEARCH) {
                             if (((QueryTrieNode) node).unboundedQueries == null)
                                 ((QueryTrieNode) node).unboundedQueries = new LinkedList<>();
                             ((QueryTrieNode) node).unboundedQueries.add((KNNQuery) query);
@@ -216,13 +212,13 @@ public class SpatialCell {
 
                             ((QueryTrieNode) node).queries.add(query);
 
-                            if (((QueryTrieNode) node).queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO) {
+                            if (((QueryTrieNode) node).queries.mbrQueries().size() > ((QueryTrieNode) node).degRatio) {
                                 findMBRQueriesToReinsert(((QueryTrieNode) node).queries.mbrQueries(), insertNextLevelQueries);
                             }
 
                             if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
-                                    ((QueryTrieNode) node).queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO)
-                                findKNNQueriesToReinsert(level, ((QueryTrieNode) node).queries.kNNQueries(), insertNextLevelQueries);
+                                    ((QueryTrieNode) node).queries.kNNQueries().size() > ((QueryTrieNode) node).knnDegRatio)
+                                findKNNQueriesToReinsert(level, ((QueryTrieNode) node), insertNextLevelQueries);
                         }
                         inserted = true;
                     }
@@ -235,7 +231,8 @@ public class SpatialCell {
                     trieNode.finalQueries.add(query);
 
                 } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
-                        level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE) {
+                        level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE &&
+                        !FAST.config.LAZY_OBJ_SEARCH) {
                     if (trieNode.unboundedQueries == null)
                         trieNode.unboundedQueries = new LinkedList<>();
                     trieNode.unboundedQueries.add((KNNQuery) query);
@@ -245,12 +242,12 @@ public class SpatialCell {
 
                     trieNode.queries.add(query);
 
-                    if (trieNode.queries.mbrQueries().size() > FAST.config.DEGRADATION_RATIO)
+                    if (trieNode.queries.mbrQueries().size() > trieNode.degRatio)
                         findMBRQueriesToReinsert(trieNode.queries.mbrQueries(), insertNextLevelQueries);
 
                     if (FAST.config.INCREMENTAL_DESCENT && level > 0 &&
-                            trieNode.queries.kNNQueries().size() > FAST.config.KNN_DEGRADATION_RATIO) {
-                        findKNNQueriesToReinsert(level, trieNode.queries.kNNQueries(), insertNextLevelQueries);
+                            trieNode.queries.kNNQueries().size() > trieNode.knnDegRatio) {
+                        findKNNQueriesToReinsert(level, trieNode, insertNextLevelQueries);
                     }
                 }
             }
@@ -422,15 +419,45 @@ public class SpatialCell {
         int queriesSize = queries.size();
         for (int i = queriesSize - 1; i > queriesSize / 2; i--) {
             MinimalRangeQuery query = queries.remove(i);
+            query.descended++;
+            FAST.context.totalDescendOpts++;
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialRange), query));
         }
     }
 
     public void findKNNQueriesToReinsert(
             int fromLevel,
-            List<KNNQuery> queries,
+            QueryTrieNode node,
+//            List<KNNQuery> queries,
             ArrayList<ReinsertEntry> insertNextLevelQueries
     ) {
+        List<KNNQuery> queries = node.queries.kNNQueries();
+        // TODO: if ar = inf -> Query object index and determine size
+        queries.iterator();
+        Iterator<KNNQuery> it = queries.iterator();
+//        HashMap<Integer, Collection<DataObject>> kthObjects = new HashMap<>();
+        while(it.hasNext()) {
+            KNNQuery query = it.next();
+            if (query.ar >= Double.MAX_VALUE) {
+                PriorityQueue<DataObject> objResults = FAST.context.objectSearcher.apply(query);
+
+                if (objResults.size() >= query.k) {
+//                    kthObjects.put(query.k, objResults);
+                    DataObject o = objResults.peek();
+                    assert o != null;
+                    query.ar = SpatialHelper.getDistanceInBetween(query.location, o.location);
+                }
+
+                // Unbounded after object search
+                if (query.ar >= Double.MAX_VALUE) {
+                    if (node.unboundedQueries == null)
+                        node.unboundedQueries = new LinkedList<>();
+                    node.unboundedQueries.add(query);
+                    it.remove();
+                }
+            }
+        }
+
         SpatialOverlapComparator spatialOverlapComparator = new SpatialOverlapComparator(bounds);
         queries.sort(spatialOverlapComparator);
         int queriesSize = queries.size();
@@ -439,7 +466,13 @@ public class SpatialCell {
                 continue;
 
             KNNQuery query = queries.remove(i);
+            query.descended++;
+            FAST.context.totalDescendOpts++;
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query));
+        }
+
+        if (FAST.config.ADAPTIVE_DEG_RATIO) {
+            node.knnDegRatio = Math.min(FAST.config.KNN_DEGRADATION_RATIO, 2 * node.knnDegRatio);
         }
     }
 
@@ -480,6 +513,8 @@ public class SpatialCell {
             } else if (node instanceof QueryTrieNode) {
                 QueryListNode combinedQueries = new QueryListNode();
                 numberOfVisitedEntries += ((QueryTrieNode) node).clean(level, bounds, combinedQueries);
+                // System.out.println(FAST.keywordFrequencyMap);
+                // System.out.println(FAST.keywordFrequencyMap.get(keyword));
                 if (((QueryTrieNode) node).queries == null && ((QueryTrieNode) node).subtree == null
                         && FAST.keywordFrequencyMap.get(keyword).queryCount <= FAST.config.TRIE_OVERALL_MERGE_THRESHOLD)
                     node = null;

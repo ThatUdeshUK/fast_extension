@@ -28,6 +28,10 @@ replay_pid*
 /results_remote
 /results_03_01
 /results_03_15
+/results_05_10
+/results_mem
+/results_06_01
+/results_remote_new
 /data2
 /data
 /related
@@ -35,6 +39,9 @@ replay_pid*
 # IDE
 .idea
 .code
+.vscode
+
+*/*.ipynb_checkpoints
 
 # FS
 ../.DS_Store
