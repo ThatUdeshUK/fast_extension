@@ -33,19 +33,19 @@ public class Run4 {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        // String name = "places_o200000_q5000000_scaled";
-        String name = "tweets_o200000_q10000000_spatialskew_max_keys3";
-        // String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
-        String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
+        String name = "places_o200000_q5000000_scaled";
+        // String name = "tweets_o200000_q10000000_spatialuni_max_keys3";
+        String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
+        // String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        // numQueriesList.add(1000);
+//        numQueriesList.add(1000);
     //    numQueriesList.add(100000);
         // numQueriesList.add(500000);
-        numQueriesList.add(1000000);
+        // numQueriesList.add(1000000);
         // numQueriesList.add(2000000);
         // numQueriesList.add(2500000);
-        // numQueriesList.add(5000000);
+        numQueriesList.add(5000000);
     //    numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
 
@@ -57,36 +57,26 @@ public class Run4 {
 //        defRatioList.add(25);
 //        defRatioList.add(50);
 //        defRatioList.add(75);
-        // defRatioList.add(100); // change this
+       defRatioList.add(100);
 
-        ArrayList<Double> arList = new ArrayList<>();
-        // arList.add(50.0);
-        // arList.add(10.0);
-        // arList.add(7.5);
-        // arList.add(5.0);
-        // arList.add(2.5);
-        // arList.add(0.0);
-
-        int degRatio = 20;
+        int degRatio = 5;
 
         for (int numQueries : numQueriesList) {
-            // for (double arThresh : arList) {
+            for (int knnDegRatio : defRatioList) {
                 PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
-                        .indexType(Experiment.IndexType.AdoptCkQST)
+                        .indexType(Experiment.IndexType.FAST)
                         .workload(Workload.KNN)
-                        .cleanMethod(CleanMethod.NO)
-                        .addArg("maxRange", 512)
                         .addArg("numObjects", 100000)
                         .addArg("numPreObjects", 100000)
                         // .addArg("knnRatio", 0)
                         .addArg("numQueries", numQueries)
                         .addArg("maxLevel", 9)
-                        // .configKNNFAST(true, false, false, false, degRatio, 100, arThresh)
-                        // .hasExternFASTObjectIndex(5)
+                        .configKNNFAST(true, false, false, false, degRatio, knnDegRatio, 5.0)
+                        .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
                         .paths(ds, args[0])
                     // .saveTimeline()
-                        .suffix("_spatialskew_maxk3_mem")
+                        .suffix("_places_fast")
 //                    .skipStatSave()
                         .build();
 
@@ -98,7 +88,7 @@ public class Run4 {
 //            exportPlaces(experiment, args[1] + "fast/data/");
                 System.out.println("Done!");
             }
-        // }
+        }
     }
 
     private static void run(PlacesExperiment experiment) {
@@ -261,7 +251,7 @@ public class Run4 {
             fastConfig.ADAPTIVE_DEG_RATIO = adaptiveDegRatio;
             fastConfig.DEGRADATION_RATIO = degRatio;
             fastConfig.KNN_DEGRADATION_RATIO = knnDegRatio;
-            fastConfig.KNN_DEGRADATION_AR = arThresh;
+            // fastConfig.KNN_DEGRADATION_AR = arThresh;
             return this;
         }
 

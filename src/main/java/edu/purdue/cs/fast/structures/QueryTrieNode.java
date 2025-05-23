@@ -15,7 +15,7 @@ public class QueryTrieNode extends TextualNode implements Serializable {
     public HybridList queries;
 
     public LinkedList<KNNQuery> unboundedQueries;
-    public ArrayList<Query> finalQueries;
+    public HybridList finalQueries;
     public int degRatio;
     public int knnDegRatio;
 
@@ -52,6 +52,7 @@ public class QueryTrieNode extends TextualNode implements Serializable {
                     if (queries == null)
                         queries = new HybridList();
 
+                    FAST.context.arAdjustments++;
                     queries.add(q);
                     it.remove();
                 } else {
@@ -84,8 +85,10 @@ public class QueryTrieNode extends TextualNode implements Serializable {
 
                     if (queriesSize > knnDegRatio &&
                             parent.level == FAST.context.maxLevel &&
-                            q.ar < FAST.config.KNN_DEGRADATION_AR &&
+//                            q.ar < FAST.config.KNN_DEGRADATION_AR &&
                             descendedCount < queriesSize / 2) {
+//                        System.out.println(queriesSize);
+
 //                        if (q.id == 31) { // || q.id == 453
 //                            System.out.println("Pushing down: " + q.id + ", from: " + q.currentLevel + ", x: " + q.location.x
 //                                    + ", y: " + q.location.y + ", ar: " + q.ar + ", list_size: " + queriesSize + ", coz: " + obj.id);
@@ -94,6 +97,7 @@ public class QueryTrieNode extends TextualNode implements Serializable {
 //                        Run.logger.debug("Descend from level on search " + parent.level + ", query: " + q.id);
                         descendingKNNQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(FAST.context.bounds, q.spatialBox()), q));
                         descendedCount++;
+                        FAST.context.smallArDescends++;
                         FAST.context.totalDescendOpts++;
                     }
                 }

@@ -104,10 +104,8 @@ public class SpatialHelper {
         return (rect.max.x - rect.min.x) * (rect.max.y - rect.min.y);
     }
 
-    public static Double getDistanceInBetween(Point p1, Point p2) {
-        Double dist = 0.0;
-        dist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-        return dist;
+    public static double getDistanceInBetween(Point p1, Point p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 
     }
 
@@ -121,10 +119,10 @@ public class SpatialHelper {
         Point p2 = recangle.max;
         Point p3 = new Point(p1.x, p2.y);
         Point p4 = new Point(p1.y, p2.x);
-        Double dist1 = getDistanceInBetween(point, p1);
-        Double dist2 = getDistanceInBetween(point, p2);
-        Double dist3 = getDistanceInBetween(point, p3);
-        Double dist4 = getDistanceInBetween(point, p4);
+        double dist1 = getDistanceInBetween(point, p1);
+        double dist2 = getDistanceInBetween(point, p2);
+        double dist3 = getDistanceInBetween(point, p3);
+        double dist4 = getDistanceInBetween(point, p4);
         return Math.max(Math.max(dist1, dist2), Math.max(dist3, dist4));
     }
 

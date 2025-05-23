@@ -39,12 +39,12 @@ public class Run3 {
         String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        // numQueriesList.add(100000);
+        // numQueriesList.add(1000);
     //    numQueriesList.add(100000);
         // numQueriesList.add(500000);
-        // numQueriesList.add(20000000);
-        // numQueriesList.add(2000000);
         numQueriesList.add(1000000);
+        // numQueriesList.add(2000000);
+        // numQueriesList.add(2500000);
         // numQueriesList.add(5000000);
     //    numQueriesList.add(10000000);
 //        numQueriesList.add(20000000);
@@ -57,10 +57,10 @@ public class Run3 {
 //        defRatioList.add(25);
 //        defRatioList.add(50);
 //        defRatioList.add(75);
-        // defRatioList.add(50); // change this
+        // defRatioList.add(150); // change this
 
         ArrayList<Double> arList = new ArrayList<>();
-        // arList.add(30.0);
+        arList.add(100.0);
         // arList.add(10.0);
         // arList.add(7.5);
         // arList.add(5.0);
@@ -70,9 +70,9 @@ public class Run3 {
         int degRatio = 20;
 
         for (int numQueries : numQueriesList) {
-            // for (double arThresh : arList) {
+            for (double arThresh : arList) {
                 PlacesExperiment experiment = (PlacesExperiment) new ExperimentBuilder()
-                        .indexType(Experiment.IndexType.AdoptCkQST)
+                        .indexType(Experiment.IndexType.FAST)
                         .workload(Workload.KNN)
                         .cleanMethod(CleanMethod.NO)
                         .addArg("maxRange", 512)
@@ -81,12 +81,12 @@ public class Run3 {
                         // .addArg("knnRatio", 0)
                         .addArg("numQueries", numQueries)
                         .addArg("maxLevel", 9)
-                        // .configKNNFAST(true, false, false, false, degRatio, 100, arThresh)
-                        // .hasExternFASTObjectIndex(5)
+                        .configKNNFAST(true, false, false, false, degRatio, 100, arThresh)
+                        .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
                         .paths(ds, args[0])
                     // .saveTimeline()
-                        .suffix("_twitter_maxk3_mem")
+                        .suffix("_param_deg_5")
 //                    .skipStatSave()
                         .build();
 
@@ -98,7 +98,7 @@ public class Run3 {
 //            exportPlaces(experiment, args[1] + "fast/data/");
                 System.out.println("Done!");
             }
-        // }
+        }
     }
 
     private static void run(PlacesExperiment experiment) {
@@ -261,7 +261,7 @@ public class Run3 {
             fastConfig.ADAPTIVE_DEG_RATIO = adaptiveDegRatio;
             fastConfig.DEGRADATION_RATIO = degRatio;
             fastConfig.KNN_DEGRADATION_RATIO = knnDegRatio;
-            fastConfig.KNN_DEGRADATION_AR = arThresh;
+            // fastConfig.KNN_DEGRADATION_AR = arThresh;
             return this;
         }
 

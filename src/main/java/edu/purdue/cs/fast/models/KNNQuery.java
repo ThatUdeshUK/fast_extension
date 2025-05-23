@@ -129,6 +129,7 @@ public class KNNQuery extends Query implements Serializable {
                 "id=" + id +
                 ", location=" + location +
                 ", keywords=" + keywords +
+                ", kObj=" + monitoredObjects.toString() +
                 ", k=" + k +
                 ", ar=" + ar +
                 ", cl=" + currentLevel +

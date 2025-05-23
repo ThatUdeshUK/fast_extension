@@ -43,8 +43,8 @@ public class LFAST implements SpatialKeywordIndex<Query, LDataObject> {
 	public Rectangle selfBounds;
 	public int gridGranularity;
 	public int maxLevel;
-	public static int Trie_SPLIT_THRESHOLD = 2;
-	public static int Degredation_Ratio = 2;
+	public static int Trie_SPLIT_THRESHOLD = 5;
+	public static int Degredation_Ratio = 20;
 	public static int Trie_OVERLALL_MERGE_THRESHOLD = 2;
 	public static int CLEANING_INTERVAL = 1000;
 	public static int NUMBER_OF_ACTIVE_QUERIES = 1000000;
@@ -75,6 +75,8 @@ public class LFAST implements SpatialKeywordIndex<Query, LDataObject> {
 	public static int totalTrieAccess = 0;
 	public static int objectSearchTrieFinalNodeCounter=0;
 	public Iterator<Entry<Integer, LIndexCell>> cleaningIterator;//iterates over cells to clean expired entries
+	public HashMap<Integer, Integer> queryLevels = new HashMap<>();
+
 
 	public LFAST(Rectangle selfBounds, Integer xGridGranularity, Integer maxLevel)  {
 		
@@ -162,6 +164,7 @@ public class LFAST implements SpatialKeywordIndex<Query, LDataObject> {
 //					System.out.println("DEBUG!");
 //					System.out.println("Inserting q: " + q + " at: " + level);
 //				}
+				queryLevels.put(entry.query.id, level);
 
 				int levelxMinCell = (int) (entry.query.getSpatialRange().min.x / levelStep);
 				int levelyMinCell = (int) (entry.query.getSpatialRange().min.y / levelStep);

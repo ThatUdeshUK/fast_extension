@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.io.Serializable;
 
 import edu.purdue.cs.fast.FAST;
-import edu.purdue.cs.fast.Run;
+import edu.purdue.cs.fast.RunCkQST;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.experiments.Experiment;
 import edu.purdue.cs.fast.models.*;
@@ -109,6 +109,7 @@ public class SpatialCell implements Serializable {
         Queue<Query> queue = new LinkedList<>();
         boolean inserted = insertAtKeyWord(keyword, query, sharedQueries);
         if (inserted) {
+            FAST.context.unboundedCounter++;
             if (textualIndex.get(keyword) instanceof QueryListNode)
                 return (QueryListNode) textualIndex.get(keyword);
             else
@@ -124,6 +125,7 @@ public class SpatialCell implements Serializable {
             String otherKeyword = getOtherKeywordToInsert(query);
             if (otherKeyword != null) {
                 inserted = insertAtKeyWord(otherKeyword, query, null);
+                FAST.context.unboundedCounter2++;
             }
             if (inserted) {
                 continue;
@@ -132,9 +134,11 @@ public class SpatialCell implements Serializable {
                     //mark all these keywords as tries
                     if (textualIndex.get(term) instanceof QueryListNode) {
                         queue.addAll(((QueryListNode) textualIndex.get(term)).queries.mbrQueries());
-                        queue.addAll(((QueryListNode) textualIndex.get(term)).queries.kNNQueries());
+                        List<KNNQuery> leaving = ((QueryListNode) textualIndex.get(term)).queries.kNNQueries();
+                        FAST.context.removed += leaving.size();
+                        queue.addAll(leaving);
                         textualIndex.put(term, new QueryTrieNode(level));
-                        FAST.context.numberOfTrieNodes++;
+                        FAST.context.numberOfTries++;
                     }
                 }
             }
@@ -148,26 +152,35 @@ public class SpatialCell implements Serializable {
                 TextualNode node = trieNode.subtree.get(keyword);
                 if (node == null) {
                     trieNode.subtree.put(keyword, new QueryNode(query));
+                    FAST.context.insertions++;
+                    FAST.context.unboundedCounter4++;
+                    FAST.context.unboundedCounter5++;
                     inserted = true;
                 } else if (node instanceof QueryNode) {
                     if (((QueryNode) node).query.et > FAST.context.timestamp) {
                         QueryListNode newNode = new QueryListNode(((QueryNode) node).query);
                         newNode.queries.add(query);
                         trieNode.subtree.put(keyword, newNode);
+                        FAST.context.nodeToList++;
+                        FAST.context.insertions++;
                     } else {
-                        deleteQueryFromStats(((QueryNode) node).query);
-                        trieNode.subtree.put(keyword, new QueryNode(query));
+                        throw new RuntimeException("Can't expire");
+//                        deleteQueryFromStats(((QueryNode) node).query);
+//                        trieNode.subtree.put(keyword, new QueryNode(query));
                     }
                     inserted = true;
                 } else if (node instanceof QueryListNode &&
                         ((QueryListNode) node).queries.size() <= FAST.config.TRIE_SPLIT_THRESHOLD) {
 
                     ((QueryListNode) node).queries.add(query);
+                    FAST.context.unboundedCounter3++;
+                    FAST.context.insertions++;
                     inserted = true;
                 } else if (node instanceof QueryListNode &&
                         ((QueryListNode) node).queries.size() > FAST.config.TRIE_SPLIT_THRESHOLD) {
                     QueryTrieNode newCell = new QueryTrieNode(level);
-                    FAST.context.numberOfTrieNodes++;
+                    FAST.context.numberOfTries++;
+                    FAST.context.unboundedCounter4++;
                     ((QueryListNode) node).queries.add(query);
                     newCell.subtree = new HashMap<>();
                     newCell.queries = new HybridList();
@@ -175,18 +188,22 @@ public class SpatialCell implements Serializable {
                     for (Query otherQuery : ((QueryListNode) node).queries) {
                         if (otherQuery.et > FAST.context.timestamp) {
                             if (otherQuery.keywords.size() > (j + 1)) {
-
                                 QueryListNode otherCell = (QueryListNode) newCell.subtree.get(otherQuery.keywords.get(j + 1));
                                 if (otherCell == null) {
                                     otherCell = new QueryListNode();
                                 }
                                 otherCell.queries.add(otherQuery);
                                 newCell.subtree.put(otherQuery.keywords.get(j + 1), otherCell);
+                                FAST.context.listToTrie++;
+                                FAST.context.insertions++;
                             } else {
                                 newCell.queries.add(otherQuery);
+                                FAST.context.listToTrie++;
+                                FAST.context.insertions++;
                             }
                         } else {
-                            deleteQueryFromStats(otherQuery);
+                            throw new RuntimeException("Can't expire");
+//                            deleteQueryFromStats(otherQuery);
                         }
                     }
                     if (newCell.queries != null && newCell.queries.isEmpty())
@@ -196,21 +213,28 @@ public class SpatialCell implements Serializable {
                     if (j < (query.keywords.size() - 1)) {
                         trieNode = (QueryTrieNode) node;
                     } else {
-                        if (query instanceof MinimalRangeQuery && (level == 0 || checkSpanForForceInsertFinal(query))) {
+                        if (((KNNQuery) query).ar != Double.MAX_VALUE && (level == 0 || checkSpanForForceInsertFinal(query))) {
                             if (((QueryTrieNode) node).finalQueries == null)
-                                ((QueryTrieNode) node).finalQueries = new ArrayList<>();
+                                ((QueryTrieNode) node).finalQueries = new HybridList();
                             ((QueryTrieNode) node).finalQueries.add(query);
+                            FAST.context.unboundedCounter4++;
+                            FAST.context.finalQueries++;
                         } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
                                 level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE &&
                                 !FAST.config.LAZY_OBJ_SEARCH) {
                             if (((QueryTrieNode) node).unboundedQueries == null)
                                 ((QueryTrieNode) node).unboundedQueries = new LinkedList<>();
                             ((QueryTrieNode) node).unboundedQueries.add((KNNQuery) query);
+                            FAST.context.unboundedInserts++;
+                            FAST.context.unboundedCounter4++;
+                            FAST.context.insertions++;
                         } else {
                             if (((QueryTrieNode) node).queries == null)
                                 ((QueryTrieNode) node).queries = new HybridList();
 
                             ((QueryTrieNode) node).queries.add(query);
+                            FAST.context.unboundedCounter4++;
+                            FAST.context.insertions++;
 
                             if (((QueryTrieNode) node).queries.mbrQueries().size() > ((QueryTrieNode) node).degRatio) {
                                 findMBRQueriesToReinsert(((QueryTrieNode) node).queries.mbrQueries(), insertNextLevelQueries);
@@ -225,22 +249,27 @@ public class SpatialCell implements Serializable {
                 }
             }
             if (!inserted) {
-                if (query instanceof MinimalRangeQuery && (level == 0 || checkSpanForForceInsertFinal(query))) {
+                if (((KNNQuery) query).ar != Double.MAX_VALUE && (level == 0 || checkSpanForForceInsertFinal(query))) {
                     if (trieNode.finalQueries == null)
-                        trieNode.finalQueries = new ArrayList<>();
+                        trieNode.finalQueries = new HybridList();
                     trieNode.finalQueries.add(query);
-
+                    FAST.context.finalQueries++;
                 } else if (FAST.config.INCREMENTAL_DESCENT && query instanceof KNNQuery &&
                         level == FAST.context.maxLevel && ((KNNQuery) query).ar == Double.MAX_VALUE &&
                         !FAST.config.LAZY_OBJ_SEARCH) {
                     if (trieNode.unboundedQueries == null)
                         trieNode.unboundedQueries = new LinkedList<>();
                     trieNode.unboundedQueries.add((KNNQuery) query);
+                    FAST.context.unboundedInserts++;
+                    FAST.context.unboundedCounter4++;
+                    FAST.context.insertions++;
                 } else {
                     if (trieNode.queries == null)
                         trieNode.queries = new HybridList();
 
                     trieNode.queries.add(query);
+                    FAST.context.unboundedCounter4++;
+                    FAST.context.insertions++;
 
                     if (trieNode.queries.mbrQueries().size() > trieNode.degRatio)
                         findMBRQueriesToReinsert(trieNode.queries.mbrQueries(), insertNextLevelQueries);
@@ -269,8 +298,12 @@ public class SpatialCell implements Serializable {
             double queryRange = ((MinimalRangeQuery) query).spatialRange.max.x - ((MinimalRangeQuery) query).spatialRange.min.x;
             double cellRange = bounds.max.x - bounds.min.x;
             return queryRange > (cellRange / 2);
+        } else if (query instanceof KNNQuery) {
+            double queryRange = ((KNNQuery) query).ar;
+            double cellRange = bounds.max.x - bounds.min.x;
+            return queryRange > (cellRange * FAST.config.KNN_OMEGA);
         }
-        // TODO - KNN - Can skip for now
+            // TODO - KNN - Can skip for now
         return false;
     }
 
@@ -278,13 +311,16 @@ public class SpatialCell implements Serializable {
         if (!textualIndex.containsKey(keyword)) {
             FAST.context.numberOfHashEntries++;
             FAST.context.queryInsertInvListNodeCounter++;
+
             textualIndex.put(keyword, new QueryNode(query));
+            FAST.context.insertions++;
             return true;
         } else { //this keyword already exists in the index
             TextualNode node = textualIndex.get(keyword);
             if (node == null) {
                 FAST.context.queryInsertInvListNodeCounter++;
                 textualIndex.put(keyword, new QueryNode(query));
+                FAST.context.insertions++;
                 return true;
             }
             if (node instanceof QueryNode) { //single query
@@ -294,9 +330,11 @@ public class SpatialCell implements Serializable {
                     FAST.context.queryInsertInvListNodeCounter++;
                     rareQueries.queries.add(query);
                     textualIndex.put(keyword, rareQueries);
+                    FAST.context.insertions++;
                 } else {
-                    deleteQueryFromStats(exitingQuery);
-                    textualIndex.put(keyword, new QueryNode(query));
+                    throw new RuntimeException("Queries shouldn't expire");
+//                    deleteQueryFromStats(exitingQuery);
+//                    textualIndex.put(keyword, new QueryNode(query));
                 }
                 return true;
             } else if ((node instanceof QueryListNode) &&
@@ -305,6 +343,7 @@ public class SpatialCell implements Serializable {
                     if (!((QueryListNode) node).queries.contains(query)) {
                         ((QueryListNode) node).queries.add(query);
                         FAST.context.queryInsertInvListNodeCounter++;
+                        FAST.context.insertions++;
                     }
                 return true;
             } else if ((node instanceof QueryListNode) &&
@@ -317,7 +356,7 @@ public class SpatialCell implements Serializable {
             } else if (node instanceof QueryTrieNode) {
                 return false;
             } else {
-                Run.logger.error("This is an error you should never be here");
+                RunCkQST.logger.error("This is an error you should never be here");
             }
         }
         return false;
@@ -433,30 +472,31 @@ public class SpatialCell implements Serializable {
     ) {
         List<KNNQuery> queries = node.queries.kNNQueries();
         // TODO: if ar = inf -> Query object index and determine size
-        queries.iterator();
-        Iterator<KNNQuery> it = queries.iterator();
+        // TODO: but why? remove it
+//        queries.iterator();
+//        Iterator<KNNQuery> it = queries.iterator();
 //        HashMap<Integer, Collection<DataObject>> kthObjects = new HashMap<>();
-        while(it.hasNext()) {
-            KNNQuery query = it.next();
-            if (query.ar >= Double.MAX_VALUE) {
-                PriorityQueue<DataObject> objResults = FAST.context.objectSearcher.apply(query);
-
-                if (objResults.size() >= query.k) {
-//                    kthObjects.put(query.k, objResults);
-                    DataObject o = objResults.peek();
-                    assert o != null;
-                    query.ar = SpatialHelper.getDistanceInBetween(query.location, o.location);
-                }
-
-                // Unbounded after object search
-                if (query.ar >= Double.MAX_VALUE) {
-                    if (node.unboundedQueries == null)
-                        node.unboundedQueries = new LinkedList<>();
-                    node.unboundedQueries.add(query);
-                    it.remove();
-                }
-            }
-        }
+//        while(it.hasNext()) {
+//            KNNQuery query = it.next();
+//            if (query.ar >= Double.MAX_VALUE) {
+//                PriorityQueue<DataObject> objResults = FAST.context.objectSearcher.apply(query);
+//
+//                if (objResults.size() >= query.k) {
+////                    kthObjects.put(query.k, objResults);
+//                    DataObject o = objResults.peek();
+//                    assert o != null;
+//                    query.ar = SpatialHelper.getDistanceInBetween(query.location, o.location);
+//                }
+//
+//                // Unbounded after object search
+//                if (query.ar >= Double.MAX_VALUE) {
+//                    if (node.unboundedQueries == null)
+//                        node.unboundedQueries = new LinkedList<>();
+//                    node.unboundedQueries.add(query);
+//                    it.remove();
+//                }
+//            }
+//        }
 
         SpatialOverlapComparator spatialOverlapComparator = new SpatialOverlapComparator(bounds);
         queries.sort(spatialOverlapComparator);
@@ -466,6 +506,7 @@ public class SpatialCell implements Serializable {
                 continue;
 
             KNNQuery query = queries.remove(i);
+            FAST.context.removed++;
             query.descended++;
             FAST.context.totalDescendOpts++;
             insertNextLevelQueries.add(new ReinsertEntry(SpatialHelper.spatialIntersect(bounds, query.spatialBox()), query));

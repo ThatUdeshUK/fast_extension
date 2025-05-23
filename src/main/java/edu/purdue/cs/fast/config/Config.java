@@ -3,11 +3,12 @@ package edu.purdue.cs.fast.config;
 import java.io.Serializable;
 
 public class Config implements Serializable {
-    public int TRIE_SPLIT_THRESHOLD = 2;
-    public int TRIE_OVERALL_MERGE_THRESHOLD = 2;
+    public int TRIE_SPLIT_THRESHOLD = 5;
+    public int TRIE_OVERALL_MERGE_THRESHOLD = 5;
     public int DEGRADATION_RATIO = 4 * this.TRIE_SPLIT_THRESHOLD;
-    public int KNN_DEGRADATION_RATIO = 50;
-    public double KNN_DEGRADATION_AR = 25.0;
+    public int KNN_DEGRADATION_RATIO = DEGRADATION_RATIO;
+    // public double KNN_DEGRADATION_AR = 25.0;
+    public double KNN_OMEGA = 0.3;
     public boolean INPLACE_OBJECT_INDEX = false;
     public int CLEANING_INTERVAL = 10000;
     public int MAX_ENTRIES_PER_CLEANING_INTERVAL = 10;

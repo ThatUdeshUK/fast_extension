@@ -12,5 +12,10 @@ public class KeywordFrequency implements Serializable {
 		this.visitCount = visitCount;
 		this.lastDecayTimeStamp = timeStamp;
 	}
+
+	@Override
+	public String toString() {
+		return "" + queryCount;
+	}
 }
 

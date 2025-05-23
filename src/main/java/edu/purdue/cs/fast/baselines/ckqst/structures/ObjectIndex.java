@@ -2,7 +2,9 @@ package edu.purdue.cs.fast.baselines.ckqst.structures;
 
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.models.DataObject;
+import edu.purdue.cs.fast.models.KNNQuery;
 import edu.purdue.cs.fast.models.Query;
+import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
 
 import java.util.*;
 
@@ -26,7 +28,10 @@ public class ObjectIndex  {
             }
         }
 
-        List<DataObject> results = new LinkedList<>();
+        BoundedPriorityQueue<DataObject> results = new BoundedPriorityQueue<>(
+                3,
+                new KNNQuery.EuclideanComparator(((KNNQuery) query).location)
+        );
         if (set != null) {
             results.addAll(set);
         }

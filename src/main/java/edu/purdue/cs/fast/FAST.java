@@ -31,6 +31,7 @@ import java.io.Serializable;
 
 import com.google.common.base.Stopwatch;
 import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
+import edu.purdue.cs.fast.baselines.ckqst.structures.ObjectIndex;
 import edu.purdue.cs.fast.config.CleanMethod;
 import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.config.Context;
@@ -45,18 +46,21 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
     public static HashMap<String, KeywordFrequency> keywordFrequencyMap;
     private final boolean lastCellCleaningDone; //to check if an entireCellHasBeenCleaned
     public IQuadTree objIndex;
+//    public ObjectIndex objIndex;
     public ConcurrentHashMap<Integer, SpatialCell> index;
     public Iterator<Entry<Integer, SpatialCell>> cleaningIterator;//iterates over cells to clean expired entries
     //    public PriorityQueue<DataObject> expiringObjects;
     private SpatialCell cellBeingCleaned;
     public long cleanTime = 0;
 
+    public HashMap<Integer, Integer> queryLevels = new HashMap<>();
+
     public FAST(Config config, Rectangle bounds, int xGridGranularity, int maxLevel) {
         context = new Context(bounds, xGridGranularity, maxLevel);
         FAST.config = config;
 
         if (FAST.config.ADAPTIVE_DEG_RATIO) {
-            Run.logger.info("Adaptive KNN degradation is ON! Skipping knn_deg_ratio threshold!");
+            RunCkQST.logger.info("Adaptive KNN degradation is ON! Skipping knn_deg_ratio threshold!");
         }
 
         index = new ConcurrentHashMap<>();
@@ -71,7 +75,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
         cellBeingCleaned = null;
         lastCellCleaningDone = true;
 
-        Run.logger.info("Index initialized!");
+        RunCkQST.logger.info("Index initialized!");
     }
 
     public static Integer calcCoordinate(int level, int x, int y, int gridGranularity) {
@@ -88,6 +92,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
 
     public void setExternalObjectIndex(int objIdxLeafCapacity, int objIdxTreeHeight) {
         config.INPLACE_OBJECT_INDEX = false;
+//        objIndex = new ObjectIndex();
         this.objIndex = new IQuadTree(context.bounds.min.x, context.bounds.min.y,
                 context.bounds.max.x, context.bounds.max.y, objIdxLeafCapacity, objIdxTreeHeight);
         Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) objIndex.search(query);
@@ -132,12 +137,17 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
             if (((KNNQuery) query).ar <= FAST.context.globalXRange) {
                 // Query with bounded range.
                 addContinuousBoundedQuery(query);
+                FAST.context.initBounded++;
             } else {
                 // Inf. range KNN query.
                 ((KNNQuery) query).currentLevel = context.maxLevel;
+                queryLevels.put(query.id, context.maxLevel);
                 addContinuousUnboundQuery((KNNQuery) query);
+                FAST.context.initUnbounded++;
             }
             insWatch.stop();
+            FAST.context.indexingTime += insWatch.elapsed(TimeUnit.NANOSECONDS);
+            FAST.context.creationTime += eagerObjSearchTime + insWatch.elapsed(TimeUnit.NANOSECONDS);
             queryStats.add(new QueryStat(query.id, eagerObjSearchTime,
                     insWatch.elapsed(TimeUnit.NANOSECONDS), ((KNNQuery) query).ar, ((KNNQuery) query).descended,
                     ((KNNQuery) query).currentLevel, QueryStat.Stage.INSERT));
@@ -171,6 +181,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
         // Vacuum cleaning
         if (config.CLEAN_METHOD != CleanMethod.NO && context.timestamp % config.CLEANING_INTERVAL == 0)
             cleanNextSetOfEntries();
+
+        FAST.context.searchTime += insWatch.elapsed(TimeUnit.NANOSECONDS) + searchTime.elapsed(TimeUnit.NANOSECONDS);
 
         // Object expiring
 //        while (expiringObjects.peek() != null && expiringObjects.peek().et <= context.timestamp) {
@@ -218,6 +230,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
             double levelStep = ((context.globalXRange) / levelGranularity);
             for (ReinsertEntry entry : currentLevelQueries) {
                 entry.query.currentLevel = level;
+                queryLevels.put(entry.query.id, level);
                 singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
             }
             currentLevelQueries = insertNextLevelQueries;
@@ -284,24 +297,25 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
     }
 
     private void reinsertKNNQueries(List<ReinsertEntry> descendingKNNQueries) {
-        for (ReinsertEntry entry : descendingKNNQueries) {
-            KNNQuery query = ((KNNQuery) entry.query);
-//            if (entry.query.id == 65 && query.currentLevel == 8) {
-//                System.out.println("debug!");
+        throw new RuntimeException("Not implemented");
+//        for (ReinsertEntry entry : descendingKNNQueries) {
+//            KNNQuery query = ((KNNQuery) entry.query);
+////            if (entry.query.id == 65 && query.currentLevel == 8) {
+////                System.out.println("debug!");
+////            }
+//            int level = 0;
+//            if (!FAST.config.PUSH_TO_LOWEST)
+//                level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
+//            query.currentLevel = level;
+//            ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
+//            int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
+//            double levelStep = ((FAST.context.bounds.max.x - FAST.context.bounds.min.x) / levelGranularity);
+//            if (query.id == 65) {
+//                System.out.println("Reinserting: " + query + ", area: " + entry.range);
 //            }
-            int level = 0;
-            if (!FAST.config.PUSH_TO_LOWEST)
-                level = Math.min(query.calcMinSpatialLevel(), FAST.context.maxLevel);
-            query.currentLevel = level;
-            ArrayList<ReinsertEntry> insertNextLevelQueries = new ArrayList<>();
-            int levelGranularity = (int) (FAST.context.gridGranularity / Math.pow(2, level));
-            double levelStep = ((FAST.context.bounds.max.x - FAST.context.bounds.min.x) / levelGranularity);
-            if (query.id == 65) {
-                System.out.println("Reinserting: " + query + ", area: " + entry.range);
-            }
-            singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
-            assert insertNextLevelQueries.isEmpty();
-        }
+//            singleQueryInsert(level, entry, levelStep, levelGranularity, insertNextLevelQueries);
+//            assert insertNextLevelQueries.isEmpty();
+//        }
     }
 
     private List<Query> internalSearchQueries(DataObject dataObject, boolean isExpiry) {
@@ -344,7 +358,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
     }
 
     public void cleanNextSetOfEntries() {
-        Run.logger.debug("Cleaning!");
+        RunCkQST.logger.debug("Cleaning!");
         Stopwatch cleanWatch = Stopwatch.createStarted();
         if (cleaningIterator == null || !cleaningIterator.hasNext()) cleaningIterator = index.entrySet().iterator();
         SpatialCell cell;
@@ -359,7 +373,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
         if (cell.textualIndex == null) cleaningIterator.remove();
         cleanWatch.stop();
         this.cleanTime += cleanWatch.elapsed(TimeUnit.NANOSECONDS);
-        Run.logger.debug("Cleaning cell: " + cell.coordinate + " at level: " + cell.level);
+        RunCkQST.logger.debug("Cleaning cell: " + cell.coordinate + " at level: " + cell.level);
     }
 
 //    public void expireQueries(DataObject dataObject) {
@@ -462,17 +476,20 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
         System.out.println(s);
     }
 
-    public HashSet<KNNQuery> allKNNQueries(boolean onlyTrie) {
-        HashSet<KNNQuery> allKNN = new HashSet<>();
+    public ArrayList<KNNQuery> allKNNQueries(boolean onlyTrie) {
+        ArrayList<KNNQuery> allKNN = new ArrayList<>();
 
         index.forEach((key, cell) -> {
-            addKNNQueriesFromTextualNodes(cell.textualIndex, allKNN, onlyTrie);
+//            if (cell.level == context.maxLevel) {
+//                System.out.println("Key: " + key);
+                addKNNQueriesFromTextualNodes(cell.textualIndex, allKNN, onlyTrie);
+//            }
         });
         return allKNN;
     }
 
     private void addKNNQueriesFromTextualNodes(
-            Map<String, TextualNode> textualIndex, HashSet<KNNQuery> result,
+            Map<String, TextualNode> textualIndex, ArrayList<KNNQuery> result,
             boolean onlyTrie
     ) {
         if (textualIndex == null) return;
@@ -483,6 +500,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
                 Query query = ((QueryNode) node).query;
                 if (query instanceof KNNQuery) {
                     result.add((KNNQuery) query);
+                } else {
+                    throw new RuntimeException("Unknown query type");
                 }
             } else if (!onlyTrie && node instanceof QueryListNode) {
                 if (((QueryListNode) node).queries != null) {
@@ -494,8 +513,10 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
                 }
                 if (((QueryTrieNode) node).queries != null) {
                     result.addAll(((QueryTrieNode) node).queries.kNNQueries());
-                    addKNNQueriesFromTextualNodes(((QueryTrieNode) node).subtree, result, onlyTrie);
                 }
+                addKNNQueriesFromTextualNodes(((QueryTrieNode) node).subtree, result, onlyTrie);
+            } else {
+                throw new RuntimeException("Unknown error");
             }
         });
     }

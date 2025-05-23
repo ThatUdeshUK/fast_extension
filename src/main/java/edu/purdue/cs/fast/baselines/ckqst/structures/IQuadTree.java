@@ -4,6 +4,7 @@ import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
 import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
 import edu.purdue.cs.fast.baselines.quadtree.BaseQuadTree;
+import edu.purdue.cs.fast.helper.MutableInt;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.structures.BoundedPriorityQueue;
@@ -86,16 +87,10 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
                 new KNNQuery.EuclideanComparator(location)
         );
         double lambda = Double.MAX_VALUE;
-        HashMap<Integer, Integer> hits = new HashMap<>();
+        HashMap<DataObject, MutableInt> hits = new HashMap<>();
+//        HashMap<Integer, Integer> hits = new HashMap<>();
         DeltaComparator deltaComparator = new DeltaComparator(location);
         PriorityQueue<ILQuadNode> H = new PriorityQueue<>(deltaComparator);    // Line 1
-
-//        for (String keyword : q.keywords) {
-//            if (!keywordFrequencyMap.containsKey(keyword) ||
-//                    keywordFrequencyMap.get(keyword).queryCount < 5) {
-//                return results;
-//            }
-//        }
 
         for (String keyword : q.keywords) {                     // Line 2
             if (roots.containsKey(keyword)) {
@@ -126,10 +121,15 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
 
                 if (signCheck) {                                // Line 10
                     for (DataObject o : e.objects) {
-                        int oHit = hits.getOrDefault(o.id, 0);
-                        oHit++;
-                        hits.put(o.id, oHit);
-                        if (oHit == q.keywords.size()) {
+//                        Integer oid = Integer.valueOf(o.id);
+//                        Integer oHit = hits.merge(oid, 1, Integer::sum);
+                        MutableInt oHit = hits.get(o);
+                        if (oHit == null) {
+                            oHit = new MutableInt(1);
+                            hits.put(o, oHit);
+                        } else
+                            oHit.increment();
+                        if (oHit.getValue() == q.keywords.size()) {
                             results.add(o);
                             if (results.isFull()) {
                                 assert results.peek() != null;
@@ -250,6 +250,8 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
     public static class ILQuadNode extends BaseQuadNode<Query, DataObject> implements Serializable {
         protected static int maxCapacity = 0;
         protected static int maxHeight = 0;
+        private static int ilQuadNodes = 0;
+        private int id = 0;
         public final String keyword;
         public String morton = "";
         protected List<DataObject> objects = new LinkedList<>();
@@ -259,6 +261,8 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         public ILQuadNode(AxisAlignedBoundingBox aabb, String keyword) {
             super(aabb);
             this.keyword = keyword;
+            this.id = ilQuadNodes;
+            ilQuadNodes++;
         }
 
         @Override
@@ -436,6 +440,22 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
             }
             return s.toString();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ILQuadNode that = (ILQuadNode) o;
+            return Objects.equals(keyword, that.keyword) && Objects.equals(morton, that.morton);
+        }
+
+        @Override
+        public int hashCode() {
+//            return Objects.hash(keyword, morton);
+//            return (keyword + morton).hashCode();
+            return id;
+        }
     }
 
     static class DeltaComparator implements Comparator<ILQuadNode> {
@@ -460,9 +480,9 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         }
 
         private double getMinDistSqr(ILQuadNode o1) {
-            double o1Min = distMap.getOrDefault(o1, -1.0);
+            Double o1Min = distMap.get(o1);
             ;
-            if (o1Min == -1.0) {
+            if (o1Min == null) {
                 o1Min = calcMinDist(o1);
                 distMap.put(o1, o1Min);
             }

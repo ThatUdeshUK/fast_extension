@@ -69,6 +69,11 @@ public class DataObject extends Query implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return id;
+    }
+
+    @Override
     public Rectangle spatialBox() {
         return pointBox;
     }

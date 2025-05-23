@@ -40,8 +40,9 @@ public class PlacesKNNExperiment extends PlacesExperiment {
         metadata.add("num_objects", "" + numObjects);
         metadata.add("k", "" + k);
         if (indexType == IndexType.FAST) {
+            metadata.add("omega", "" + FAST.config.KNN_OMEGA);
             metadata.add("knn_deg_ratio", "" + FAST.config.KNN_DEGRADATION_RATIO);
-            metadata.add("knn_ar_thresh", "" + FAST.config.KNN_DEGRADATION_AR);
+            // metadata.add("knn_ar_thresh", "" + FAST.config.KNN_DEGRADATION_AR);
         }
         return metadata;
     }

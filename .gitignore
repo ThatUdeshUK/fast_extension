@@ -35,6 +35,9 @@ replay_pid*
 /data2
 /data
 /related
+/output
+/out
+/output_omega
 
 # IDE
 .idea
@@ -42,8 +45,11 @@ replay_pid*
 .vscode
 
 */*.ipynb_checkpoints
+.venv
 
 # FS
 ../.DS_Store
 */.DS_Store
 data/*.geojson
+*.txt
+*.out

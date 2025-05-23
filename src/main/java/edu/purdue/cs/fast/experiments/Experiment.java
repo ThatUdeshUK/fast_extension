@@ -12,6 +12,7 @@ import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
 import edu.purdue.cs.fast.helper.ObjectSizeCalculator;
 import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.*;
+import edu.purdue.cs.fast.structures.KeywordFrequency;
 import me.tongfei.progressbar.ProgressBar;
 //import org.openjdk.jol.info.GraphLayout;
 
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class Experiment<T> {
     public List<DataObject> preObjects;
@@ -32,6 +34,7 @@ public abstract class Experiment<T> {
     protected List<Query> preQueries;
     protected List<DataObject> objects;
     protected long creationTime;
+    protected long indexingTime;
     protected long searchTime;
     protected Metadata<Long> createMem = new Metadata<Long>();
     protected Metadata<Long> searchMem = new Metadata<Long>();
@@ -167,28 +170,60 @@ public abstract class Experiment<T> {
 
         calcCreateMem();
     //    createMem = GraphLayout.parseInstance(index).totalSize();
-        this.creationTime = stopwatch.elapsed(TimeUnit.NANOSECONDS);
+        if (index instanceof FAST) {
+            this.creationTime = FAST.context.creationTime;
+            this.indexingTime = FAST.context.indexingTime;
+        } else if (index instanceof CkQST) {
+            this.creationTime = CkQST.creationTime;
+            this.indexingTime = CkQST.indexingTime;
+        }  
     }
 
     public void search() {
         results = new ArrayList<>();
 
-        Stopwatch totalTimeWatch = Stopwatch.createStarted();
+        // Stopwatch totalTimeWatch = Stopwatch.createStarted();
+        int resultCount = 0;
         for (DataObject o : ProgressBar.wrap(objects, "Stream Objects")) {
         // for (DataObject o : objects) {
             Stopwatch searchTimeWatch = null;
             if (saveTimeline)
                 searchTimeWatch = Stopwatch.createStarted();
             Collection<Query> res = index.insertObject(o);
+            resultCount += res.size();
             if (saveTimeline) {
                 assert searchTimeWatch != null;
                 searchTimeWatch.stop();
                 searchTimeline.add((int) searchTimeWatch.elapsed(TimeUnit.NANOSECONDS));
             }
+//            if (res.size() > 0)
+//                System.out.println("Object: " + o.id + " -> " + res.toString());
             results.add(res);
         }
-        totalTimeWatch.stop();
+        // totalTimeWatch.stop();
+        if (index instanceof FAST) {
+            System.out.println("Insertions: " + FAST.context.insertions);
+            System.out.println("Unbounded Insertions: " + FAST.context.initUnbounded);
+            System.out.println("Bounded Insertions: " + FAST.context.initBounded + "\n");
+            System.out.println("Insertions: " + FAST.context.insertions);
+            System.out.println("No. of tries: " + FAST.context.numberOfTries);
+            System.out.println("Results count: " + resultCount);
+            System.out.println("Small Ar descends count: " + FAST.context.smallArDescends);
+            System.out.println("Ar adj count: " + FAST.context.arAdjustments + "\n");
+            System.out.println("Unbounded count: " + FAST.context.unboundedInserts);
+            System.out.println("Unbounded keyword inserted: " + FAST.context.unboundedCounter);
+            System.out.println("Unbounded alt keyword inserted: " + FAST.context.unboundedCounter2);
+            System.out.println("Unbounded inserted at list: " + FAST.context.unboundedCounter3);
+            System.out.println("Unbounded inserted at trie: " + FAST.context.unboundedCounter4);
+            System.out.println("Unbounded inserted at trie (as Node): " + FAST.context.unboundedCounter5);
+            System.out.println("Final queries: " + FAST.context.finalQueries + "\n");
+            System.out.println("Nodes to lists: " + FAST.context.nodeToList);
+            System.out.println("List to tries: " + FAST.context.listToTrie + "\n");
 
+            List<String> maxList = FAST.keywordFrequencyMap.entrySet().stream().sorted(Comparator.comparingInt((e) -> ((Map.Entry<String, KeywordFrequency>) e).getValue().queryCount).reversed()).map((e) -> e.getKey() + " - " + e.getValue()).limit(10).collect(Collectors.toList());
+            System.out.println(maxList.toString());
+        }
+        
         String javaVersion = System.getProperty("java.version");
         String javaVendor = System.getProperty("java.vendor");
         if (javaVersion.contains("1.8") && javaVendor.contains("OpenJDK")) {
@@ -241,7 +276,12 @@ public abstract class Experiment<T> {
     //        searchMem = indexMemorySize;
     //    }
 //        searchMem = GraphLayout.parseInstance(index).totalSize();
-        this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
+        // this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
+        if (index instanceof FAST) {
+            this.searchTime = FAST.context.searchTime;
+        } else if (index instanceof CkQST) {
+            this.searchTime = CkQST.searchTime;
+        }     
     }
 
     public void search(Function<DataObject, Boolean> fn) {
@@ -290,7 +330,7 @@ public abstract class Experiment<T> {
         if (!outputFile.isDirectory()) {
             try {
                 if (!fileExists && outputFile.createNewFile()) {
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,index_time");
                     for (String k : meta.getKeys()) {
                         header.append(",").append(k);
                     }
@@ -311,7 +351,7 @@ public abstract class Experiment<T> {
                 FileWriter fw = new FileWriter(outputFile, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime);
+                StringBuilder line = new StringBuilder(name + "," + creationTime + "," + searchTime + "," + indexingTime);
                 for (String v : meta.getValues()) {
                     line.append(",").append(v);
                 }

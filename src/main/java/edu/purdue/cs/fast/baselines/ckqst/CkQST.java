@@ -23,6 +23,10 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static int maxHeight = 9;
     public static int maxLeafCapacity = 5;
 
+    public static long creationTime = 0;
+    public static long indexingTime = 0;
+    public static long searchTime = 0;
+
     public static double thetaU;
     public final IQuadTree objectIndex;
     public final CostBasedQuadTree queryIndex;
@@ -65,6 +69,10 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
             Stopwatch insWatch = Stopwatch.createStarted();
             queryIndex.insert(query);
             insWatch.stop();
+
+            indexingTime += insWatch.elapsed(TimeUnit.NANOSECONDS);
+            creationTime += objSearchWatch.elapsed(TimeUnit.NANOSECONDS) + insWatch.elapsed(TimeUnit.NANOSECONDS);
+
             queryStats.add(new QueryStat(query.id, objSearchWatch.elapsed(TimeUnit.NANOSECONDS),
                     insWatch.elapsed(TimeUnit.NANOSECONDS), ((CkQuery) query).sr, 0, 0, QueryStat.Stage.INSERT));
         } else if (query.getClass() == LMinimalRangeQuery.class) {
@@ -78,8 +86,15 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public Collection<Query> insertObject(DataObject dataObject) {
         timestamp++;
 
+        Stopwatch insWatch = Stopwatch.createStarted();
         objectIndex.insert(dataObject);
+        insWatch.stop();
+
+        Stopwatch sTime = Stopwatch.createStarted();
         Collection<Query> queryResults = queryIndex.search(dataObject);
+        sTime.stop();
+
+        searchTime += insWatch.elapsed(TimeUnit.NANOSECONDS) + sTime.elapsed(TimeUnit.NANOSECONDS);
 //        for (Query query : queryResults) {
 //            if (query instanceof CkQuery) {
 //                PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);

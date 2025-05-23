@@ -33,13 +33,13 @@ public class Run2 {
     public static Logger logger = LogManager.getLogger(Experiment.class);
 
     public static void main(String[] args) {
-        String name = "places_o200000_q5000000_scaled";
-        // String name = "tweets_o200000_q10000000_scaled_max_keys3";
-        String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
-        // String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
+        // String name = "places_o200000_q5000000_scaled";
+        String name = "tweets_o200000_q10000000_spatialuni_max_keys3";
+        // String ds = Paths.get(args[1], "data/exported/" + name + ".json").toString();
+        String ds = Paths.get("/homes/ukumaras/scratch/twitter-data/" + name + ".json").toString();
 
         ArrayList<Integer> numQueriesList = new ArrayList<>();
-        // numQueriesList.add(20000000);
+        // numQueriesList.add(1000);
     //    numQueriesList.add(100000);
         // numQueriesList.add(500000);
         numQueriesList.add(1000000);
@@ -47,7 +47,7 @@ public class Run2 {
         // numQueriesList.add(2500000);
         // numQueriesList.add(5000000);
     //    numQueriesList.add(10000000);
-    //    numQueriesList.add(20000000);
+//        numQueriesList.add(20000000);
 
         ArrayList<Integer> defRatioList = new ArrayList<>();
 //        defRatioList.add(2);
@@ -57,10 +57,10 @@ public class Run2 {
 //        defRatioList.add(25);
 //        defRatioList.add(50);
 //        defRatioList.add(75);
-        // defRatioList.add(25); // change this
+        // defRatioList.add(100); // change this
 
         ArrayList<Double> arList = new ArrayList<>();
-        // arList.add(5.0);
+        // arList.add(50.0);
         // arList.add(10.0);
         // arList.add(7.5);
         // arList.add(5.0);
@@ -81,12 +81,12 @@ public class Run2 {
                         // .addArg("knnRatio", 0)
                         .addArg("numQueries", numQueries)
                         .addArg("maxLevel", 9)
-                        // .configKNNFAST(true, false, false, false, degRatio, 100, 5)
+                        // .configKNNFAST(true, false, false, false, degRatio, 100, arThresh)
                         // .hasExternFASTObjectIndex(5)
 //                    .hasInternFASTObjectIndex()
                         .paths(ds, args[0])
                     // .saveTimeline()
-                        .suffix("_places_maxk3_mem")
+                        .suffix("_spatialuni_maxk3_mem")
 //                    .skipStatSave()
                         .build();
 
@@ -261,7 +261,7 @@ public class Run2 {
             fastConfig.ADAPTIVE_DEG_RATIO = adaptiveDegRatio;
             fastConfig.DEGRADATION_RATIO = degRatio;
             fastConfig.KNN_DEGRADATION_RATIO = knnDegRatio;
-            fastConfig.KNN_DEGRADATION_AR = arThresh;
+            // fastConfig.KNN_DEGRADATION_AR = arThresh;
             return this;
         }
 

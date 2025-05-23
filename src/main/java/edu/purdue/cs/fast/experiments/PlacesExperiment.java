@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
+import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
+import edu.purdue.cs.fast.baselines.fast.LFAST;
 import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.config.Context;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
@@ -112,7 +114,7 @@ public class PlacesExperiment extends Experiment<Place> {
         this.queries = new ArrayList<>();
         for (int i = numPreQueries; i < numPreQueries + numQueries; i++) {
             Place place = places.get(i);
-            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, numPreQueries + numPreObjects + numQueries + numObjects + 1, indexType));
+            queries.add(place.toMinimalRangeQuery(i, r, maxRange, numKeywords, Integer.MAX_VALUE, indexType));
         }
     }
 
@@ -274,10 +276,57 @@ public class PlacesExperiment extends Experiment<Place> {
             create();
         }
 
-        Run.logger.info("Creation Done! Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Total Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Q.Index Time=" + this.indexingTime);
 
         Run.logger.info("Searching!");
         search();
+        if (index instanceof AdoptCkQST) {
+            AdoptCkQST idx = (AdoptCkQST) index;
+            HashMap<Integer, Integer> queryLevels = idx.queryIndex.queryLevels;
+            String fileName = "query_levels.csv";
+
+            // Write the HashMap to the file in a readable format
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+                for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
+                    writer.write(entry.getKey() + "," + entry.getValue());
+                    writer.newLine();
+                }
+                System.out.println("HashMap written to file: " + fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (index instanceof FAST) {
+            FAST idx = (FAST) index;
+            System.out.println("No. insertions: " + FAST.context.insertions);
+            System.out.println("No. removed: " + FAST.context.removed);
+            HashMap<Integer, Integer> queryLevels = idx.queryLevels;
+            String fileName = "query_levels_fast.csv";
+            String fileNameOther = "query_levels.csv";
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+                for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
+//                    writer.write(entry.id + "," + entry.currentLevel);
+                    writer.write(entry.getKey() + "," + entry.getValue());
+                    writer.newLine();
+                }
+                System.out.println("HashMap written to file: " + fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            ArrayList<KNNQuery> queryLevelsOther = idx.allKNNQueries(false);
+            // Write the HashMap to the file in a readable format
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileNameOther))) {
+                for (KNNQuery entry : queryLevelsOther) {
+                    writer.write(entry.id + "," + entry.currentLevel);
+                    writer.newLine();
+                }
+                System.out.println("HashMap written to file: " + fileNameOther);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         Run.logger.info("Search Done! Time=" + searchTime);
 
         try {
