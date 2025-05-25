@@ -1,6 +1,7 @@
 package edu.purdue.cs.fast.baselines.ckqst;
 
 import edu.purdue.cs.fast.L;
+import edu.purdue.cs.fast.Morton;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
 import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
 import edu.purdue.cs.fast.models.DataObject;
@@ -28,8 +29,8 @@ class ILQuadTreeTest {
         index.insert(new DataObject(10, new Point(6.0, 8.0), L.of("k1"), 0, 0));
         index.insert(new DataObject(11, new Point(3.0, 9.0), L.of("k2"), 0, 0));
 
-        System.out.println(index.getStatusByMorton("k1", "1010"));
-        System.out.println(index.getStatusByMorton("k1", "10"));
+        System.out.println(index.getStatusByMorton("k1", new Morton(10, 2)));
+        System.out.println(index.getStatusByMorton("k1", new Morton(2, 1)));
         System.out.println(index.search(new CkQuery(1, L.of("k1", "k2"), 3.0, 6.0, 1, 0, 0)));
         System.out.println(index);
     }

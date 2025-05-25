@@ -34,6 +34,7 @@ public abstract class Experiment<T> {
     protected List<Query> preQueries;
     protected List<DataObject> objects;
     protected long creationTime;
+    protected long objIdxSearchTime;
     protected long indexingTime;
     protected long searchTime;
     protected Metadata<Long> createMem = new Metadata<Long>();
@@ -172,9 +173,11 @@ public abstract class Experiment<T> {
     //    createMem = GraphLayout.parseInstance(index).totalSize();
         if (index instanceof FAST) {
             this.creationTime = FAST.context.creationTime;
+            this.objIdxSearchTime = FAST.context.objIdxSearchTime;
             this.indexingTime = FAST.context.indexingTime;
         } else if (index instanceof CkQST) {
             this.creationTime = CkQST.creationTime;
+            this.objIdxSearchTime = CkQST.objIdxSearchTime;
             this.indexingTime = CkQST.indexingTime;
         }  
     }
@@ -222,6 +225,8 @@ public abstract class Experiment<T> {
 
             List<String> maxList = FAST.keywordFrequencyMap.entrySet().stream().sorted(Comparator.comparingInt((e) -> ((Map.Entry<String, KeywordFrequency>) e).getValue().queryCount).reversed()).map((e) -> e.getKey() + " - " + e.getValue()).limit(10).collect(Collectors.toList());
             System.out.println(maxList.toString());
+        } else {
+            System.out.println("Results count: " + resultCount);
         }
         
         String javaVersion = System.getProperty("java.version");
@@ -279,8 +284,10 @@ public abstract class Experiment<T> {
         // this.searchTime = totalTimeWatch.elapsed(TimeUnit.NANOSECONDS);
         if (index instanceof FAST) {
             this.searchTime = FAST.context.searchTime;
+            System.out.println("Obj. idx search count: " + FAST.context.objectSearchCount);
         } else if (index instanceof CkQST) {
             this.searchTime = CkQST.searchTime;
+            System.out.println("Obj. idx search count: " + CkQST.objectSearchCount);
         }     
     }
 

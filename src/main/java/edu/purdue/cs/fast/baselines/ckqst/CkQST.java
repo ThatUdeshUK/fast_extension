@@ -26,6 +26,8 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static long creationTime = 0;
     public static long indexingTime = 0;
     public static long searchTime = 0;
+    public static long objectSearchCount = 0;
+    public static long objIdxSearchTime = 0;
 
     public static double thetaU;
     public final IQuadTree objectIndex;
@@ -56,20 +58,22 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public Collection<DataObject> insertQuery(Query query) {
         timestamp++;
         if (query.getClass() == CkQuery.class) {
+            CkQST.objectSearchCount++;
             Stopwatch objSearchWatch = Stopwatch.createStarted();
             PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objectIndex.search(query);
+            objSearchWatch.stop();
 
             if (objResults.size() >= ((CkQuery) query).k) {
                 DataObject o = objResults.peek();
-                assert o != null;
+//                assert o != null;
                 ((CkQuery) query).sr = SpatialHelper.getDistanceInBetween(((CkQuery) query).location, o.location);
             }
-            objSearchWatch.stop();
 
             Stopwatch insWatch = Stopwatch.createStarted();
             queryIndex.insert(query);
             insWatch.stop();
 
+            objIdxSearchTime += objSearchWatch.elapsed(TimeUnit.NANOSECONDS);
             indexingTime += insWatch.elapsed(TimeUnit.NANOSECONDS);
             creationTime += objSearchWatch.elapsed(TimeUnit.NANOSECONDS) + insWatch.elapsed(TimeUnit.NANOSECONDS);
 

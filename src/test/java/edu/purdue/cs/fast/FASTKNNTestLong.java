@@ -58,7 +58,7 @@ class FASTKNNTestLong {
         Config fastConfig = new Config();
         fastConfig.INCREMENTAL_DESCENT = true;
         fastConfig.KNN_DEGRADATION_RATIO = 2;
-        fastConfig.KNN_DEGRADATION_AR = 5.0;
+//        fastConfig.KNN_DEGRADATION_AR = 5.0;
 
         FAST testFAST = new FAST(
                 fastConfig,

@@ -1,5 +1,6 @@
 package edu.purdue.cs.fast.baselines.ckqst.structures;
 
+import edu.purdue.cs.fast.Morton;
 import edu.purdue.cs.fast.baselines.ckqst.models.AxisAlignedBoundingBox;
 import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
 import edu.purdue.cs.fast.baselines.fast.messages.LMinimalRangeQuery;
@@ -64,8 +65,8 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         return true;
     }
 
-    public double getStatusByMorton(String keyword, String morton) {
-        return roots.get(keyword).getStatusByMorton(morton, 1);
+    public double getStatusByMorton(String keyword, Morton morton) {
+        return roots.get(keyword).getStatusByMorton(morton);
     }
 
     @Override
@@ -107,7 +108,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
                     if (!kj.equals(e.keyword)) {
                         if (roots.containsKey(kj)) {
                             // Line 9: CheckSignature
-                            double other = roots.get(kj).getStatusByMorton(e.morton, 1);
+                            double other = roots.get(kj).getStatusByMorton(e.mortonCode);
                             if (other == 0) {
                                 signCheck = false;
                                 break;
@@ -151,90 +152,6 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         return results;
     }
 
-    public Collection<DataObject> searchWithEarlyStop(Query q) {
-        int k = -1;
-        Point location = null;
-        if (q instanceof CkQuery) {
-            k = ((CkQuery) q).k;
-            location = ((CkQuery) q).location;
-        } else if (q instanceof KNNQuery) {
-            k = ((KNNQuery) q).k;
-            location = ((KNNQuery) q).location;
-        } else if (q instanceof LMinimalRangeQuery) {
-            k = ((LMinimalRangeQuery) q).k;
-            location = ((LMinimalRangeQuery) q).location;
-        }
-        BoundedPriorityQueue<DataObject> results = new BoundedPriorityQueue<>(
-                k,
-                new KNNQuery.EuclideanComparator(location)
-        );
-        double lambda = Double.MAX_VALUE;
-        HashMap<Integer, Integer> hits = new HashMap<>();
-        DeltaComparator deltaComparator = new DeltaComparator(location);
-        PriorityQueue<ILQuadNode> H = new PriorityQueue<>(deltaComparator);    // Line 1
-
-//        for (String keyword : q.keywords) {
-//            if (!keywordFrequencyMap.containsKey(keyword) ||
-//                    keywordFrequencyMap.get(keyword).queryCount < 5) {
-//                return results;
-//            }
-//        }
-
-        for (String keyword : q.keywords) {                     // Line 2
-            if (roots.containsKey(keyword)) {
-                H.add(roots.get(keyword));                      // Line 3
-            } else
-                return results; // ILQuadTree doesn't have all the keywords
-        }
-
-        for (ILQuadNode e; (e = H.poll()) != null; ) {          // Line 4
-            if (!e.objects.isEmpty()) {                         // Line 6: e is a black node
-                boolean signCheck = true;
-
-                for (String kj : q.keywords) {                  // Line 8
-                    if (!kj.equals(e.keyword)) {
-                        if (roots.containsKey(kj)) {
-                            // Line 9: CheckSignature
-                            double other = roots.get(kj).getStatusByMorton(e.morton, 1);
-                            if (other == 0) {
-                                signCheck = false;
-                                break;
-                            }
-                        } else {
-                            signCheck = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (signCheck) {                                // Line 10
-                    for (DataObject o : e.objects) {
-                        int oHit = hits.getOrDefault(o.id, 0);
-                        oHit++;
-                        hits.put(o.id, oHit);
-                        if (oHit == q.keywords.size()) {
-                            results.add(o);
-                            if (results.isFull()) {
-                                assert results.peek() != null;
-                                lambda = SpatialHelper.getDistanceInBetween(location, results.peek().location);
-//                                return results;
-                            }
-                        }
-                    }
-                }
-            } else if (!e.isLeaf()) {                           // Line 17: Non leaf node
-                for (ILQuadNode child : e.getChildren()) {
-                    double eMinDist = deltaComparator.getMinDist(child);
-                    if (!(child.isLeaf() && child.objects.isEmpty()) && eMinDist < lambda) { // Line 19
-                        H.add(child);                           // Line 20
-                    }
-                }
-            }
-        }
-
-        return results;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -251,15 +168,25 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         protected static int maxCapacity = 0;
         protected static int maxHeight = 0;
         private static int ilQuadNodes = 0;
-        private int id = 0;
         public final String keyword;
-        public String morton = "";
+        //        public String morton = "";
+        public Morton mortonCode;
         protected List<DataObject> objects = new LinkedList<>();
         protected int height = 1;
         protected LinkedList<ILQuadNode> children;
+        private int id = 0;
 
         public ILQuadNode(AxisAlignedBoundingBox aabb, String keyword) {
             super(aabb);
+            this.mortonCode = new Morton();
+            this.keyword = keyword;
+            this.id = ilQuadNodes;
+            ilQuadNodes++;
+        }
+
+        public ILQuadNode(AxisAlignedBoundingBox aabb, String keyword, Morton code) {
+            super(aabb);
+            this.mortonCode = code;
             this.keyword = keyword;
             this.id = ilQuadNodes;
             ilQuadNodes++;
@@ -288,27 +215,23 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
             double w = aabb.width / 2d;
 
             AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(aabb, w, h);
-            southWest = new ILQuadNode(aabbSW, keyword);
+            southWest = new ILQuadNode(aabbSW, keyword, mortonCode.getChild(0));
             ((ILQuadNode) southWest).height = height + 1;
-            ((ILQuadNode) southWest).morton = morton + "00";
 
             Point xySE = new Point(aabb.x + w, aabb.y);
             AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE, w, h);
-            southEast = new ILQuadNode(aabbSE, keyword);
+            southEast = new ILQuadNode(aabbSE, keyword, mortonCode.getChild(1));
             ((ILQuadNode) southEast).height = height + 1;
-            ((ILQuadNode) southEast).morton = morton + "01";
 
             Point xyNW = new Point(aabb.x, aabb.y + h);
             AxisAlignedBoundingBox aabbNW = new AxisAlignedBoundingBox(xyNW, w, h);
-            northWest = new ILQuadNode(aabbNW, keyword);
+            northWest = new ILQuadNode(aabbNW, keyword, mortonCode.getChild(2));
             ((ILQuadNode) northWest).height = height + 1;
-            ((ILQuadNode) northWest).morton = morton + "10";
 
             Point xyNE = new Point(aabb.x + w, aabb.y + h);
             AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE, w, h);
-            northEast = new ILQuadNode(aabbNE, keyword);
+            northEast = new ILQuadNode(aabbNE, keyword, mortonCode.getChild(3));
             ((ILQuadNode) northEast).height = height + 1;
-            ((ILQuadNode) northEast).morton = morton + "11";
 
             // points live in leaf nodes, so distribute
             for (DataObject p : objects)
@@ -401,22 +324,29 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         /**
          * Get the status of the node using the morton code.
          *
-         * @param m     Morton code for the node.
-         * @param level Recursive parameter (use 1 to start from the root).
+         * @param m Morton code for the node.
          * @return Int specifying the node type (1:black node, 0:white node, -1: node unreachable)
          */
-        public int getStatusByMorton(String m, int level) {
-            if (morton.length() == m.length()) {
-                if (this.objects.isEmpty() && this.isLeaf())
-                    return 0;
-                return 1;
+        public int getStatusByMorton(Morton m) {
+            ILQuadNode node = this;
+
+            int code = m.getCode();
+            int level = m.getLevel();
+            for (int i = 1; i <= level; i++) {
+                int shift = 2 * (level - i);
+                int prefixCode = code >> shift;
+
+                for (ILQuadNode child : node.getChildren()) {
+                    if (child.mortonCode.getCode() == prefixCode) {
+                        node = child;
+                    }
+                }
             }
 
-            String nextNode = m.substring(0, 2 * level);
-            for (ILQuadNode child : getChildren()) {
-                if (child.morton.equals(nextNode)) {
-                    return child.getStatusByMorton(m, level + 1);
-                }
+            if (node.mortonCode.getLevel() == m.getLevel()) {
+                if (node.objects.isEmpty() && node.isLeaf())
+                    return 0;
+                return 1;
             }
             return -1;
         }
@@ -434,7 +364,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
         @Override
         public String toString() {
             StringBuilder s = new StringBuilder();
-            s.append(morton).append(": ");
+            s.append(mortonCode.getString()).append(": ");
             for (DataObject object : objects) {
                 s.append(object.id).append(", ");
             }
@@ -447,7 +377,7 @@ public class IQuadTree extends BaseQuadTree<Query, DataObject> implements Serial
             if (o == null || getClass() != o.getClass()) return false;
             if (!super.equals(o)) return false;
             ILQuadNode that = (ILQuadNode) o;
-            return Objects.equals(keyword, that.keyword) && Objects.equals(morton, that.morton);
+            return Objects.equals(keyword, that.keyword) && Objects.equals(mortonCode, that.mortonCode);
         }
 
         @Override

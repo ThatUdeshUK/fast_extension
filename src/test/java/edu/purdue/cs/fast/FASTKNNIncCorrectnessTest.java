@@ -31,7 +31,7 @@ class FASTKNNIncCorrectnessTest {
         );
         FAST.config.INCREMENTAL_DESCENT = true;
         FAST.config.KNN_DEGRADATION_RATIO = 100;
-        FAST.config.KNN_DEGRADATION_AR = 25.0;
+//        FAST.config.KNN_DEGRADATION_AR = 25.0;
 
         fast.setCleaning(CleanMethod.NO);
 

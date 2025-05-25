@@ -1,20 +1,27 @@
 package edu.purdue.cs.fast.experiments;
 
+import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import edu.purdue.cs.fast.FAST;
 import edu.purdue.cs.fast.Run;
 import edu.purdue.cs.fast.SpatialKeywordIndex;
 import edu.purdue.cs.fast.baselines.ckqst.AdoptCkQST;
+import edu.purdue.cs.fast.baselines.ckqst.CkQST;
+import edu.purdue.cs.fast.baselines.ckqst.models.CkQuery;
+import edu.purdue.cs.fast.baselines.ckqst.structures.IQuadTree;
 import edu.purdue.cs.fast.baselines.fast.LFAST;
 import edu.purdue.cs.fast.config.Config;
 import edu.purdue.cs.fast.config.Context;
 import edu.purdue.cs.fast.exceptions.InvalidOutputFile;
+import edu.purdue.cs.fast.helper.SpatialHelper;
 import edu.purdue.cs.fast.models.*;
 import edu.purdue.cs.fast.parser.Place;
 import edu.purdue.cs.fast.structures.KeywordFrequency;
+import me.tongfei.progressbar.ProgressBar;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class PlacesExperiment extends Experiment<Place> {
     protected final String inputPath;
@@ -71,8 +78,10 @@ public class PlacesExperiment extends Experiment<Place> {
                 if (line == null) {
                     nullLines++;
 
-                    if (nullLines > 1000)
+                    if (nullLines > 1000) {
+                        System.out.println("Only collected: " + places.size());
                         throw new RuntimeException("EOF! File can't produce the requested number of lines.");
+                    }
                 } else
                     nullLines = 0;
 
@@ -187,6 +196,84 @@ public class PlacesExperiment extends Experiment<Place> {
         }
     }
 
+    public void runObjSearch() {
+        init();
+
+        Run.logger.info("Objects: " + objects.size() + "/" + numObjects);
+
+        System.gc();
+        System.gc();
+        System.gc();
+
+        Run.logger.info("Preloading objects!");
+        preloadObjects();
+
+        IQuadTree objIndex = new IQuadTree(0, 0, 512, 512, 64, 9);
+
+        Stopwatch cs = Stopwatch.createStarted();
+        for (DataObject o : preObjects) {
+            objIndex.insert(o);
+        }
+        cs.stop();
+        long insertTime = cs.elapsed(TimeUnit.NANOSECONDS);
+
+        double tar = 0;
+        Stopwatch ss = Stopwatch.createStarted();
+        for (Query q : ProgressBar.wrap(queries, "Create Index")) {
+            PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objIndex.search(q);
+
+            int k = q instanceof KNNQuery ? ((KNNQuery) q).k : ((CkQuery) q).k;
+            Point location = q instanceof KNNQuery ? ((KNNQuery) q).location : ((CkQuery) q).location;
+            if (objResults.size() >= k) {
+                DataObject o = objResults.peek();
+//                    assert o != null;
+                double ar = SpatialHelper.getDistanceInBetween(location, o.location);
+                tar += ar;
+            }
+        }
+        ss.stop();
+        long searchTime = ss.elapsed(TimeUnit.NANOSECONDS);
+
+        Stopwatch fs = Stopwatch.createStarted();
+        for (DataObject o : ProgressBar.wrap(objects, "Search Index")) {
+            objIndex.insert(o);
+        }
+        fs.stop();
+        long finalTime = fs.elapsed(TimeUnit.NANOSECONDS);
+
+        System.out.println("Creation Time: " + insertTime);
+        System.out.println("Search Time: " + searchTime);
+        System.out.println("Final Time: " + finalTime);
+
+        File outputFile = new File(outputPath);
+        boolean fileExists = outputFile.exists();
+        if (!outputFile.isDirectory()) {
+            try {
+                if (!fileExists && outputFile.createNewFile()) {
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,final_time");
+                    header.append(",").append("clean_time");
+                    FileWriter fw = new FileWriter(outputFile);
+                    BufferedWriter bw = new BufferedWriter(fw);
+                    bw.write(header + "\n");
+                    bw.close();
+                    fw.close();
+                }
+
+                FileWriter fw = new FileWriter(outputFile, true);
+                BufferedWriter bw = new BufferedWriter(fw);
+
+                StringBuilder line = new StringBuilder(name + "," + insertTime + "," + searchTime + "," + finalTime);
+                bw.write(line + "\n");
+                bw.close();
+                fw.close();
+            } catch (IOException e) {
+                System.out.println("Wrong: " + outputPath);
+            }
+        } else {
+            System.out.println("Wrong: " + outputPath);
+        }
+    }
+
     @Override
     public void run() {
         init();
@@ -226,7 +313,7 @@ public class PlacesExperiment extends Experiment<Place> {
                 fos = new FileOutputStream("./" + this.name + ".context.out");
                 pw = new PrintWriter(fos);
                 pw.write(toString(FAST.context));
-                Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) ((FAST) index).objIndex.search(query);
+//                Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) ((FAST) index).objIndex.search(query);
                 pw.close();
                 fos.close();
 
@@ -277,6 +364,7 @@ public class PlacesExperiment extends Experiment<Place> {
         }
 
         Run.logger.info("Creation Done! Total Time=" + this.creationTime);
+        Run.logger.info("Creation Done! Obj. Index Search Time=" + this.objIdxSearchTime);
         Run.logger.info("Creation Done! Q.Index Time=" + this.indexingTime);
 
         Run.logger.info("Searching!");

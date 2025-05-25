@@ -53,15 +53,17 @@ public class Context implements Serializable {
     public int finalQueries = 0;
 
     public long creationTime = 0;
+    public long objIdxSearchTime = 0;
     public long indexingTime = 0;
     public long searchTime = 0;
+    public long objectSearchCount = 0;
 
 
     public int initUnbounded = 0;
     public int initBounded = 0;
 
 //    public Map<String, Integer> cellInsertions = new HashMap<>();
-    public static Function<KNNQuery, PriorityQueue<DataObject>> objectSearcher;
+//    public static Function<KNNQuery, PriorityQueue<DataObject>> objectSearcher;
 
     public Context(Rectangle bounds, int gridGranularity, int maxLevel) {
         this.bounds = bounds;

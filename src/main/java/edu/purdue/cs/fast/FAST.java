@@ -95,7 +95,7 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
 //        objIndex = new ObjectIndex();
         this.objIndex = new IQuadTree(context.bounds.min.x, context.bounds.min.y,
                 context.bounds.max.x, context.bounds.max.y, objIdxLeafCapacity, objIdxTreeHeight);
-        Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) objIndex.search(query);
+//        Context.objectSearcher = (query) -> (PriorityQueue<DataObject>) objIndex.search(query);
     }
 
     @Override
@@ -121,16 +121,17 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
         } else if (query instanceof KNNQuery) {
             long eagerObjSearchTime = 0;
             if (objIndex != null && !config.LAZY_OBJ_SEARCH) {
+                FAST.context.objectSearchCount++;
                 Stopwatch objSearchWatch = Stopwatch.createStarted();
-                PriorityQueue<DataObject> objResults = Context.objectSearcher.apply((KNNQuery) query);
+                PriorityQueue<DataObject> objResults = (PriorityQueue<DataObject>) objIndex.search(query);
+                eagerObjSearchTime = objSearchWatch.elapsed(TimeUnit.NANOSECONDS);
 
                 if (objResults.size() >= ((KNNQuery) query).k) {
                     DataObject o = objResults.peek();
-                    assert o != null;
+//                    assert o != null;
                     ((KNNQuery) query).ar = SpatialHelper.getDistanceInBetween(((KNNQuery) query).location, o.location);
                 }
                 objSearchWatch.stop();
-                eagerObjSearchTime = objSearchWatch.elapsed(TimeUnit.NANOSECONDS);
             }
 
             Stopwatch insWatch = Stopwatch.createStarted();
@@ -146,6 +147,8 @@ public class FAST implements SpatialKeywordIndex<Query, DataObject>, Serializabl
                 FAST.context.initUnbounded++;
             }
             insWatch.stop();
+
+            FAST.context.objIdxSearchTime += eagerObjSearchTime;
             FAST.context.indexingTime += insWatch.elapsed(TimeUnit.NANOSECONDS);
             FAST.context.creationTime += eagerObjSearchTime + insWatch.elapsed(TimeUnit.NANOSECONDS);
             queryStats.add(new QueryStat(query.id, eagerObjSearchTime,

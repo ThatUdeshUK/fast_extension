@@ -33,7 +33,7 @@ class FASTKNNObjIncCorrectnessTest {
         fast.setExternalObjectIndex(5, 9);
         FAST.config.INCREMENTAL_DESCENT = true;
         FAST.config.KNN_DEGRADATION_RATIO = 100;
-        FAST.config.KNN_DEGRADATION_AR = 25.0;
+//        FAST.config.KNN_DEGRADATION_AR = 25.0;
         FAST.config.LAZY_OBJ_SEARCH = true;
 
         fast.setCleaning(CleanMethod.NO);
