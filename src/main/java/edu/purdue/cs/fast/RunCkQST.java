@@ -62,11 +62,11 @@ public class RunCkQST {
                         .paths(ds, args[0])
                     // .saveTimeline()
                         .suffix(args[5])
-                        .skipStatSave()
+                        // .skipStatSave()
                         .build();
 
-                experiment.runObjSearch();
-//                run(experiment);
+                // experiment.runObjSearch(Integer.parseInt(args[6]));
+               run(experiment);
 
 //            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);
 //            System.out.println(FAST.context.cellInsertions);

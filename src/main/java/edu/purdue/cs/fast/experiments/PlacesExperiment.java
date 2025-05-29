@@ -196,7 +196,7 @@ public class PlacesExperiment extends Experiment<Place> {
         }
     }
 
-    public void runObjSearch() {
+    public void runObjSearch(int node_size) {
         init();
 
         Run.logger.info("Objects: " + objects.size() + "/" + numObjects);
@@ -208,7 +208,7 @@ public class PlacesExperiment extends Experiment<Place> {
         Run.logger.info("Preloading objects!");
         preloadObjects();
 
-        IQuadTree objIndex = new IQuadTree(0, 0, 512, 512, 64, 9);
+        IQuadTree objIndex = new IQuadTree(0, 0, 512, 512, node_size, 9);
 
         Stopwatch cs = Stopwatch.createStarted();
         for (DataObject o : preObjects) {
@@ -250,8 +250,7 @@ public class PlacesExperiment extends Experiment<Place> {
         if (!outputFile.isDirectory()) {
             try {
                 if (!fileExists && outputFile.createNewFile()) {
-                    StringBuilder header = new StringBuilder("name,creation_time,search_time,final_time");
-                    header.append(",").append("clean_time");
+                    StringBuilder header = new StringBuilder("name,creation_time,search_time,final_time,n");
                     FileWriter fw = new FileWriter(outputFile);
                     BufferedWriter bw = new BufferedWriter(fw);
                     bw.write(header + "\n");
@@ -262,7 +261,7 @@ public class PlacesExperiment extends Experiment<Place> {
                 FileWriter fw = new FileWriter(outputFile, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                StringBuilder line = new StringBuilder(name + "," + insertTime + "," + searchTime + "," + finalTime);
+                StringBuilder line = new StringBuilder(name + "," + insertTime + "," + searchTime + "," + finalTime + "," + node_size);
                 bw.write(line + "\n");
                 bw.close();
                 fw.close();
@@ -369,52 +368,52 @@ public class PlacesExperiment extends Experiment<Place> {
 
         Run.logger.info("Searching!");
         search();
-        if (index instanceof AdoptCkQST) {
-            AdoptCkQST idx = (AdoptCkQST) index;
-            HashMap<Integer, Integer> queryLevels = idx.queryIndex.queryLevels;
-            String fileName = "query_levels.csv";
+//         if (index instanceof AdoptCkQST) {
+//             AdoptCkQST idx = (AdoptCkQST) index;
+//             HashMap<Integer, Integer> queryLevels = idx.queryIndex.queryLevels;
+//             String fileName = "query_levels.csv";
 
-            // Write the HashMap to the file in a readable format
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-                for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
-                    writer.write(entry.getKey() + "," + entry.getValue());
-                    writer.newLine();
-                }
-                System.out.println("HashMap written to file: " + fileName);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else if (index instanceof FAST) {
-            FAST idx = (FAST) index;
-            System.out.println("No. insertions: " + FAST.context.insertions);
-            System.out.println("No. removed: " + FAST.context.removed);
-            HashMap<Integer, Integer> queryLevels = idx.queryLevels;
-            String fileName = "query_levels_fast.csv";
-            String fileNameOther = "query_levels.csv";
+//             // Write the HashMap to the file in a readable format
+//             try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+//                 for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
+//                     writer.write(entry.getKey() + "," + entry.getValue());
+//                     writer.newLine();
+//                 }
+//                 System.out.println("HashMap written to file: " + fileName);
+//             } catch (IOException e) {
+//                 e.printStackTrace();
+//             }
+//         } else if (index instanceof FAST) {
+//             FAST idx = (FAST) index;
+//             System.out.println("No. insertions: " + FAST.context.insertions);
+//             System.out.println("No. removed: " + FAST.context.removed);
+//             HashMap<Integer, Integer> queryLevels = idx.queryLevels;
+//             String fileName = "query_levels_fast.csv";
+//             String fileNameOther = "query_levels.csv";
 
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-                for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
-//                    writer.write(entry.id + "," + entry.currentLevel);
-                    writer.write(entry.getKey() + "," + entry.getValue());
-                    writer.newLine();
-                }
-                System.out.println("HashMap written to file: " + fileName);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//             try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+//                 for (Map.Entry<Integer, Integer> entry : queryLevels.entrySet()) {
+// //                    writer.write(entry.id + "," + entry.currentLevel);
+//                     writer.write(entry.getKey() + "," + entry.getValue());
+//                     writer.newLine();
+//                 }
+//                 System.out.println("HashMap written to file: " + fileName);
+//             } catch (IOException e) {
+//                 e.printStackTrace();
+//             }
 
-            ArrayList<KNNQuery> queryLevelsOther = idx.allKNNQueries(false);
-            // Write the HashMap to the file in a readable format
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileNameOther))) {
-                for (KNNQuery entry : queryLevelsOther) {
-                    writer.write(entry.id + "," + entry.currentLevel);
-                    writer.newLine();
-                }
-                System.out.println("HashMap written to file: " + fileNameOther);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//             ArrayList<KNNQuery> queryLevelsOther = idx.allKNNQueries(false);
+//             // Write the HashMap to the file in a readable format
+//             try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileNameOther))) {
+//                 for (KNNQuery entry : queryLevelsOther) {
+//                     writer.write(entry.id + "," + entry.currentLevel);
+//                     writer.newLine();
+//                 }
+//                 System.out.println("HashMap written to file: " + fileNameOther);
+//             } catch (IOException e) {
+//                 e.printStackTrace();
+//             }
+//         }
         Run.logger.info("Search Done! Time=" + searchTime);
 
         try {

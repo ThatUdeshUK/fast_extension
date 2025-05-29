@@ -81,16 +81,16 @@ public class RunFAST {
                         .addArg("maxLevel", 9)
                         .addArg("k", k)
                          .configKNNFAST(true, false, false, false, degRatio, knnDegRatio, omega)
-                         .hasExternFASTObjectIndex(8)
+                         .hasExternFASTObjectIndex(512)
 //                    .hasInternFASTObjectIndex()
                         .paths(ds, args[0])
                     // .saveTimeline()
                         .suffix(args[6])
-                         .skipStatSave()
+                        //  .skipStatSave()
                         .build();
 
-                experiment.runObjSearch();
-//                run(experiment);
+                // experiment.runObjSearch(Integer.parseInt(args[7]));
+               run(experiment);
 
 
 //            System.out.println(FAST.context.totalQueryInsertionsIncludingReplications);

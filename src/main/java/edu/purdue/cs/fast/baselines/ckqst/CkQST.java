@@ -21,7 +21,7 @@ public class CkQST implements SpatialKeywordIndex<Query, DataObject> {
     public static int xRange = 10;
     public static int yRange = 10;
     public static int maxHeight = 9;
-    public static int maxLeafCapacity = 5;
+    public static int maxLeafCapacity = 512;
 
     public static long creationTime = 0;
     public static long indexingTime = 0;

@@ -53,3 +53,6 @@ replay_pid*
 data/*.geojson
 *.txt
 *.out
+out/
+out2/
+run*.sh
